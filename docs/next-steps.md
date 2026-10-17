@@ -13,7 +13,6 @@
 1. **真实业务复用收益评测（End-to-End Benchmark）**
    - 独立推进端到端的昇腾工程任务评测，客观衡量知识与经验闭环在算子排障、模型迁移和性能调优中的实际提效幅度（在基准评测完成前，我们不在版本说明中做未经实测的量化夸大宣传）。
 2. **更多宿主与领域扩展**
-   - **Kimi Code 正式版对齐**：推进 [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) 跨平台验收与正式 Release 发布。
    - **DSH 适配器补全**：在 [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) 后续版本中补齐 Stop 采集、有用性反馈与经验贡献，完成 Windows/Linux 与真实远端 NPU 验收；`0.0.1` 保持只读知识与 `remote-dev` 的稳定边界。
    - **独立开箱即用 Skills 持续扩充**：在 [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) 中沉淀更多昇腾 Profiling、精度比对与算子开发专项指南。
 3. **上游宿主问题跟进**

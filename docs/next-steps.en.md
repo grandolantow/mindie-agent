@@ -13,7 +13,6 @@ Our initial [`0.0.1`](releases/0.0.1.en.md) release is live across six mainstrea
 1. **Real-World Engineering Benchmarks**
    - Run end-to-end benchmarks on real Ascend operator debugging, model migration, and inference tuning workloads to measure how much time and effort the experience loop saves in practice (we avoid making premature quantitative claims before benchmarks are complete).
 2. **Broader Host & Domain Coverage**
-   - **Kimi Code Formal Release**: Complete cross-platform acceptance and publish the formal release for [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi).
    - **DSH Adapter Completion**: Add Stop capture, usefulness feedback, and experience contribution to [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh), then accept Windows/Linux and real remote NPU execution; `0.0.1` keeps the stable read-only knowledge + `remote-dev` boundary.
    - **Expand Standalone Skills**: Grow [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) with additional ready-to-use workflows for Ascend profiling, accuracy verification, and kernel development.
 3. **Upstream Host Issue Tracking**
