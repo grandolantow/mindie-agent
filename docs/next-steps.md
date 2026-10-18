@@ -4,7 +4,7 @@
 
 当前系统架构与知识闭环设计见 [系统架构与模块分工](architecture.md) 与 [知识与经验闭环设计](knowledge-system.md)，所有迭代遵循 [工程设计原则与演进准则](design-principles.md)。
 
-首发版本 [`0.0.1`](releases/0.0.1.md) 已完成发布，覆盖 Claude Code 与 OpenAI Codex CLI 在 macOS、原生 Windows 与 Windows WSL 上的六个主流开发环境；DeepSeek Harness 适配器 [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) `0.0.1` 已正式发布：原生入口、Stop 采集/脱敏/摘要索引、自动 fork 贡献、反馈与诊断，macOS/4090 WSL/Lenovo Windows 实机验收。
+首发版本 [`0.0.1`](releases/0.0.1.md) 已完成发布，覆盖 Claude Code 与 OpenAI Codex CLI 在 macOS、原生 Windows 与 Windows WSL 上的六个主流开发环境；DeepSeek Harness 适配器 [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) `0.0.1` 已正式发布（包含原生 `/mindie-agent` 入口、Stop 公开对话采集+脱敏、DSH 模型摘要索引、自动 fork 贡献、反馈、诊断、静默自动更新与官方 `remote-dev` MCP 接入，已完成 macOS / 4090 WSL / Lenovo Windows 实机验收）。
 
 ---
 
@@ -14,7 +14,7 @@
    - 独立推进端到端的昇腾工程任务评测，客观衡量知识与经验闭环在算子排障、模型迁移和性能调优中的实际提效幅度（在基准评测完成前，我们不在版本说明中做未经实测的量化夸大宣传）。
 2. **更多宿主与领域扩展**
    - **Kimi Code 正式版对齐**：推进 [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) 跨平台验收与正式 Release 发布。
-   - **DSH 适配器补全**：在 [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) 后续版本中补齐 Stop 采集、有用性反馈与经验贡献，完成 Windows/Linux 与真实远端 NPU 验收；`0.0.1` 保持只读知识与 `remote-dev` 的稳定边界。
+   - **DSH 适配器持续演进**：在 [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) `0.0.1` 正式版（已包含原生 `/mindie-agent` 入口、Stop 采集/脱敏/摘要索引、自动 fork 贡献、反馈、诊断、静默自动更新与官方 `remote-dev` MCP 接入）基础上，持续扩展更多远端昇腾 NPU 联合评测场景。
    - **独立开箱即用 Skills 持续扩充**：在 [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) 中沉淀更多昇腾 Profiling、精度比对与算子开发专项指南。
 3. **上游宿主问题跟进**
    - 持续跟踪 OpenAI Codex CLI 子代理（Subagent）中断信号向在途工具调用传递的上游修复进展；待上游合入发布后及时补齐验证并更新兼容性声明，不在插件内引入高侵入性的私有杀进程轮询器。
