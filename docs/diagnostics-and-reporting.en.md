@@ -6,7 +6,7 @@ This document explains how MindIE Agent records bounded local diagnostic logs, h
 
 - Governed by: [Engineering Design Principles](design-principles.en.md)
 - Core Component Repository: [`mindie-agent/diagnostics`](https://github.com/mindie-agent/diagnostics)
-- Release Verification Details: [`0.0.1` Release Record](releases/0.0.1.en.md)
+- Current Verification Details: [`0.0.2` Release Notes](releases/0.0.2.en.md) (initial release: [`0.0.1`](releases/0.0.1.en.md))
 
 ---
 
@@ -18,16 +18,16 @@ When a remote command or background indexing step fails, a vague error string wa
 
 ---
 
-## 2. One Contribution Switch & Everyday Experience
+## 2. Unified Contribution Switch & Everyday Experience
 
 1. **Bounded Local Structured Logs (Always Available)**:
    - Components write structured local logs at real operational boundaries. When a tool call fails, the error response includes a random diagnostic correlation ID, a static error category, and a recovery hint alongside the original exit status and cleanup outcome.
-2. **One contribution switch controls knowledge sharing and fault reporting**:
-   - Setup explains both outgoing actions: contributing redacted knowledge within approved project scope and filing allowlisted fault metadata in the product repository. **Both are off until explicitly enabled**; there is no separate fault-reporting choice.
-   - The installation profile's `mindie-consent.json` is the sole contribution authority. Reporter configuration stores the destination, log roots, and a reference to that authority. Recording, ingestion, and the final send check the same choice and revision.
-   - Enabling prepares both knowledge contribution and the actual native background reporter, returning configuration and service outcomes separately. A saved switch is not proof that the service started. Service failures remain visible and preparation can recover later. Disabling stops new outgoing work in both paths while local logs and queries remain available.
-   - Existing deferred or disabled choices remain unchanged. An old knowledge-only approval does not silently expand during upgrade; an explicit unified choice establishes a new consent revision.
-   - **Reuses the verified `gh` channel**: Producers and the background reporter use the same profile diagnostics path, preventing an enabled setting from being invisible to recorded faults. Packaged knowledge and `remote-dev` inherit that configuration. Standalone `remote-dev` retains its explicitly configured reporting policy.
+2. **A Single Contribution Switch Controls Knowledge Sharing and Fault Reporting**:
+   - Setup explains both outgoing actions: contributing redacted knowledge packages within approved project scope and filing allowlisted tool fault metadata in the product repository. **The switch is off by default and takes effect only when explicitly enabled**.
+   - The installation profile's `mindie-consent.json` is the sole authority for contribution consent. Reporter configuration stores the destination repository, log roots, and a reference to that consent file; fault recording, queue ingestion, and final submission all verify the same `choice` and `choice_revision`.
+   - **Three Distinct States**: The system keeps **configuration written**, **background reporter worker running**, and **external GitHub Issue published** strictly separate. Enabling the switch configures knowledge sharing and provisions the native background reporter, returning their readiness outcomes separately; service startup errors remain visible and can self-heal on subsequent runs. Disabling the switch immediately stops new outgoing sends on both paths while local diagnostic logs and queries remain available.
+   - **No Silent Expansion on Upgrade**: Existing `disabled`, `later`, and `read-only` choices stay off across upgrades. Legacy knowledge-only `contribute` records lacking the unified consent revision do **not** automatically gain fault-reporting permission on upgrade; users opt in explicitly once through the unified contribution entry.
+   - **Reuses the Verified `gh` Channel**: Automatic reporting uses the authenticated GitHub CLI (`gh`) verified during installation. Plugin-bundled `knowledge`, `remote-dev`, and the background reporter share the same profile diagnostics path; standalone `remote-dev` deployments retain their explicitly configured reporting policy.
 
 ---
 
@@ -58,18 +58,18 @@ Public GitHub Issues are assembled deterministically from **allowlisted metadata
 
 ---
 
-## 5. Deduplication & Retry Budgets (Loop Prevention)
+## 5. Deduplication & Recoverable Delivery Queue (Loop Prevention)
 
-To prevent duplicate Issues or infinite retry loops during network outages:
+To prevent duplicate Issues and retain pending reports across transient network outages:
 
 1. **Cross-task fingerprint deduplication**:
-   - Faults sharing the same component version, operation, stage, error category, and internal stack frame location produce a deterministic fingerprint. Switching sessions or hosts never files a duplicate Issue for an already reported bug; if an open Issue matches, its URL is recorded without spamming comments.
+   - Faults sharing the same component version, operation, stage, error category, and internal stack frame location produce a deterministic fingerprint. Switching sessions or host CLIs never creates a duplicate Issue for an already reported bug; read-only GitHub lookup links matching faults to the existing Issue without spamming comments.
 2. **Bounded requests and recoverable pending reports**:
-   - Each cycle shares one request deadline. Temporary network or authentication failures retain pending evidence, expose the actual error, and defer retries. A few failed read-only queries must not permanently discard a fault.
-   - Only a submission that may have reached GitHub becomes `unknown`. Later cycles reconcile read-only without blindly posting again. A process that never started or an explicitly rejected request is not an uncertain external write.
-   - If GitHub confirms an Issue but local receipt storage fails, the local failure is reported separately without reversing the external success. Disabling contribution stops unsent events; reenabling does not backfill events from an earlier consent revision.
+   - Each processing cycle operates under a bounded request deadline. Temporary network or GitHub authentication failures preserve pending records, surface the actual error, and defer retries rather than dropping faults after transient read-only lookup failures.
+   - Only a submission that may have reached GitHub without a response is marked `unknown` and reconciled read-only on the next cycle before any write. A subprocess that never started or a request explicitly rejected by the server is never misclassified as `unknown`.
+   - If GitHub confirms Issue creation but local receipt persistence fails, the local storage error is reported separately without reversing the completed external result. Disabling the contribution switch stops unsent queue items immediately; re-enabling processes only events recorded under the new consent revision.
 3. **No self-reporting loops**:
-   - Failures inside the reporter itself stay strictly local so the reporter can never file Issues about its own reporting errors.
+   - Failures inside the reporter itself stay strictly local so the reporter never files Issues about its own reporting errors.
 
 ---
 
