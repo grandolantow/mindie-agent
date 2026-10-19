@@ -329,3 +329,17 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 | **Structured Diagnostics & Issue Reporting** | [docs/diagnostics-and-reporting.md](./docs/diagnostics-and-reporting.md) | [docs/diagnostics-and-reporting.en.md](./docs/diagnostics-and-reporting.en.md) |
 | **Roadmap & Next Steps** | [docs/next-steps.md](./docs/next-steps.md) | [docs/next-steps.en.md](./docs/next-steps.en.md) |
 | **`v0.0.1` Release Record** | [docs/releases/0.0.1.md](./docs/releases/0.0.1.md) | [docs/releases/0.0.1.en.md](./docs/releases/0.0.1.en.md) |
+
+---
+
+## 📊 Ecosystem & Telemetry Dashboard
+
+<p align="center">
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md">
+    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.en.svg" alt="MindIE Agent Ecosystem & Telemetry Dashboard" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Auto-refreshed every 12 hours via <a href="./.github/workflows/telemetry-dashboard.yml">GitHub Actions</a> onto the <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md"><code>telemetry-data</code></a> branch (click the dashboard for interactive repository links and the <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/telemetry-history.json">cumulative historical ledger</a>).</sub>
+</p>
