@@ -39,8 +39,11 @@ MindIE Agent 采用“**宿主原生插件 + 共享运行时组件 + 开放知�
 | [`coordinator`](https://github.com/mindie-agent/coordinator) | **升级版 SSH 与远端昇腾环境管理器（面向 Agent）**：统一管理机器台账（`machines.json` -> 自动同步 `endpoints.json`）、SSH 免密与多机容器互通（`mindie_hosts`）、远端容器绑定/开通（`mindie_container`）、Agent 级 NPU/节点/权重目录无代理探测與空闲算力推荐（`mindie_probe`）、物理 NPU 与端口租约协调（`mindie_lease`）及受管源码快照任务（`mindie_run`） |
 | [`npu-top`](https://github.com/mindie-agent/npu-top) | **昇腾集群可视化监控台（面向人类）**：复用读取 `coordinator` 的 `machines.json`，提供本地 Web 实时看板（`127.0.0.1:8788`）与 90 天有界 SQLite 热力图；Agent 侧探测统一走 `coordinator` 的 `mindie_probe`，无需依赖人类监控 Web 服务常驻 |
 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | **结构化诊断与故障上报**：提供有界本地诊断日志、错误定位编号，以及独立授权、自动去重的 GitHub Issue 故障上报 |
+| [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | **评测与发行证据**：维护真实任务评测、各代码仓发布 benchmark 的公共契约与聚合工具；分别呈现正确性、可靠性和性能证据 |
 
-各宿主插件共享同一套 `knowledge`、`coordinator`、`remote-dev` 和 `diagnostics` 核心实现；只有与宿主强相关的会话身份识别和 Transcript 解析留在各自插件内。
+当前四个宿主插件打包的共享运行时是 `knowledge`、`remote-dev` 与直接或间接依赖的 `diagnostics`；与宿主强相关的会话身份识别和 Transcript 解析留在各自插件内。`coordinator` 与 `npu-top` 是按需独立安装的组件：前者提供 Agent 环境管理与任务协调，后者提供面向人的监控界面。插件锁中没有 `coordinator`，不能据此宣称安装插件已经自动暴露其工具；未来接入需要明确的依赖、工具注册和宿主验收。
+
+产品发布记录汇总五个共享/独立组件、四个插件与 `mindie-bench` 共十个代码仓的版本、源码及 benchmark 结果。本仓只维护文档与聚合记录，不生成虚构的运行时 benchmark。具体交付规则见[组件与插件配套发布](release-compatibility-and-update.md#组件与插件配套发布)。
 
 ---
 

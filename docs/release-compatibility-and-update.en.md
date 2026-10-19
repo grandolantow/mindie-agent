@@ -17,19 +17,38 @@ MindIE Agent ships **verified combinations of components and plugins**. Each rep
 
 Releases always follow a **bottom-up dependency order**:
 1. Publish the base diagnostics library [`diagnostics`](https://github.com/mindie-agent/diagnostics) first;
-2. Prepare and publish [`remote-dev`](https://github.com/mindie-agent/remote-dev) and [`knowledge`](https://github.com/mindie-agent/knowledge) (which depend on `diagnostics`);
-3. Publish the Harness plugins ([`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex), [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc), [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi), [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)) that lock those exact component releases, followed by the unified release record in `mindie-agent`. The DSH adapter `0.0.1` reuses the published `knowledge v0.11.0`, `remote-dev v0.9.5`, and `diagnostics v0.4.1` rather than re-releasing unchanged components; verify its `uv.lock` and stable-only DSH plugin set separately.
+2. Prepare and publish [`remote-dev`](https://github.com/mindie-agent/remote-dev), [`knowledge`](https://github.com/mindie-agent/knowledge), and [`npu-top`](https://github.com/mindie-agent/npu-top), which depend on `diagnostics`;
+3. Publish [`coordinator`](https://github.com/mindie-agent/coordinator) with its exact, formally released `remote-dev` and `diagnostics` dependencies;
+4. Publish the Harness plugins ([`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex), [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc), [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi), [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)) with their actual runtime dependencies, followed by the product release record. `coordinator` and `npu-top` remain optional, independently installed components; this ordering does not imply that plugins package or register them. `mindie-bench` maintains its own tool version, referenced by immutable source SHA in release workflows.
 
 Before publishing any plugin Release, maintainers verify and record the following checklist:
 
 | Pre-Release Check | Verification Standard |
 | --- | --- |
-| **1. Complete Dependency Inventory** | Extract all direct and transitive first-party runtime packages from the plugin's final `uv.lock`; record repository, package name, version, full commit SHA, and corresponding Release tag. |
+| **1. Complete Dependency Inventory** | Extract direct first-party dependencies from the final `uv.lock` or fixed requirements used by the installer, then inventory transitive dependencies in the installed environment; record repository, package name, version, full commit SHA, and corresponding Release tag. |
 | **2. Formal Component Releases** | Every first-party runtime dependency must have a published GitHub Release (`draft=false`, `prerelease=false`); a Git tag, merged PR, or green CI run alone is never sufficient. |
-| **3. Exact Commit & Version Alignment** | Dereferencing the component Release tag must resolve to the exact commit SHA pinned in `uv.lock`, and the tag version, `pyproject.toml` version, and built wheel/sdist metadata must match. |
+| **3. Exact Commit & Version Alignment** | The dereferenced Release tag must match both the declared source pin and installed `direct_url.json`; tag version, source package version, and wheel/sdist or plugin archive metadata must agree. |
 | **4. Artifact Download & Checksum Verification** | Download the published wheel, sdist, and `SHA256SUMS` from the GitHub Release and verify digests and package contents against the locked source tree. |
 | **5. Honest Acceptance Scope** | Record verified host versions, OS platforms, and any post-acceptance source deltas clearly; never claim un-run tests as fresh hardware evidence, and document known host limitations openly. |
 | **6. Closed-Loop Combination** | Publish plugins only after all underlying component Releases are verified, preventing broken dependency locks in released plugins. |
+| **7. Release Benchmark Delivery** | Every new code repository Release includes benchmark JSON, Markdown, and checksum files from the exact tagged source, measured with a clean checkout and passing required scenarios. See the asset contract below. |
+
+### Benchmark Evidence on Every Release
+
+Each code repository declares stable workloads in `benchmarks/release.json`, executed by a fixed `mindie-bench` runner. The tag-triggered shared pipeline verifies source and versions, installs declared dependencies, verifies formal releases for installed first-party components, runs local component tests, and then runs benchmarks and builds deliverables. Ordinary CI and local test stages exclude `live_npu`; real host, paid-model, and NPU acceptance run separately with their own evidence.
+
+Every new Release ships the following alongside its wheel/sdist or plugin archive:
+
+- `benchmark-results.json`: repository, version, full source SHAs before and after measurement, clean-checkout status, suite digest, execution environment, repeated samples, iteration counts, units, case outcomes, and release decision;
+- `benchmark-results.md`: readable methods, measurements, and scope;
+- `benchmark-SHA256SUMS`: digests of those two public reports;
+- `SHA256SUMS`: complete digests for software deliverables and public benchmark assets.
+
+Failed, missing, timed-out, or unknown required scenarios, and source changes during measurement, cannot be treated as passing evidence. Recheck that the remote tag still identifies the measured source before publication; do not move existing tags or overwrite Releases to manufacture a pass. Keep build and benchmark logs in controlled CI storage; public reports contain publishable workload descriptions, environment facts, and numbers without credentials, user transcripts, or sensitive local paths.
+
+Product `0.0.2` and later records aggregate ten repositories: `diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, the four Harness plugins, and `mindie-bench`. The documentation repository has no runtime workload and does not add a filler benchmark. Reused unchanged components may reuse evidence for their exact source, with measurement date and environment stated.
+
+Passing functional tests, CPU microbenchmarks, A2/A3 integration, and end-to-end productivity evaluation establish different facts. Pytest duration, parser latency, or a successful single-platform run cannot establish NPU performance gains or an Agent productivity percentage.
 
 > **Note**: `knowledge` is a software runtime package governed by this release checklist, whereas `knowledge-vllm-ascend` is a domain content repository updated continuously under `publication-contract.json` without requiring a new software release for every new knowledge package.
 

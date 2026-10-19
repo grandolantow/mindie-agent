@@ -4,6 +4,8 @@
 
 This document defines the unified **Test Validity Redlines** and **Four-Tier Testing Pyramid (Tier 0 – Tier 3)** across all MindIE Agent repositories (`knowledge`, `remote-dev`, `coordinator`, `npu-top`, `diagnostics`, native Harness plugins, and `mindie-bench`). Designed around **always-available live Ascend A2 (910B) and A3 (910C) NPU clusters**, our testing architecture maximizes defect-detection signal while keeping execution fast.
 
+These are design targets, not a claim that every repository has completed all four tiers or meets the listed duration budgets. Release records must name the actual source, cases, environment, duration, and missing coverage. A successful single probe does not establish acceptance of the complete release combination.
+
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
 
 ---
@@ -65,3 +67,18 @@ flowchart TB
 
 ### 3.4 Tier 3: Host CLI & `mindie-bench` Canary Loop
 - In `mindie-bench`, the test suite focuses on recipe materialization, workspace isolation (source projection / worktree), verifier soundness, telemetry/cost settlement, and live Canary task execution—keeping the benchmark harness fast, deterministic, and free of dead-branch filler tests.
+
+## 4. CI Separation & Release Benchmarks
+
+Ordinary PR/branch CI and pre-release local contract stages use `pytest -m "not live_npu"` or an equivalent explicit component entrypoint. They do not automatically access standing clusters or invoke paid host models. Every real NPU case carries `live_npu`; an environment-variable opt-in may supplement this marker but cannot replace it. Direct calls to `mcp_server.handle()` remain component contracts. Tier 3 host acceptance requires the actual host CLI path.
+
+Every code repository owns `benchmarks/release.json` and executable workloads. Each benchmark iteration performs real business operations and checks their output, recording independent repetitions, sample counts, iterations, values, and units. The release workflow first verifies local contracts and formally published dependencies, then measures the clean candidate using an immutable `mindie-bench` runner. Required cases must pass, and source SHAs before and after measurement must equal the tag, before publication can proceed.
+
+| Evidence | Supported conclusion | Validation it cannot replace |
+| --- | --- | --- |
+| Local business regression tests | Specified consent, protocol, state, and error contracts hold | Actual host or NPU behavior |
+| CPU microbenchmark | Latency or throughput of a core operation on fixed inputs | Network/NPU performance or Agent productivity |
+| Non-destructive A2/A3 integration | Observed behavior on the named hardware, containers, and source | Unexecuted platforms or a complete host loop |
+| Real host and Canary | End-to-end behavior for the named version, platform, and task | A statistically designed productivity comparison |
+
+Each Release includes `benchmark-results.json`, `benchmark-results.md`, and `benchmark-SHA256SUMS`, covered by the full `SHA256SUMS`. Public reports contain publishable workload descriptions and measurements; raw failure logs, user inputs, and credentials are not published with them. The product repository aggregates ten code repositories without adding a documentation benchmark. See [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release).

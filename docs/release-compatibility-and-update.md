@@ -17,19 +17,38 @@ MindIE Agent 对外发布的是**经过实机验证的组件与插件组合**。
 
 发版必须严格遵循**自底向上的拓扑依赖顺序**：
 1. 先发布基础诊断组件 [`diagnostics`](https://github.com/mindie-agent/diagnostics)；
-2. 再并行准备并发布依赖它的 [`remote-dev`](https://github.com/mindie-agent/remote-dev) 与 [`knowledge`](https://github.com/mindie-agent/knowledge)；
-3. 最后发布锁定了上述组件版本的各宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)）及主仓库版本记录。DSH 适配器在 `0.0.1` 直接复用已发布的 `knowledge v0.11.0`、`remote-dev v0.9.5` 与 `diagnostics v0.4.1`，不重复发布未改动组件；其 `uv.lock` 与 DSH 稳定插件依赖需单独核对。
+2. 再并行准备并发布依赖它的 [`remote-dev`](https://github.com/mindie-agent/remote-dev)、[`knowledge`](https://github.com/mindie-agent/knowledge) 与 [`npu-top`](https://github.com/mindie-agent/npu-top)；
+3. 发布锁定正式 `remote-dev`、`diagnostics` 的 [`coordinator`](https://github.com/mindie-agent/coordinator)；
+4. 发布锁定实际运行时依赖的各宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)），再汇总主产品版本记录。`coordinator` 与 `npu-top` 仍是按需独立组件，这个发布顺序不意味着插件已打包或自动注册它们。`mindie-bench` 的评测工具版本独立维护，发行流程引用其固定源码 SHA。
 
 在发布任何一个宿主插件 Release 前，维护者必须逐项核对以下配套清单，并在版本发布记录中留存证据：
 
 | 发布前检查项 | 核对标准 |
 | --- | --- |
-| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` 中提取全部直接与间接第一方运行时组件，列出仓库名、包名、版本号、完整 Commit SHA 与对应的 Release Tag |
+| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` 或实际安装使用的固定 requirements 中提取直接第一方依赖，并结合安装环境盘点间接依赖；列出仓库名、包名、版本号、完整 Commit SHA 与对应 Release Tag |
 | **2. 组件已正式发布** | 每个第一方运行时依赖都必须已有正式发布的 GitHub Release（`draft=false` 且 `prerelease=false`）；仅有 Git Tag、合并 PR 或 CI 通过不算组件已发布 |
-| **3. 源码与标签严格对齐** | 解引用组件 Release Tag 后的源码 Commit 必须与插件 `uv.lock` 锁定的 Commit 完全一致；Tag 版本、源码 `pyproject.toml` 版本与构建产物（wheel / sdist）元数据必须一致 |
+| **3. 源码与标签严格对齐** | 解引用组件 Release Tag 后的源码 Commit 必须与插件声明的固定 Commit 及安装环境 `direct_url.json` 完全一致；Tag 版本、源码包版本与构建产物（wheel / sdist 或插件包）元数据必须一致 |
 | **4. 发行产物下载校验** | 从正式 Release 页面下载构建产物与 `SHA256SUMS`，校验哈希值、包内文件列表与锁定源码完全对应 |
 | **5. 验收范围清晰诚实** | 如实记录实机验收覆盖的客户端版本、平台与源码范围；未重跑的测试不冒充新 Tag 实机证据，已知限制明确列出 |
 | **6. 组合闭环复核** | 所有依赖组件 Release 核对无误后才发布插件 Release，防止出现“插件已发、底层组件未发”的断链状态 |
+| **7. 发布 benchmark 随包交付** | 每个代码仓的新 Release 必须包含与该 Tag 精确源码相符、干净工作区运行且必需场景通过的 benchmark JSON、Markdown 与哈希文件；完整产物清单见下节 |
+
+### 每次发布的 benchmark 交付
+
+各代码仓在 `benchmarks/release.json` 声明稳定工作负载，通过固定版本的 `mindie-bench` 运行器执行。Tag 触发的共享发布流程依次验证版本与源码、安装实际声明的依赖、确认第一方依赖已有匹配的正式 Release、运行本地组件测试，再运行 benchmark 和构建产物。普通 CI 和本地测试步骤排除 `live_npu`；真实宿主、付费模型与 NPU 验收单独执行、单独记录。
+
+每个新 Release 都随 wheel/sdist 或插件归档交付：
+
+- `benchmark-results.json`：仓库、版本、测量前后完整 SHA、工作区是否干净、测试套件摘要、执行环境、每次重复样本、迭代次数、单位、场景状态和发布判定；
+- `benchmark-results.md`：可直接阅读的测量方法、结果与边界；
+- `benchmark-SHA256SUMS`：上述两个公共报告的摘要；
+- `SHA256SUMS`：软件产物及公共 benchmark 附件的完整摘要清单。
+
+必需场景失败、缺失、超时、状态未知或源码在执行中发生变化，都不能作为通过的发布证据。发布前复核远端 Tag 仍指向测量源码；不移动已有 Tag 或覆盖既有 Release 来补写“通过”。构建和 benchmark 日志保留在受控 CI 中，公共报告仅发布可公开的输入描述、环境与数值，不包含凭据、用户对话或本机敏感路径。
+
+主产品 `0.0.2` 及后续版本记录聚合 `diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、四个宿主插件与 `mindie-bench` 的十仓结果。文档主仓没有自己的运行时 workload，不添加一个凑数 benchmark。复用未改动组件时复用与其精确源码相符的已有结果，并清楚标明测量日期和环境。
+
+功能测试通过、CPU 微 benchmark、A2/A3 集成验证和端到端生产力评测分别说明不同事实。不得把 pytest 耗时、局部解析延迟或单个平台成功换算为 NPU 性能提升或 Agent 提效百分比。
 
 > **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 `knowledge-vllm-ascend` 是领域知识内容仓库，按固定的内容契约（`publication-contract.json`）持续合入更新，日常新增知识包无需同步发布软件版本。
 

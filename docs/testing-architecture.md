@@ -4,6 +4,8 @@
 
 本文定义 MindIE Agent 全栈仓库（`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`diagnostics`、各宿主插件与评测仓 `mindie-bench`）统一的**用例有效性红线**与**四级测试金字塔（Tier 0 ~ Tier 3）**。我们的测试体系建立在**默认常备 A2（Ascend 910B）与 A3（Ascend 910C）昇腾 NPU 真机集群**的前提之上，追求极致的信噪比与执行速度。
 
+这是测试设计目标，不表示所有仓库已完成四层验收或达到表中的耗时预算。发布记录必须写明实际源码、用例范围、环境、耗时与未覆盖项；不能把单个探测通过扩展为整个发布组合已经通过。
+
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
 
 ---
@@ -65,3 +67,18 @@ flowchart TB
 
 ### 3.4 Tier 3：宿主 CLI 与 `mindie-bench` Canary 闭环
 - 在 `mindie-bench` 中，测试套件聚焦于验证 Recipe 构建器、环境隔离（Source Projection / Worktree）、Verifier 判定逻辑、遥测计费对账与 Canary 任务实机闭环，确保评测基础设施本身严谨、快速且无死分支冗余。
+
+## 四、CI 分层与发布 benchmark
+
+普通 PR、分支 CI 和发布前本地组件检查使用 `pytest -m "not live_npu"` 或等价的显式组件入口，不自动连接常备集群或调用付费宿主模型。所有真实 NPU 用例统一标记 `live_npu`；环境变量 opt-in 可以作为第二道运行选择，但不能替代标记。直接调用 `mcp_server.handle()` 的测试仍属于组件契约，只有真实宿主 CLI 路径才构成 Tier 3 宿主验收。
+
+各代码仓维护 `benchmarks/release.json` 和实际工作负载。benchmark 每次执行真实业务操作并校验结果，记录多次独立重复、样本数、迭代次数、数值与单位。发布工作流先验证本地组件契约及正式依赖，再由固定 SHA 的 `mindie-bench` 运行器测量干净的候选源码；只有必需场景全部通过、测量前后 SHA 相同并与 Tag 一致，才可进入发布。
+
+| 证据 | 能支持的判断 | 不能替代的验证 |
+| --- | --- | --- |
+| 本地业务回归测试 | 授权、协议、状态与错误传播满足指定契约 | 真实宿主或 NPU 运行结果 |
+| CPU 微 benchmark | 固定输入下某个核心操作的延迟或吞吐 | 网络性能、NPU 性能、Agent 提效 |
+| A2/A3 无损集成 | 指定硬件、容器与源码上的实际行为 | 未运行的平台或整个宿主闭环 |
+| 真实宿主与 Canary | 指定版本、平台与任务链路的闭环行为 | 有统计设计的整体生产力提升 |
+
+每个 Release 附带 `benchmark-results.json`、`benchmark-results.md`、`benchmark-SHA256SUMS`，并纳入完整 `SHA256SUMS`。公共报告只包含可公开的工作负载说明与测量数据；原始失败日志、用户输入和凭据不随报告公开。产品主仓聚合十个代码仓结果，本身不添加文档 benchmark；完整规则见[版本兼容与配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)。
