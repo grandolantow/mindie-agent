@@ -87,4 +87,4 @@ flowchart TB
 | **A2/A3 实机无损集成（Tier 2）** | 指定昇腾硬件、容器拓扑与源码版本下的真实探测、执行与租约行为 | 未测操作系统平台或完整宿主 CLI 会话回路 |
 | **真实宿主与 Canary 验收（Tier 3）** | 指定宿主客户端版本、平台与任务链路的端到端闭环可用性 | 具备统计对照设计的研发生产力提升百分比 |
 
-每个代码仓的正式 GitHub Release 均随构建产物附上 `benchmark-results.json`、`benchmark-results.md`、`benchmark-SHA256SUMS` 与总 `SHA256SUMS`（公开报告仅包含合成输入说明、运行环境与测量数值，不含私有日志、用户对话或凭据）。主仓库（`mindie-agent`）在版本发布时汇总十个代码仓的正式基准报告，详见[组件与插件配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)与 [`0.0.2` 版本发布说明](releases/0.0.2.md#四十仓发布基准测试release-benchmarks)。
+每个代码仓的正式 GitHub Release 均随构建产物附上 `benchmark-results.json` 与 `benchmark-results.md`（公开报告仅包含合成输入说明、运行环境与测量数值，不含私有日志、用户对话或凭据）。主仓库（`mindie-agent`）在版本发布时汇总十个代码仓的正式基准报告，详见[组件与插件配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)与 [`0.0.2` 版本发布说明](releases/0.0.2.md#四十仓发布基准测试release-benchmarks)。

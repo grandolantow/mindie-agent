@@ -32,10 +32,10 @@ Before publishing any plugin Release, maintainers verify the following checklist
 | **1. Complete Dependency Inventory** | Extract direct first-party dependencies from the final `uv.lock` or pinned requirements and inventory transitive dependencies in the installed environment; record repository, package name, version, full commit SHA, and Release tag. |
 | **2. Formal Component Releases** | Every first-party runtime dependency has a published GitHub Release (`draft=false`, `prerelease=false`). |
 | **3. Exact Commit & Version Alignment** | The dereferenced Release tag matches both the declared source pin and installed `direct_url.json`; tag version, source package version, and artifact metadata agree. |
-| **4. Artifact Download & Checksum Verification** | Download the published build artifacts and `SHA256SUMS` from the GitHub Release and verify digests and package contents against the locked source tree. |
+| **4. Published Package Contents** | Download the published packages from the GitHub Release and confirm their contents match the locked source tree. |
 | **5. Documented Acceptance Scope** | Record verified host versions, OS platforms, exact tested source SHAs, and known boundaries accurately. |
 | **6. Closed-Loop Combination** | Publish plugins only after all underlying component Releases are verified. |
-| **7. Release Benchmark Delivery** | Every new code repository Release includes benchmark JSON, Markdown, and checksum files generated from the exact tagged commit on a clean checkout. |
+| **7. Release Benchmark Delivery** | Every new code repository Release includes benchmark JSON and Markdown reports generated from the exact tagged commit on a clean checkout. |
 
 ### Benchmark Evidence on Every Release
 
@@ -45,8 +45,6 @@ Every new code repository Release ships the following alongside its wheel/sdist 
 
 - `benchmark-results.json`: repository, version, full source SHAs before and after measurement, clean-checkout status, suite digest, execution environment, repeated samples, iteration counts, units, case outcomes, and release gate decision;
 - `benchmark-results.md`: human-readable workload summary, measurements, and scope;
-- `benchmark-SHA256SUMS`: SHA256 digests of the two benchmark reports;
-- `SHA256SUMS`: complete SHA256 manifest covering both software artifacts and public benchmark reports.
 
 Any failed, missing, or timed-out required scenario—or any checkout modification during measurement—blocks publication. Public reports contain synthetic workload descriptions, environment metadata, and numeric measurements only, excluding credentials, user transcripts, and local paths.
 
