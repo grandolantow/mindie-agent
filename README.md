@@ -331,3 +331,13 @@ MindIE Agent 在持续演进中沉淀了一套严格的 **[工程设计原则](.
 | **结构化诊断与故障自动上报** | [docs/diagnostics-and-reporting.md](./docs/diagnostics-and-reporting.md) | [docs/diagnostics-and-reporting.en.md](./docs/diagnostics-and-reporting.en.md) |
 | **演进路线与下一步重点** | [docs/next-steps.md](./docs/next-steps.md) | [docs/next-steps.en.md](./docs/next-steps.en.md) |
 | **`v0.0.2` 版本发布记录** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
+
+---
+
+## 📊 开源仓库与下载统计
+
+<p align="center">
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md">
+    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.zh.svg" alt="MindIE Agent 开源仓库与下载统计" width="100%">
+  </a>
+</p>
