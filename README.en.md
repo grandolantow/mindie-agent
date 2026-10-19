@@ -23,6 +23,50 @@
 
 ---
 
+<!-- mindie-value-results:start -->
+### 0.0.2 measured results
+
+Small-sample results on fixed tasks, reported separately by host, model and comparison. They are not averaged across models and do not establish a general productivity gain.
+
+G0: native host. G1: add remote-dev. G2: also add knowledge retrieval, shipped Skills and explicit retrieval guidance. G3: capture an earlier task's experience for later tasks.
+
+| Study / host / model | Repeats per task | Pair | Baseline solved/attempts | Candidate solved/attempts | Delivery-time ratio (baseline/candidate) | Mutually solved pairs |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G2 | 2/3 | 3/3 | 0.975x | 2 |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G1 | 2/3 | 2/3 | 0.963x | 1 |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 2/3 | 3/3 | 0.789x | 2 |
+| stale / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 3/3 | 3/3 | 0.595x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G2 | 3/3 | 3/3 | 0.689x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G1 | 3/3 | 3/3 | 1.025x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 3/3 | 3/3 | 0.673x | 3 |
+| claude-code / claude-code / deepseek-flash | 3 | G0 → G2 | 2/3 | 2/3 | 0.678x | 2 |
+| dsh / dsh / deepseek-flash | 3 | G0 → G2 | 2/3 | 3/3 | 0.600x | 2 |
+| kimi / kimi / k3 (max) | 3 | G0 → G2 | 2/3 | 1/3 | not measured | 0 |
+| knowledge-transfer / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 6/6 | 6/6 | 0.685x | 6 |
+| knowledge-transfer / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G2 → G3 | 6/6 | 6/6 | 1.011x | 6 |
+
+Solved/attempts uses the selected settled evals, with failures in the denominator. Timing includes only tasks solved by both sides: above 1 means the candidate was faster on those pairs; below 1 means slower.
+
+**Knowledge transfer: knowledge-transfer / home/codex/gpt-6.1-sol** — 3 runs, each with 1 seed + 2 distinct eval tasks.
+Query returned the seed in 5/6 evals; explain read it in 5/6. Misses remain in the results. Workflow totals below include seed and capture, unlike the eval-only paired timing above.
+
+| Condition | Selected workflow (s) | All executed, including historical attempts (s) |
+| --- | ---: | ---: |
+| G1 | 1814.9 | 2612.6 |
+| G2 | 2662.1 | 4140.8 |
+| G3 | 2726.2 | 3312.7 |
+
+**Component scenarios**
+
+- npu-top: 3 replay runs; 24 devices and 16/16 process assignments correct per run; live container-owner checks passed 3/3. Human accuracy: not measured; task time (s): not measured. Replays are not independent hardware samples.
+- diagnostics: 3 local HTTP runs turned 9 fault occurrences into 3 reports and 3 POSTs; evidence retained 3/3, redaction 3/3, requests stopped after withdrawal 3/3. Delivery took 60.58-60.64 s, including the production retry wait; GitHub availability and human triage gains were not measured.
+- coordinator: 3 contention runs; successful listeners 3 → 6, port conflicts 3 → 0, duplicate device selections 3 → 0. The baseline uses check-then-act, not another atomic scheduler.
+
+[Full results, condition definitions and costs](docs/releases/0.0.2/value-results.md) retain original failures, unknown outcomes, historical attempts and targeted retests. Setup and diagnostic model usage is accounted for separately from task value.
+<!-- mindie-value-results:end -->
+
+---
+
 ## Quick Install
 
 ### Option 1: Let Your Coding Agent Install It

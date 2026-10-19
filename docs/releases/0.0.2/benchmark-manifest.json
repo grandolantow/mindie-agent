@@ -37,8 +37,8 @@
     },
     {
       "repository": "mindie-agent/coordinator",
-      "revision": "daf7fa38b431187c04a6dea4341df4a066100953",
-      "version": "0.5.2",
+      "revision": "34812c2d385f3ff112be3a597d27fd3a0c15c104",
+      "version": "0.5.3",
       "required_cases": [
         "two-role-placement"
       ],
@@ -59,7 +59,7 @@
     },
     {
       "repository": "mindie-agent/mindie-agent-codex",
-      "revision": "efc6ade6fd20aef37a8b457853a9501a26df6c94",
+      "revision": "f1acb69ba336f75ae2d909443ca118835b038b9c",
       "version": "0.0.2",
       "required_cases": [
         "public-transcript"
@@ -70,7 +70,7 @@
     },
     {
       "repository": "mindie-agent/mindie-agent-cc",
-      "revision": "55b1db15f398460d8243e1f840f0c02b6d044e1b",
+      "revision": "78f34dd9b09e877298225fa243ea4c28978c9dd6",
       "version": "0.0.2",
       "required_cases": [
         "public-transcript"
@@ -81,7 +81,7 @@
     },
     {
       "repository": "mindie-agent/mindie-agent-kimi",
-      "revision": "fb4634305fd891749642d46d4d2d3e502351213f",
+      "revision": "0e78f0422162a61e8c56850e049f9e5fc4d290b5",
       "version": "0.0.2",
       "required_cases": [
         "public-transcript-parsing"
@@ -92,7 +92,7 @@
     },
     {
       "repository": "mindie-agent/mindie-agent-dsh",
-      "revision": "585f19e62f7d2b79dd306af85bc1db5d8e5d3732",
+      "revision": "d3a1e1282356b65b51fba49072c1842918746f8f",
       "version": "0.0.2",
       "required_cases": [
         "public-transcript"
@@ -103,8 +103,8 @@
     },
     {
       "repository": "mindie-agent/mindie-bench",
-      "revision": "fe87041b0c78730c04b8c67e287e0a82a017b4e6",
-      "version": "0.2.0",
+      "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
+      "version": "0.3.0",
       "required_cases": [
         "retrieval-scoring"
       ],

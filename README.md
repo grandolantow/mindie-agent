@@ -23,6 +23,50 @@
 
 ---
 
+<!-- mindie-value-results:start -->
+### 0.0.2 实测结果
+
+固定任务集的小样本结果，按宿主、模型和对照分开列出，不跨模型求平均，也不代表普遍提效。
+
+G0：原生宿主；G1：加入 remote-dev；G2：再加入知识检索、随包 Skills 和显式检索提示；G3：在 G2 上采集前一任务的经验，供后续任务使用。
+
+| 任务集 / 宿主 / 模型 | 每任务重复数 | 对照 | 基线解题数/尝试数 | 候选解题数/尝试数 | 交付时间比（基线/候选） | 双方均解决的配对数 |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G2 | 2/3 | 3/3 | 0.975x | 2 |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G1 | 2/3 | 2/3 | 0.963x | 1 |
+| dp2 / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 2/3 | 3/3 | 0.789x | 2 |
+| stale / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 3/3 | 3/3 | 0.595x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G2 | 3/3 | 3/3 | 0.689x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G0 → G1 | 3/3 | 3/3 | 1.025x | 3 |
+| quarot / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 3/3 | 3/3 | 0.673x | 3 |
+| claude-code / claude-code / deepseek-flash | 3 | G0 → G2 | 2/3 | 2/3 | 0.678x | 2 |
+| dsh / dsh / deepseek-flash | 3 | G0 → G2 | 2/3 | 3/3 | 0.600x | 2 |
+| kimi / kimi / k3 (max) | 3 | G0 → G2 | 2/3 | 1/3 | 未测 | 0 |
+| knowledge-transfer / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G1 → G2 | 6/6 | 6/6 | 0.685x | 6 |
+| knowledge-transfer / codex / home/codex/gpt-6.1-sol (xhigh) | 3 | G2 → G3 | 6/6 | 6/6 | 1.011x | 6 |
+
+解题数与尝试数使用选定的已结束 eval；失败仍计入分母。时间比仅使用双方均解决的任务，大于 1 表示候选在这些配对中更快，小于 1 表示更慢。
+
+**知识复用：knowledge-transfer / home/codex/gpt-6.1-sol** — 3 轮，每轮 1 个 seed + 2 个不同 eval。
+实际 query 命中 seed 5/6，explain 读取 5/6；未命中也保留在结果中。以下为全流程累计交付时间，已包含 seed 与 capture，不是仅 eval 的时间。
+
+| 条件 | 选定全流程（秒） | 全部已执行，含历史尝试（秒） |
+| --- | ---: | ---: |
+| G1 | 1814.9 | 2612.6 |
+| G2 | 2662.1 | 4140.8 |
+| G3 | 2726.2 | 3312.7 |
+
+**组件场景**
+
+- npu-top：3 轮回放，每轮正确识别设备 24 个、进程归属 16/16；现场容器归属检查 3/3 通过。人工定位准确率：未测，耗时（秒）：未测。重复回放不是独立硬件样本。
+- diagnostics：3 轮本地 HTTP 场景中，9 次故障形成 3 条报告、3 次 POST；证据保留 3/3、脱敏 3/3、撤回后停止请求 3/3。故障到交付耗时 60.58-60.64 秒，包含生产重试等待；不代表 GitHub 可用性或人工排障收益。
+- coordinator：3 轮竞争，成功监听数 3 → 6，端口冲突 3 → 0，重复设备选择 3 → 0。基线是先检查再操作，不是另一种原子调度器。
+
+[完整结果、条件定义与成本记录](docs/releases/0.0.2/value-results.md)保留原始失败、未知终态、历史尝试和单点重测；准备与诊断模型调用单独记账，不混入任务价值。
+<!-- mindie-value-results:end -->
+
+---
+
 ## 快速安装
 
 ### 方式一：交给你的 AI 编程客户端自动安装
