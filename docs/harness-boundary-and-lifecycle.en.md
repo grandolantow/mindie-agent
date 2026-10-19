@@ -5,7 +5,7 @@
 This document explains how responsibilities are divided between MindIE Agent's native Harness plugins (**Claude Code**, **OpenAI Codex CLI**, **Kimi Code**, **DeepSeek Harness**) and its shared runtime components, as well as how task identity, user consent, long-running jobs, and local data recovery work in practice.
 
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
-- Release Verification Details: [`0.0.1` Release Record](releases/0.0.1.en.md)
+- Release Records: [`0.0.2` Release Record](releases/0.0.2.en.md) · [`0.0.1` Release Record](releases/0.0.1.en.md)
 
 ---
 
@@ -18,7 +18,7 @@ MindIE Agent does not invent a proprietary chat UI or force you into a custom ta
 | **Host Native Plugin Manager** | Downloading, installing, and recording installed plugin packages | Does not replace MindIE Agent's SemVer host-compatibility check |
 | **Harness Plugin Adapters** (`mindie-agent-cc` / `-codex` / `-kimi` / `-dsh`) | Verifying native task identity, locating trusted transcripts, extracting public dialogue, invoking the host's lightweight native model, shipping locked dependencies (`uv.lock`), and running silent background updates | Never maintains a second knowledge database or duplicate process-supervision state machine |
 | **Shared Knowledge Engine** (`knowledge`) | Managing consent & cursors, running deterministic privacy redaction, coordinating block navigation indexing, serving `TechnicalTokenizerV1`-based ReMe search, and tracking PR receipts & recovery | Never imports host-private session tables or guesses task ownership from working directories or timestamps |
-| **Remote & Diagnostics Components** (`remote-dev` / `diagnostics`) | Providing standalone SSH remote execution/background job management, bounded local logs, and opt-in fault reporting | Never depends on experience capture being enabled, and never truncates user job outputs |
+| **Remote & Diagnostics Components** (`remote-dev` / `diagnostics`) | SSH execution and background jobs, bounded local logs, and fault reporting under the contribution switch | SSH tools and local logs remain available with contribution off; outgoing fault reports obey that switch and never truncate user job output |
 
 In everyday workflows:
 - **Manual `/mindie-agent` Trigger**: Type `/mindie-agent <problem description>` (or `$mindie-agent` in Codex; DSH uses its native `/mindie-agent` gesture) whenever you want to invoke Ascend domain knowledge, historical troubleshooting experience, and the Skill workflow;
@@ -38,7 +38,7 @@ In everyday workflows:
 - **Clear time boundaries**: Only turns generated after consent is enabled and within an authorized project path are captured. Disabling sharing immediately cancels unsent queue items; re-enabling captures only new turns going forward without back-scanning conversations from the disabled period.
 
 ### 2.3 Stable GitHub Channel (`gh`) & Protecting Uncertain (`unknown`) Writes
-- **Unified `gh` authenticated transport (Hard Requirement) & Two-Stage On-Demand Forking**: All GitHub API requests and remote Git branch pushes go through the authenticated `gh` CLI (`GhTransport` invokes `gh api`, and Git binds `!gh auth git-credential`), keeping credentials out of command-line arguments, logs, and config files. During installation, after verifying `gh auth status`, the playbook Stars and Forks (`--clone=false`) **only** `mindie-agent/mindie-agent` without pre-forking plugin or knowledge repositories; when the user explicitly enables community knowledge contribution (`contribute`) for a target public knowledge repository (e.g., `mindie-agent/knowledge-vllm-ascend`), the Agent Stars and Forks that target knowledge repository on demand and binds `fork` to `<GH_USER>/<repo>`. If `gh` is missing or unauthenticated, operations fail visibly rather than silently degrading.
+- **Unified `gh` authenticated transport (Hard Requirement) & Two-Stage On-Demand Forking**: All GitHub API requests and remote Git branch pushes go through the authenticated `gh` CLI (`GhTransport` invokes `gh api`, and Git binds `!gh auth git-credential`), keeping credentials out of command-line arguments, logs, and config files. Installation does not require Stars or Forks. When contribution is enabled, create or reuse a Fork of the selected knowledge repository and bind `fork` to `<GH_USER>/<repo>`. Stars are optional. If `gh` is missing or unauthenticated, operations fail visibly rather than silently degrading.
 - **Re-verify consent before every write**: Every external write (such as pushing a branch or opening a knowledge PR) re-verifies current consent before executing.
 - **Read-only reconciliation for `unknown` outcomes**: If a network glitch leaves an external write without a receipt, it is recorded as `unknown` with its original operation identity. Before any future write, the runtime reconciles read-only against the remote repository rather than blindly retrying as if the operation had never been sent.
 

@@ -5,31 +5,50 @@
 本文说明 MindIE Agent 的组件与插件配套发布规则、宿主版本兼容性筛选机制，以及后台静默更新是如何在不打断开发者日常工作的前提下完成无感切换的。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md)
-- 首发验证详情：[`0.0.1` 版本发布记录](releases/0.0.1.md)
+- 当前发布详情：[`0.0.2` 版本发布说明](releases/0.0.2.md)（历史首发：[`0.0.1`](releases/0.0.1.md)）
 
 ---
 
 ## 组件与插件配套发布
 
-MindIE Agent 对外发布的是**经过实机验证的组件与插件组合**。各个子仓库独立维护自己的版本号（例如主产品与插件发 `0.0.1` 时，`remote-dev`、`knowledge`、`diagnostics` 保持各自独立的版本序列，不强行改号或回退）。未发生代码改动的组件直接复用已有 Release，无需陪跑发版。
+MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0.0.2` 起，OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件跟随主产品统一版本号；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件可直接复用已有正式 Release。
+
+> **DSH `0.0.2` 同版本刷新说明**：DSH 本次保持 `0.0.2` 版本号并对早先发布的 `0.0.2`（`828c375...`）做单次授权替换；已安装旧 `0.0.2` 的环境需按[`0.0.2` 发布说明](releases/0.0.2.md#四dsh-002-同版本刷新说明)显式刷新一次运行环境与插件包并重启整个 DSH 进程。
 
 ### 发布顺序与依赖闭环
 
-发版必须严格遵循**自底向上的拓扑依赖顺序**：
+发版遵循**自底向上的拓扑依赖顺序**：
 1. 先发布基础诊断组件 [`diagnostics`](https://github.com/mindie-agent/diagnostics)；
-2. 再并行准备并发布依赖它的 [`remote-dev`](https://github.com/mindie-agent/remote-dev) 与 [`knowledge`](https://github.com/mindie-agent/knowledge)；
-3. 最后发布锁定了上述组件版本的各宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)）及主仓库版本记录。DSH 适配器在 `0.0.1` 直接复用已发布的 `knowledge v0.11.0`、`remote-dev v0.9.5` 与 `diagnostics v0.4.1`，不重复发布未改动组件；其 `uv.lock` 与 DSH 稳定插件依赖需单独核对。
+2. 并行准备并发布依赖它的 [`remote-dev`](https://github.com/mindie-agent/remote-dev)、[`knowledge`](https://github.com/mindie-agent/knowledge) 与 [`npu-top`](https://github.com/mindie-agent/npu-top)；
+3. 发布锁定正式 `remote-dev` 与 `diagnostics` 版本的 [`coordinator`](https://github.com/mindie-agent/coordinator)；
+4. 发布锁定实际运行时依赖的四个宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)），最后汇总发布主仓库版本说明。
+   - 四个宿主插件实际打包并注册 `knowledge`、`remote-dev` 与 `diagnostics`；`coordinator` 与 `npu-top` 作为按需独立安装的组件提供服务。
+   - `mindie-bench` 版本独立演进，各仓发布流水线通过固定 Commit SHA 引用其运行器。
 
-在发布任何一个宿主插件 Release 前，维护者必须逐项核对以下配套清单，并在版本发布记录中留存证据：
+在发布任何一个宿主插件 Release 前，维护者需核对以下清单：
 
 | 发布前检查项 | 核对标准 |
 | --- | --- |
-| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` 中提取全部直接与间接第一方运行时组件，列出仓库名、包名、版本号、完整 Commit SHA 与对应的 Release Tag |
-| **2. 组件已正式发布** | 每个第一方运行时依赖都必须已有正式发布的 GitHub Release（`draft=false` 且 `prerelease=false`）；仅有 Git Tag、合并 PR 或 CI 通过不算组件已发布 |
-| **3. 源码与标签严格对齐** | 解引用组件 Release Tag 后的源码 Commit 必须与插件 `uv.lock` 锁定的 Commit 完全一致；Tag 版本、源码 `pyproject.toml` 版本与构建产物（wheel / sdist）元数据必须一致 |
-| **4. 发行产物下载校验** | 从正式 Release 页面下载构建产物与 `SHA256SUMS`，校验哈希值、包内文件列表与锁定源码完全对应 |
-| **5. 验收范围清晰诚实** | 如实记录实机验收覆盖的客户端版本、平台与源码范围；未重跑的测试不冒充新 Tag 实机证据，已知限制明确列出 |
-| **6. 组合闭环复核** | 所有依赖组件 Release 核对无误后才发布插件 Release，防止出现“插件已发、底层组件未发”的断链状态 |
+| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` 或固定 requirements 中提取直接第一方依赖，并结合安装环境盘点间接依赖；列出仓库名、包名、版本号、完整 Commit SHA 与对应 Release Tag |
+| **2. 组件已正式发布** | 每个第一方运行时依赖均已发布正式 GitHub Release（`draft=false` 且 `prerelease=false`） |
+| **3. 源码与标签严格对齐** | 解引用组件 Release Tag 后的源码 Commit 与插件锁定的 Commit 及安装环境 `direct_url.json` 完全一致；Tag 版本、源码包版本与构建产物元数据一致 |
+| **4. 发行产物下载校验** | 从正式 Release 页面下载构建产物，确认包内文件与锁定源码一致 |
+| **5. 验收范围清晰记录** | 如实记录实机验收覆盖的客户端版本、操作系统平台、实测源码 SHA 与已知边界 |
+| **6. 组合闭环复核** | 确认所有底层依赖组件 Release 均已就绪后再发布插件 Release |
+| **7. 发布 benchmark 随包交付** | 每个代码仓的新 Release 均附带基于该 Tag 精确源码、在干净工作区上运行通过的基准测试报告 |
+
+### 每次发布的 benchmark 交付
+
+各代码仓在 `benchmarks/release.json` 中声明固定工作负载，由固定版本的 `mindie-bench` 运行器执行。Tag 触发的发布工作流依次完成：版本与源码核验、实际依赖安装、第一方依赖正式 Release 校验、本地合同测试（排除 `live_npu`）、基准测试运行与产物打包。
+
+每个代码仓的新 Release 随构建产物一并交付：
+
+- `benchmark-results.json`：记录仓库、版本、测量前后完整 SHA、工作区干净状态、测试套件摘要、运行环境、每次重复样本值、迭代次数、单位、场景状态与准入结论；
+- `benchmark-results.md`：便于直接阅读的测试工作负载、数据与范围说明；
+
+若必选基准场景失败、缺失、超时，或测量期间工作区源码发生变化，发布流水线将直接拦截。公开报告仅包含合成输入描述、环境信息与测量数值，不包含凭据、用户对话或私有路径。
+
+主仓库 `0.0.2` 及后续版本发布自动校验并汇总 `diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、四个宿主插件与 `mindie-bench` 共十个代码仓的正式评测报告与任务实测结果（详见 [`0.0.2` 版本发布说明](releases/0.0.2.md#三实测收益与-003-优化计划)）。
 
 > **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 `knowledge-vllm-ascend` 是领域知识内容仓库，按固定的内容契约（`publication-contract.json`）持续合入更新，日常新增知识包无需同步发布软件版本。
 

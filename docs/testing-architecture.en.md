@@ -2,7 +2,9 @@
 
 [中文](testing-architecture.md) · [Back to Documentation Center](README.en.md)
 
-This document defines the unified **Test Validity Redlines** and **Four-Tier Testing Pyramid (Tier 0 – Tier 3)** across all MindIE Agent repositories (`knowledge`, `remote-dev`, `coordinator`, `npu-top`, `diagnostics`, native Harness plugins, and `mindie-bench`). Designed around **always-available live Ascend A2 (910B) and A3 (910C) NPU clusters**, our testing architecture maximizes defect-detection signal while keeping execution fast.
+This document defines the unified **Test Validity Redlines** and **Four-Tier Testing Pyramid (Tier 0 – Tier 3)** across all MindIE Agent repositories (`knowledge`, `remote-dev`, `coordinator`, `npu-top`, `diagnostics`, native Harness plugins, and `mindie-bench`).
+
+> **Note**: The four tiers and time budgets below are engineering design targets; the exact source SHAs, test scopes, environments, wall times, and known boundaries for each release are recorded in the corresponding [Release Notes](releases/0.0.2.en.md).
 
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
 
@@ -65,3 +67,20 @@ flowchart TB
 
 ### 3.4 Tier 3: Host CLI & `mindie-bench` Canary Loop
 - In `mindie-bench`, the test suite focuses on recipe materialization, workspace isolation (source projection / worktree), verifier soundness, telemetry/cost settlement, and live Canary task execution—keeping the benchmark harness fast, deterministic, and free of dead-branch filler tests.
+
+---
+
+## 4. CI Separation & Per-Release Benchmarks
+
+1. **Separating Routine CI from Live Hardware Acceptance**:
+   - Standard PR checks, branch CI, and pre-release local contract stages run `pytest -m "not live_npu"`, avoiding automatic connections to standing NPU clusters or paid host model calls.
+   - All live NPU cases carry the `@pytest.mark.live_npu` marker. Direct calls to `mcp_server.handle()` in tests validate Tier 1 component contracts, whereas Tier 3 host acceptance drives the actual host CLI binary.
+2. **Release Benchmark Verification**:
+   - On formal product releases, a pinned `mindie-bench` runner verifies exact component source revisions alongside end-to-end engineering task comparisons, cross-task experience reuse, and component scenario benchmarks (see [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release) and the [`0.0.2` Release Notes](releases/0.0.2.en.md#3-benchmark-results-and-003-roadmap)).
+3. **Scope of Each Verification Layer**:
+
+| Verification Layer | What It Establishes | Scope Boundary |
+| --- | --- | --- |
+| **Local Unit & Contract Suites (Tier 0/1)** | Consent state transitions, protocol translation, redaction, and error propagation obey code contracts | Does not replace runtime checks inside real host CLIs or on Ascend NPU hardware |
+| **Live A2/A3 Integration (Tier 2)** | Real hardware probing, container execution, and lease coordination on standing Ascend clusters | Does not replace full host CLI conversation loops |
+| **Native Host & Task Evaluation (Tier 3)** | End-to-end task completion, cross-task reuse, and multi-agent coordination on fixed benchmark suites | Reported per tested host, model, and experimental condition |

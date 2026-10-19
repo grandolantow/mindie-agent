@@ -2,27 +2,24 @@
 
 [中文](next-steps.md) · [Back to Documentation Center](README.en.md)
 
-For the current system architecture and knowledge loop design, see [Architecture & Module Boundaries](architecture.en.md) and [Knowledge & Experience System](knowledge-system.en.md). All iterations follow the [Engineering Design Principles](design-principles.en.md).
+For the system architecture and knowledge loop design, see [Architecture & Module Boundaries](architecture.en.md) and [Knowledge & Experience System](knowledge-system.en.md). Engineering guidelines are documented in [Engineering Design Principles](design-principles.en.md).
 
-Our initial [`0.0.1`](releases/0.0.1.en.md) release is live across six mainstream development environments (**Claude Code** and **OpenAI Codex CLI** on **macOS**, **native Windows**, and **Windows WSL**), alongside the formal [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) `0.0.2` release, now a native `mindie-bench` harness with G0/G1/G2 canaries.
-
-Building on that foundation, **`0.0.2` completes our stack-wide "Anti Over-Defensive Programming & Four-Tier Live NPU Testing" refactoring across all 10 repositories while 100% preserving the `gpt6-astra` core architecture** (taking core business logic correctness as the sole baseline and directly deleting/rewriting unreasonable defensive imaginary-enemy checks and legacy shims):
-- **Eliminated hot-path paranoia & local one-way self-bricking**: Removed per-`SELECT` SQLite `.owner`/Schema reflection checks, local upgrade/consent `suppressed`/`fault` self-bricking tombstones, and `TaskRootBusy` container rejections—retaining `unknown` receipt reconciliation strictly for irreversible external writes;
-- **Removed cross-repo shadow state machines & reflection locks**: Deleted copy-pasted `*_fallback.py`/`*_bootstrap.py` shadow modules, Win32 ACL ceremonies, `inspect.signature` internal parameter locks, and giant inline Python strings (extracting `REMOTE_FILE_PY` into a standalone module);
-- **Established the Tier 0 – Tier 3 Standing A2/A3 Live NPU Testing Pyramid**: Purged defensive `ValueError`/`symlink` filler tests and standardized non-destructive `@pytest.mark.live_npu` verification against standing A2 (`173.125.1.2`) and A3 (`192.168.13.165`/`.156`/`.154`) clusters.
+The current release is [`0.0.2`](releases/0.0.2.en.md), which aligns the product and the four host plugins (Codex, Claude Code, Kimi Code, and DSH) on version `0.0.2` while keeping independent version sequences for shared runtime components and `mindie-bench` (historical initial release notes remain at [`0.0.1`](releases/0.0.1.en.md)). In `0.0.2`, we simplified cross-repository state management, unified community knowledge sharing and automatic fault reporting under a single contribution switch, tightened locked dependency installation, and introduced automated per-release benchmarks across all ten code repositories.
 
 ---
 
-## Current Engineering Priorities
+## Upcoming Priorities
 
-1. **Real-World Engineering Benchmarks**
-   - Using the streamlined `mindie-bench` harness verified on live A2 NPUs, run end-to-end benchmarks on real Ascend operator debugging, model migration, and inference tuning workloads to measure how much time and effort the experience loop saves in practice (we avoid making premature quantitative claims before benchmarks are complete).
-2. **Broader Host & Domain Coverage**
-   - **DSH Adapter Evolution**: Continue refining native entry, Stop capture/redaction/summary indexing, auto-fork contribution, feedback, and diagnostics in [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh), and extend `mindie-bench` with G3 native capture and live remote-NPU evaluation.
-   - **Expand Standalone Skills**: Grow [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) with additional ready-to-use workflows for Ascend profiling, accuracy verification, and kernel development.
-3. **Upstream Host Issue Tracking**
-   - Track upstream fixes in OpenAI Codex CLI for delivering cancellation signals to in-flight tool calls when a child agent (`spawn_agent`) is interrupted, updating our compatibility range once upstream ships the fix rather than adding intrusive process-hunting workarounds.
-4. **Unified Remote Environment Management in `coordinator` (`coordinator` + `remote-dev` + `npu-top`)**
-   - Agent-facing SSH host/key/mesh management (`mindie_hosts`), agentless Ascend NPU/server/mount probing (`mindie_probe`), container binding/provisioning (`mindie_container`), and lightweight NPU/port lease coordination (`mindie_lease`) are now unified in [`coordinator`](https://github.com/mindie-agent/coordinator) with automatic `machines.json` -> `remote-dev` `endpoints.json` bridging, while [`npu-top`](https://github.com/mindie-agent/npu-top) focuses purely on the human-facing Web dashboard and 90-day utilization heatmaps.
-5. **Keep Everyday Workflows Zero-Ceremony**
-   - Maintain a frictionless experience—one-sentence Agent-native installation, zero daily activation commands, and silent background updates—so developers can focus entirely on Ascend engineering.
+1. **`0.0.3` Knowledge Retrieval Latency & Context Efficiency Optimization**
+   - In the `0.0.2` live Ascend evaluations, enabling `mindie-knowledge` raised solved counts from `2/3` to `3/3` on both `dp2` and `dsh`, while introducing retrieval and long-context reading overhead. `0.0.3` will focus on optimizing retrieval granularity and context delivery so we keep the solve-rate gains while reducing latency overhead.
+2. **Host Lifecycle Reliability & Live Test Speed**
+   - Monitor real-world usage of the unified contribution and fault-reporting pipeline, prioritize fixes for reported tool faults, and expand automated cross-platform upgrade verification.
+   - Streamline the `remote-dev` live A2/A3 integration suite so its total execution time drops from ~51 seconds into the 25-second Tier 2 design budget.
+3. **Broader Ascend AI Infra Skills & Knowledge Coverage**
+   - Expand [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) and [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) across the Ascend NPU AI Infra workflow, covering architecture design, `vLLM-Ascend` feature development, `AscendC`/`Triton` kernel implementation, accuracy verification, and profiling.
+   - Extend `mindie-bench` with G3 native session capture and live remote-NPU evaluation support for DSH.
+4. **Optional `coordinator` Integration Path**
+   - Today, [`coordinator`](https://github.com/mindie-agent/coordinator) (Agent-facing SSH host management, agentless NPU/server probing, container binding, and lease arbitration) and [`npu-top`](https://github.com/mindie-agent/npu-top) (human-facing Web dashboard and 90-day heatmaps) are installed standalone on demand, while the four host plugins bundle `knowledge`, `remote-dev`, and `diagnostics`.
+   - Exposing `coordinator` tools by default inside host plugins will be evaluated as a dedicated step with explicit dependency locking, tool registration, and host verification.
+5. **Upstream Host CLI Tracking**
+   - Track upstream fixes in OpenAI Codex CLI for forwarding cancellation signals to in-flight MCP tool calls when a child agent (`spawn_agent`) is interrupted, and update `harness-compatibility.json` once upstream ships the fix.

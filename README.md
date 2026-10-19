@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.1.md"><img src="https://img.shields.io/badge/release-v0.0.1-7045F5.svg" alt="Release v0.0.1"></a>
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.2.md"><img src="https://img.shields.io/badge/release-v0.0.2-7045F5.svg" alt="Release v0.0.2"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-cc"><img src="https://img.shields.io/badge/Claude_Code-Plugin-D97757.svg" alt="Claude Code Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-codex"><img src="https://img.shields.io/badge/OpenAI_Codex-Plugin-10A37F.svg" alt="OpenAI Codex Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-kimi"><img src="https://img.shields.io/badge/Kimi_Code-Plugin-2563EB.svg" alt="Kimi Code Plugin"></a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>中文</strong> · <a href="./README.en.md">English</a> · <a href="#-一句话无感安装">⚡ 一句话安装</a> · <a href="#-为什么选择-mindie-agent">✨ 核心能力</a> · <a href="#️-架构全景与经验飞轮">🏗️ 架构全景</a> · <a href="#-装好之后怎么用">🔥 实战用法</a> · <a href="#-组件与仓库生态">📦 仓库生态</a> · <a href="./docs/README.md">📚 文档中心</a>
+  <strong>中文</strong> · <a href="./README.en.md">English</a> · <a href="#-一句话无感安装">⚡ 一句话安装</a> · <a href="#-为什么选择-mindie-agent">✨ 核心能力</a> · <a href="#️-架构全景与经验飞轮">🏗️ 架构全景</a> · <a href="#-装好之后怎么用">🔥 实战用法</a> · <a href="#-组件与仓库生态">📦 仓库生态</a> · <a href="#-当前版本与实测效果v002-release">🚀 v0.0.2 实测</a> · <a href="./docs/README.md">📚 文档中心</a>
 </p>
 
 ---
@@ -48,7 +48,7 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 > GH_USER=$(gh api user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
 > gh auth setup-git
 > ```
-> - **门禁要求（严禁跳过或静默忽略；仅安装 DSH `0.0.1` 且不启用社区贡献时可跳过 `gh` 门禁，但仍需 `git` 与 `uv`）**：
+> - **门禁要求（严禁跳过或静默忽略；仅安装 DSH `0.0.2` 且不启用社区贡献时可跳过 `gh` 门禁，但仍需 `git` 与 `uv`）**：
 >   - 若未安装 `gh`：请先按宿主系统协助安装（macOS：`brew install gh`；Windows：`winget install --id GitHub.cli`；Ubuntu / WSL：`sudo apt update && sudo apt install -y gh`）。
 >   - 若 `gh auth status` 未登录、Token 失效或 `gh api user` 无法连通 GitHub：**请勿继续执行后续步骤**，立即引导用户完成 `gh auth login`（或配置有效的 `GH_TOKEN`）并运行 `gh auth setup-git`，直至 `gh api user --jq .login` 稳定返回当前 GitHub 账号名。
 >
@@ -66,27 +66,27 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 >
 > - **分支 A — 如果你是 Claude Code（或检测到 `CLAUDECODE` 环境变量 / 用户使用 `claude`）**：
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.1"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.2"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.0.1`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
+>   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.0.2`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
 >
 > - **分支 B — 如果你是 OpenAI Codex CLI（或检测到 `CODEX_CI` / `CODEX_THREAD_ID` / 用户使用 `codex`）**：
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.1
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.2
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.0.1`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
+>   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.0.2`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
 >
 > - **分支 C — 如果你是 Kimi Code CLI（或检测到 `KIMI_CODE_HOME` / 用户使用 `kimi`）**：
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-kimi-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
 >   SETUP_OUT=$(python3 "$MINDIE_TMP/scripts/setup.py")
 >   echo "$SETUP_OUT"
 >   NATIVE_PKG=$(printf '%s\n' "$SETUP_OUT" | python3 -c 'import sys, json; text=sys.stdin.read(); data=json.loads(text[text.find("{"):]); print(data["native_package"])')
@@ -109,8 +109,8 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 >   ```text
 >   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.2")
 >   ```
->   *验证标准*：`setup.py` 最终 JSON 中 `status` 为 `ready`、`components` 为 `knowledge 0.11.0 / remote-dev 0.9.5 / diagnostics 0.4.1`，且 `knowledge.status` 为 `ready`；Plugins 页面显示 `mindie-agent-dsh` 已启用。提醒用户打开**新会话**后使用 `/mindie-agent`。
->   *说明*：DSH `0.0.1` 只做只读知识与 `remote-dev`，不启用社区贡献与故障上报，因此该分支**不依赖 `gh`**；若你已按第一步完成 `gh` 校验，可继续保留主仓 Star/Fork。
+>   *验证标准*：`setup.py` 最终 JSON 中 `status` 为 `ready`、`components` 为 `knowledge 0.12.2 / remote-dev 0.10.1 / diagnostics 0.4.3`，且 `knowledge.status` 为 `ready`；Plugins 页面显示 `mindie-agent-dsh` 已启用。提醒用户打开**新会话**后使用 `/mindie-agent`。
+>   *说明*：DSH `0.0.2` 只做只读知识与 `remote-dev`，不启用社区贡献与故障上报，因此该分支**不依赖 `gh`**；若你已按第一步完成 `gh` 校验，可继续保留主仓 Star/Fork。
 >
 > - **分支 E — 如果你是 Cursor / 其他通用 MCP 客户端（仅需 SSH 远端 NPU 开发底座 `remote-dev`）**：
 >   在项目的 `.mcp.json`（或 `.cursor/mcp.json`）中写入 `remote-dev` 服务：
@@ -120,7 +120,7 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 >       "remote-dev": {
 >         "type": "stdio",
 >         "command": "uvx",
->         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@main", "remote-dev", "server"]
+>         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.1", "remote-dev", "server"]
 >       }
 >     }
 >   }
@@ -137,7 +137,7 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 
 ### 方式二：人类终端手动一行安装
 
-> **硬性前置指标**：请确保本机已安装 `git`、`uv` 以及已登录的 **`gh`（GitHub CLI）**。下表 DSH `0.0.1` 不启用贡献与上报，因此不依赖 `gh`。安装前可先在终端运行下方一行命令，完成 **GitHub 通道校验 + 顺带 Star 与 Fork `mindie-agent` 主仓**：
+> **硬性前置指标**：请确保本机已安装 `git`、`uv` 以及已登录的 **`gh`（GitHub CLI）**。下表 DSH `0.0.2` 不启用贡献与上报，因此不依赖 `gh`。安装前可先在终端运行下方一行命令，完成 **GitHub 通道校验 + 顺带 Star 与 Fork `mindie-agent` 主仓**：
 > ```bash
 > gh auth status && gh auth setup-git && gh api -X PUT /user/starred/mindie-agent/mindie-agent && gh repo fork mindie-agent/mindie-agent --clone=false
 > ```
@@ -146,11 +146,11 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 
 | 客户端 | 一键安装命令 | 插件仓库 |
 | --- | --- | --- |
-| **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.1" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
-| **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.1 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
-| **Kimi Code CLI** | `git clone https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
+| **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.2" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
+| **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.2 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
+| **Kimi Code CLI** | `git clone --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
 | **DeepSeek Harness (DSH)** | `git clone --depth 1 --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-dsh.git /tmp/mindie-agent-dsh && uv run --quiet --no-project --python 3.11 /tmp/mindie-agent-dsh/scripts/setup.py`，随后在 DSH **Plugins** 页面启用 `git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.2` | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) |
-| **仅安装 NPU 监控台 (`npu-top`)** | `uvx --from "https://github.com/mindie-agent/npu-top/releases/download/v0.1.6/npu_top-0.1.6-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
+| **仅安装 NPU 监控台 (`npu-top`)** | `uvx --from "https://github.com/mindie-agent/npu-top/releases/download/v0.1.9/npu_top-0.1.9-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
 
 ---
 
@@ -316,12 +316,26 @@ MindIE Agent 在持续演进中沉淀了一套严格的 **[工程设计原则](.
 
 ---
 
+## 🚀 当前版本与实测效果（v0.0.2 Release）
+
+当前正式发布版本为 **[`v0.0.2`](./docs/releases/0.0.2.md)**（[English Release Notes](./docs/releases/0.0.2.en.md) · [详细评测报告](./docs/releases/0.0.2/value-results.md)）。本版本完成主产品与四个原生宿主插件（Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness）的统一 `0.0.2` 发布，将社区知识共享与产品故障上报收敛为单一授权开关，并完成共享运行时底座的真机 Benchmark 评测：
+
+| 组件 / 评测场景 | 版本 | 实测核心收益与结论 |
+| --- | --- | --- |
+| **⚡ `remote-dev` 远端容器与长任务执行** | `v0.10.1` | 昇腾实机端到端评测中，`quarot` 量化修复任务 **`3/3` 全部解出**，结题中位耗时从 `747.31s` 缩短至 **`550.89s`**（提速 **`1.025x`**）；`dp2` 双卡排障任务 `2/3` 解出（与基线持平，速度比 `0.963x`），远端文件读写与持久后台作业稳定可靠 |
+| **🎯 `coordinator` 多 Agent 并发防撞车** | `v0.5.3` | 3 轮双 Agent 并发抢卡抢端口压测：成功建立独立监听从 `3` 个提升至 **`6` 个**，端口冲突 **`3 → 0`**、重复选卡 **`3 → 0`**，前序任务释放后约 **`2ms`** 完成接管 |
+| **📊 `npu-top` & 🛡️ `diagnostics` 可观测与隐私** | `v0.1.9` / `v0.4.3` | `npu-top` 3 台昇腾主机 24 张 NPU、`16/16` 进程卡号映射与 `3/3` 容器归属全部实测通过；`diagnostics` 9 次重复故障自动去重收敛为 3 条报告，隐私脱敏与关闭开关后零外发 **`3/3` 全部通过** |
+| **🧠 `knowledge` 领域知识与跨任务经验复用** | `v0.12.2` | 接入知识库后，`dp2` 与 `dsh` 任务解题数均从 `2/3` 提升至 **`3/3` 全部解出**；跨任务经验沉淀后后续同源任务复用命中率 **`5/6`**（结题速度比 **`1.011x`**）。当前长上下文检索耗时偏高，**预计在 `0.0.3` 版本重点优化检索效率** |
+
+---
+
 ## 📚 文档中心
 
 完整技术文档索引请参阅 **[`docs/README.md`](./docs/README.md)**（**[English Documentation Index](./docs/README.en.md)**）：
 
 | 文档主题 | 中文 | English |
 | --- | --- | --- |
+| **`v0.0.2` 版本发布与实测基准报告（当前版本）** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
 | **系统架构与组件边界** | [docs/architecture.md](./docs/architecture.md) | [docs/architecture.en.md](./docs/architecture.en.md) |
 | **工程设计原则与演进准则** | [docs/design-principles.md](./docs/design-principles.md) | [docs/design-principles.en.md](./docs/design-principles.en.md) |
 | **知识与经验闭环设计** | [docs/knowledge-system.md](./docs/knowledge-system.md) | [docs/knowledge-system.en.md](./docs/knowledge-system.en.md) |
