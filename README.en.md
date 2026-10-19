@@ -51,14 +51,8 @@ When your Agent reads this page, it checks `git`, `uv`, and `gh` (GitHub CLI) au
 > - If `gh` is missing, help the user install it first (macOS: `brew install gh`; Windows: `winget install --id GitHub.cli`; Ubuntu / WSL: `sudo apt update && sudo apt install -y gh`).
 > - If `gh auth status` fails or `gh api user` cannot reach GitHub, stop and guide the user through `gh auth login` (or setting a valid `GH_TOKEN`) and `gh auth setup-git` until `gh api user --jq .login` returns their GitHub username.
 >
-> #### Step 2: Two-stage on-demand Fork policy
-> The `@mindie-agent` organization contains 10+ repositories. To avoid creating unnecessary forks under the user's account, follow a two-stage policy:
-> 1. **At install time**: Star and create a remote Fork (`--clone=false`, zero local disk usage, leaves local Git remotes untouched) **only** for `mindie-agent/mindie-agent`:
->    ```bash
->    gh api -X PUT /user/starred/mindie-agent/mindie-agent
->    gh repo fork mindie-agent/mindie-agent --clone=false
->    ```
-> 2. **When community contribution is enabled (on demand)**: Contribution is off by default. Only when the user explicitly enables contribution for a target knowledge repository `<owner/repo>` (such as `mindie-agent/knowledge-vllm-ascend`) should you Star and Fork that repository on demand and bind `$GH_USER/<repo>` as the push target (`--fork $GH_USER/<repo>`).
+> #### Step 2: Prepare contribution only when enabled
+> Installation does not require a Star or a repository Fork. Stars are optional support for the project. When the user enables community contribution for a target knowledge repository `<owner/repo>`, create or reuse its remote Fork with `gh repo fork <owner/repo> --clone=false` and bind `$GH_USER/<repo>` as the push target.
 >
 > #### Step 3: Install the plugin matching your host CLI
 > Run only the branch matching your environment (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if needed):
@@ -127,7 +121,7 @@ When your Agent reads this page, it checks `git`, `uv`, and `gh` (GitHub CLI) au
 >
 > #### Step 4: Summarize for the user
 > Report:
-> 1. Verified `gh` authentication (`$GH_USER`) and Star / Fork status for `mindie-agent/mindie-agent`;
+> 1. Verified `gh` authentication (`$GH_USER`);
 > 2. Installed plugin name, version, and MCP status;
 > 3. How to use it: type `/mindie-agent` to invoke Ascend domain knowledge and Skills, while `remote-dev` tools trigger automatically when prompts involve remote servers or containers;
 > 4. That **community knowledge sharing and automatic fault reporting share a single contribution switch** (off by default). Explicitly enabling it forks/binds the target knowledge repository on demand and provisions the background fault reporter. Public fault Issues contain allowlisted execution metadata only—never conversations, command arguments, paths, or credentials.
@@ -139,7 +133,7 @@ When your Agent reads this page, it checks `git`, `uv`, and `gh` (GitHub CLI) au
 Ensure `git`, `uv`, and an authenticated `gh` (GitHub CLI) are installed first:
 
 ```bash
-gh auth status && gh auth setup-git && gh api -X PUT /user/starred/mindie-agent/mindie-agent && gh repo fork mindie-agent/mindie-agent --clone=false
+gh auth status && gh auth setup-git
 ```
 
 Then run the command for your client:

@@ -20,7 +20,7 @@ MindIE Agent 的核心定位是**面向昇腾（Ascend）NPU AI Infra 设计、�
   - **手动触发 `/mindie-agent`（知识、经验与 Skill 系统）**：在需要昇腾方案设计、推理排障、算子开发或模型迁移时，直接使用 `/mindie-agent`（Codex 中也可使用 `$mindie-agent`；DSH 中使用 `/mindie-agent` 用户手势）并阐述你的问题，即可唤醒昇腾 Skill 体系、检索历史经验包并关联当前任务的经验闭环；平时写普通代码时完全静默、零打扰。
   - **默认自动触发 `remote-dev`（远端昇腾开发执行）**：`remote-dev` 作为常驻 MCP 工具默认就绪。日常对话中只要提到远端服务器、容器或 NPU 命令，无需输入任何斜杠命令即可直接触发远端文件读写、补丁同步与后台长任务执行。
 - **配置一次，长期有效**：首次配置好统一贡献开关、目标公开仓库与授权项目范围后，后续所有授权范围内的任务都会自动生效。历史经验仅供 Agent 按需参考，不强制检索或投票。
-- **前置依赖：稳定的 GitHub 交互通道（`gh` CLI）与按需收敛 Fork 范围**：插件市场拉取、锁定发行版校验、`knowledge-vllm-ascend` 增量同步、经验闭环自动提交 PR（通过 `gh api` 与 `!gh auth git-credential`）以及可选的故障上报均使用已登录的 `gh`（GitHub CLI）通道。鉴于 `@mindie-agent` 组织下拥有十余个仓库，我们采用**按需两阶段 Fork 策略**：（1）**安装阶段**：校验 `gh auth status` 与 `gh auth setup-git` 后，仅为入口仓 `mindie-agent/mindie-agent` 点亮 **Star** 并创建个人远端 **Fork**（`--clone=false`），不批量 Fork 各个插件仓或知识库；（2）**开启知识贡献阶段（按需）**：当用户明确开启面向目标公开知识库（如 `mindie-agent/knowledge-vllm-ascend`）的社区贡献时，再按需为该知识库点亮 **Star**、创建个人远端 **Fork** 并绑定 `fork` 配置（`<GH_USER>/<repo>`）。
+- **前置依赖：稳定的 GitHub 交互通道（`gh` CLI）与按需收敛 Fork 范围**：插件市场拉取、锁定发行版校验、`knowledge-vllm-ascend` 增量同步、经验闭环自动提交 PR（通过 `gh api` 与 `!gh auth git-credential`）以及可选的故障上报均使用已登录的 `gh`（GitHub CLI）通道。安装不需要 Star 或 Fork 仓库。仅在用户开启目标知识库的社区贡献时，创建或复用该知识库的个人 Fork，并绑定 `fork` 配置（`<GH_USER>/<repo>`）。Star 由用户自愿选择。
 - **当前覆盖与后续扩展**：当前已沉淀 `vLLM` / `vLLM-Ascend` 特性开发与测试、`AscendC` / `Triton` 算子实现与验证等领域的知识包与 Skills，并持续向更广泛的昇腾基础软件栈扩展。
 
 ---

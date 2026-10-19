@@ -51,14 +51,8 @@ Agent 读取本页后会先检查 `git`、`uv` 与 `gh`（GitHub CLI）登录状
 > - 若未安装 `gh`，请先协助用户安装（macOS：`brew install gh`；Windows：`winget install --id GitHub.cli`；Ubuntu / WSL：`sudo apt update && sudo apt install -y gh`）。
 > - 若 `gh auth status` 未登录或 Token 失效，请先引导用户完成 `gh auth login`（或配置有效的 `GH_TOKEN`）并运行 `gh auth setup-git`，确认 `gh api user --jq .login` 返回当前 GitHub 账号后再继续。
 >
-> #### 第二步：按需准备仓库 Fork
-> `@mindie-agent` 组织包含十余个仓库。为避免在用户账号下创建多余的派生仓库，请按两阶段策略处理：
-> 1. **安装阶段**：仅为入口仓库 `mindie-agent/mindie-agent` 点亮 Star 并在 GitHub 远端创建/同步 Fork（`--clone=false` 不占用本地磁盘，也不修改当前目录的 Git 远端）：
->    ```bash
->    gh api -X PUT /user/starred/mindie-agent/mindie-agent
->    gh repo fork mindie-agent/mindie-agent --clone=false
->    ```
-> 2. **开启社区贡献阶段（后续按需执行）**：社区贡献默认关闭。仅当用户明确开启贡献并指定目标知识库 `<owner/repo>`（如 `mindie-agent/knowledge-vllm-ascend`）时，再对该知识库执行 Star 与远端 Fork，并将 `$GH_USER/<repo>` 绑定为推送目标（`--fork $GH_USER/<repo>`）。
+> #### 第二步：按需准备社区贡献
+> 安装无需 Star 或 Fork 仓库。Star 是用户自愿支持项目的方式。当用户开启目标知识库 `<owner/repo>` 的社区贡献时，再用 `gh repo fork <owner/repo> --clone=false` 创建或复用远端 Fork，并将 `$GH_USER/<repo>` 绑定为推送目标。
 >
 > #### 第三步：根据当前宿主安装对应插件
 > 请仅执行与你当前宿主环境匹配的一组命令（可通过 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version` 确认）：
@@ -127,7 +121,7 @@ Agent 读取本页后会先检查 `git`、`uv` 与 `gh`（GitHub CLI）登录状
 >
 > #### 第四步：向用户说明结果
 > 简要告知用户：
-> 1. `gh` 通道校验结果（当前账号 `$GH_USER`）与主仓库 Star / Fork 状态；
+> 1. `gh` 通道校验结果（当前账号 `$GH_USER`）；
 > 2. 已安装的客户端插件名称、版本与连接状态；
 > 3. 日常使用通过 `/mindie-agent` 唤醒昇腾领域知识与 Skill，`remote-dev` 远端工具在对话涉及远端主机或容器时自动调用；
 > 4. **社区知识共享与工具故障上报共用同一个贡献开关**（默认关闭）。显式开启后会同步准备目标知识库 Fork 与后台故障上报服务；公开故障 Issue 仅包含白名单执行元数据，不包含对话、命令参数、路径或凭据。
@@ -139,7 +133,7 @@ Agent 读取本页后会先检查 `git`、`uv` 与 `gh`（GitHub CLI）登录状
 请先确保本机已安装 `git`、`uv` 并已登录 `gh`（GitHub CLI）：
 
 ```bash
-gh auth status && gh auth setup-git && gh api -X PUT /user/starred/mindie-agent/mindie-agent && gh repo fork mindie-agent/mindie-agent --clone=false
+gh auth status && gh auth setup-git
 ```
 
 再按客户端执行对应命令：

@@ -60,7 +60,7 @@ flowchart TB
 
 ### 2.4 Step 4: Automated PR Publication & Reconciliation via `gh` and On-Demand Personal Forks
 - When community sharing is enabled, the publisher uses the verified **`gh` (GitHub CLI) channel** (binding `!gh auth git-credential` for Git pushes and `gh api` for PR operations) to push the contribution branch to the user's `<GH_USER>/<repo>` Fork (e.g., `<GH_USER>/knowledge-vllm-ascend`) and open or update a cross-fork PR against the target public corpus (e.g., [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)).
-- **On-Demand Star & Fork of the Target Knowledge Repository**: Installation forks only `mindie-agent/mindie-agent` and never pre-forks knowledge repositories. When the user explicitly enables community contribution (`contribute`) for a target public repository `<owner/repo>` (default `mindie-agent/knowledge-vllm-ascend`), the Agent runs `gh api -X PUT /user/starred/<owner/repo>` and `gh repo fork <owner/repo> --clone=false` on demand and binds `fork` to `<GH_USER>/<repo>` so external contributors can push branches and open PRs seamlessly.
+- **Fork the Target Knowledge Repository on Demand**: Installation requires no Fork. Once the user enables contribution to `<owner/repo>` (default `mindie-agent/knowledge-vllm-ascend`), create or reuse a personal Fork with `gh repo fork <owner/repo> --clone=false` and bind `fork` to `<GH_USER>/<repo>` for branch pushes and PRs. Stars are optional.
 - If a network timeout leaves a PR write in an uncertain state (`unknown`), the next run reconciles read-only via `gh api` before attempting any write, never force-pushing or blindly duplicating PRs.
 
 ---
