@@ -1319,7 +1319,7 @@
         "cumulative_views": 1,
         "pkg_downloads": 2,
         "all_asset_downloads": 6,
-        "latest_release": "v0.5.1"
+        "latest_release": "v0.5.2"
       }
     },
     "npu-top": {
@@ -1581,8 +1581,8 @@
         "views_14d": 0,
         "views_14d_uniques": 0,
         "cumulative_views": 0,
-        "pkg_downloads": 21,
-        "all_asset_downloads": 32,
+        "pkg_downloads": 23,
+        "all_asset_downloads": 38,
         "latest_release": "v0.4.3"
       }
     },
@@ -1719,5 +1719,5 @@
       }
     }
   },
-  "updated_at_cst": "2026-10-19 12:13"
+  "updated_at_cst": "2026-10-19 12:18"
 }

@@ -1,6 +1,6 @@
 # 📊 MindIE Agent 社区生态与使用统计报表 (Telemetry Archive)
 
-> **最近更新时间**：`2026-10-19 12:13 (UTC+8)` · 由 GitHub Actions 每 12 小时自动拉取并归档至 `telemetry-data` 分支。
+> **最近更新时间**：`2026-10-19 12:18 (UTC+8)` · 由 GitHub Actions 每 12 小时自动拉取并归档至 `telemetry-data` 分支。
 
 ![MindIE Agent Telemetry Dashboard](./dashboard.zh.svg)
 
@@ -17,11 +17,11 @@
 | 共享底座 | [`knowledge`](https://github.com/mindie-agent/knowledge) | `v0.12.1` | 0 | 2 | 3,142 (719) | **3,142** | 8 (5) | 16 (28) |
 | 领域知识源 | [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) | `knowledge-v1f0362a8ba94` | 0 | 2 | 2,561 (404) | **2,561** | 27 (11) | 629 (629) |
 | 共享底座 | [`remote-dev`](https://github.com/mindie-agent/remote-dev) | `v0.10.1` | 0 | 2 | 1,431 (520) | **1,431** | 1 (1) | 10 (19) |
-| 共享底座 | [`coordinator`](https://github.com/mindie-agent/coordinator) | `v0.5.1` | 0 | 1 | 213 (73) | **213** | 1 (1) | 2 (6) |
+| 共享底座 | [`coordinator`](https://github.com/mindie-agent/coordinator) | `v0.5.2` | 0 | 1 | 213 (73) | **213** | 1 (1) | 2 (6) |
 | 可视化监控 | [`npu-top`](https://github.com/mindie-agent/npu-top) | `v0.1.8` | 2 | 3 | 195 (66) | **195** | 19 (7) | 595 (599) |
-| 共享底座 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.4.3` | 0 | 1 | 2,836 (866) | **2,836** | 0 (0) | 21 (32) |
+| 共享底座 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.4.3` | 0 | 1 | 2,836 (866) | **2,836** | 0 (0) | 23 (38) |
 | 评测门禁 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | `v0.2.0` | 0 | 0 | 6 (1) | **6** | 0 (0) | 2 (6) |
-| **合计** | **全组织 13 个核心仓** | — | **57** | **62** | **13,687** | **13,687** | — | **1,294** (1,346) |
+| **合计** | **全组织 13 个核心仓** | — | **57** | **62** | **13,687** | **13,687** | — | **1,296** (1,352) |
 
 ## 数据文件说明
 
