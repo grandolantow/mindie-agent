@@ -18,14 +18,16 @@ When a remote command or background indexing step fails, a vague error string wa
 
 ---
 
-## 2. Independent Consent & Everyday Experience
+## 2. One Contribution Switch & Everyday Experience
 
 1. **Bounded Local Structured Logs (Always Available)**:
    - Components write structured local logs at real operational boundaries. When a tool call fails, the error response includes a random diagnostic correlation ID, a static error category, and a recovery hint alongside the original exit status and cleanup outcome.
-2. **Opt-In Automatic Tool-Fault Reporting (Independent Toggle)**:
-   - First-time setup offers an independent **"Automatic Tool-Fault Reporting"** option with a clear explanation of what it sends—**never enabled silently by default**.
-   - **Decoupled from knowledge sharing**: You can enable fault reporting even if community knowledge contribution is turned off, and turning off fault reporting leaves local diagnostic logging completely intact.
-   - **Reuses the verified `gh` channel**: Issue reporting uses the same authenticated `gh` (GitHub CLI) channel verified during installation (surfacing `github_client_missing` explicitly if `gh` is absent). Claude Code, OpenAI Codex CLI, Kimi Code, and DeepSeek Harness (DSH) plugins (as well as standalone `remote-dev`) share a single user-level reporter and consent configuration (`diagnostics`); turning the setting off immediately cancels any unsent reports.
+2. **One contribution switch controls knowledge sharing and fault reporting**:
+   - Setup explains both outgoing actions: contributing redacted knowledge within approved project scope and filing allowlisted fault metadata in the product repository. **Both are off until explicitly enabled**; there is no separate fault-reporting choice.
+   - The installation profile's `mindie-consent.json` is the sole contribution authority. Reporter configuration stores the destination, log roots, and a reference to that authority. Recording, ingestion, and the final send check the same choice and revision.
+   - Enabling prepares both knowledge contribution and the actual native background reporter, returning configuration and service outcomes separately. A saved switch is not proof that the service started. Service failures remain visible and preparation can recover later. Disabling stops new outgoing work in both paths while local logs and queries remain available.
+   - Existing deferred or disabled choices remain unchanged. An old knowledge-only approval does not silently expand during upgrade; an explicit unified choice establishes a new consent revision.
+   - **Reuses the verified `gh` channel**: Producers and the background reporter use the same profile diagnostics path, preventing an enabled setting from being invisible to recorded faults. Packaged knowledge and `remote-dev` inherit that configuration. Standalone `remote-dev` retains its explicitly configured reporting policy.
 
 ---
 
@@ -47,7 +49,7 @@ When a shared component has already logged an internal fault, it passes a truste
 Public GitHub Issues are assembled deterministically from **allowlisted metadata fields** without calling any LLM:
 
 - **Allowed in public Issues (code & execution metadata only)**:
-  - Component name, package version or Git commit SHA, operation name, stage, static error category/code, monotonic duration, exit code, cleanup outcome, and a random task-agnostic diagnostic correlation ID.
+  - Component name, package version or Git commit SHA, operation name, stage, static error category/code, duration, exit code, and cleanup outcome. A stable public fault fingerprint supports deduplication; random diagnostic correlation IDs and process clocks stay local.
 - **Strictly excluded from public Issues**:
   - **Never included**: User commands, command arguments, environment variables, raw `stdout`/`stderr`, free-text exception messages, conversation transcripts, config files, credentials/tokens, native task IDs, remote job IDs, local or remote file paths, and hostnames or IP addresses.
 - **What never triggers an Issue**:
@@ -62,9 +64,10 @@ To prevent duplicate Issues or infinite retry loops during network outages:
 
 1. **Cross-task fingerprint deduplication**:
    - Faults sharing the same component version, operation, stage, error category, and internal stack frame location produce a deterministic fingerprint. Switching sessions or hosts never files a duplicate Issue for an already reported bug; if an open Issue matches, its URL is recorded without spamming comments.
-2. **Strict 3-attempt persistent budget**:
-   - Each candidate fault consumes at most **three persistent processing attempts** (including deduplication queries, submission, and reconciliation).
-   - If a submission ends in an uncertain state (`unknown`), the reporter checks GitHub read-only first rather than blindly re-posting. Once all three attempts are used, the item enters a terminal state that is never reset by restarts or status checks.
+2. **Bounded requests and recoverable pending reports**:
+   - Each cycle shares one request deadline. Temporary network or authentication failures retain pending evidence, expose the actual error, and defer retries. A few failed read-only queries must not permanently discard a fault.
+   - Only a submission that may have reached GitHub becomes `unknown`. Later cycles reconcile read-only without blindly posting again. A process that never started or an explicitly rejected request is not an uncertain external write.
+   - If GitHub confirms an Issue but local receipt storage fails, the local failure is reported separately without reversing the external success. Disabling contribution stops unsent events; reenabling does not backfill events from an earlier consent revision.
 3. **No self-reporting loops**:
    - Failures inside the reporter itself stay strictly local so the reporter can never file Issues about its own reporting errors.
 

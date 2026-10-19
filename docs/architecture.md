@@ -38,7 +38,7 @@ MindIE Agent 采用“**宿主原生插件 + 共享运行时组件 + 开放知�
 | [`remote-dev`](https://github.com/mindie-agent/remote-dev) | **远端昇腾开发执行底座**：基于 SSH 提供远端文件读写、语法大纲/符号精读、行范围精确编辑、补丁应用、全文/文件名搜索、受管长任务执行、作业取消与构建产物同步工具，完整镜像兼容 6 大主流 Harness（Codex、Claude Code、Cursor、Kimi Code、DSH、Antigravity）的本地原生工具与参数，并直接消费 `coordinator` 同步的 `endpoints.json` 与 Endpoint Resolver |
 | [`coordinator`](https://github.com/mindie-agent/coordinator) | **升级版 SSH 与远端昇腾环境管理器（面向 Agent）**：统一管理机器台账（`machines.json` -> 自动同步 `endpoints.json`）、SSH 免密与多机容器互通（`mindie_hosts`）、远端容器绑定/开通（`mindie_container`）、Agent 级 NPU/节点/权重目录无代理探测與空闲算力推荐（`mindie_probe`）、物理 NPU 与端口租约协调（`mindie_lease`）及受管源码快照任务（`mindie_run`） |
 | [`npu-top`](https://github.com/mindie-agent/npu-top) | **昇腾集群可视化监控台（面向人类）**：复用读取 `coordinator` 的 `machines.json`，提供本地 Web 实时看板（`127.0.0.1:8788`）与 90 天有界 SQLite 热力图；Agent 侧探测统一走 `coordinator` 的 `mindie_probe`，无需依赖人类监控 Web 服务常驻 |
-| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | **结构化诊断与故障上报**：提供有界本地诊断日志、错误定位编号，以及独立授权、自动去重的 GitHub Issue 故障上报 |
+| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | **结构化诊断与故障上报**：提供有界本地诊断日志、错误定位编号，以及受统一贡献开关控制、自动去重的 GitHub Issue 故障上报 |
 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | **评测与发行证据**：维护真实任务评测、各代码仓发布 benchmark 的公共契约与聚合工具；分别呈现正确性、可靠性和性能证据 |
 
 当前四个宿主插件打包的共享运行时是 `knowledge`、`remote-dev` 与直接或间接依赖的 `diagnostics`；与宿主强相关的会话身份识别和 Transcript 解析留在各自插件内。`coordinator` 与 `npu-top` 是按需独立安装的组件：前者提供 Agent 环境管理与任务协调，后者提供面向人的监控界面。插件锁中没有 `coordinator`，不能据此宣称安装插件已经自动暴露其工具；未来接入需要明确的依赖、工具注册和宿主验收。
@@ -101,4 +101,4 @@ flowchart LR
 ## 6. 后台无感更新与故障诊断
 
 - **兼容性筛选与无感更新**：每个插件 Release 都会在 `harness-compatibility.json` 中声明经过实机验证的宿主版本范围。距离上次检查超过 24 小时后，日常使用会在后台异步拉取最高兼容版本并利用 `uv` 构建锁定环境，趁服务空闲时原子切换，全程无需手动重装或重新授权。详见[版本兼容与无感更新](release-compatibility-and-update.md)。
-- **结构化日志与可选故障上报**：组件在关键操作边界记录有界本地日志。用户可以独立选择是否开启“工具故障自动上报”——开启后仅上传白名单内的代码错误事实（组件名、版本、阶段、错误类型、耗时与退出码），**绝不包含任何对话正文、命令参数、机器路径或凭据**。详见[诊断日志与故障上报](diagnostics-and-reporting.md)。
+- **结构化日志与统一贡献开关**：组件在关键操作边界记录有界本地日志。知识共享与工具故障上报共用当前安装配置的贡献开关；明确开启后，故障上报只上传白名单内的代码错误事实（组件名、版本、阶段、错误类型、耗时与退出码），**绝不包含任何对话正文、命令参数、机器路径或凭据**。关闭后两条外发链路停止，本地日志与远端开发仍可用。详见[诊断日志与故障上报](diagnostics-and-reporting.md)。

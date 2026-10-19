@@ -4,7 +4,7 @@
 
 For the current system architecture and knowledge loop design, see [Architecture & Module Boundaries](architecture.en.md) and [Knowledge & Experience System](knowledge-system.en.md). All iterations follow the [Engineering Design Principles](design-principles.en.md).
 
-The historical [`0.0.1`](releases/0.0.1.en.md) record preserves its verified scope and component combination. Current work closes the product and four Harness plugin releases at the shared `0.0.2` version; runtime components continue their independent version sequences.
+The [current `0.0.2` release record](releases/0.0.2.en.md) lists the product and four aligned Harness plugins, their component combination, benchmarks, and acceptance limits. Runtime components retain independent version sequences; historical [`0.0.1`](releases/0.0.1.en.md) evidence remains separate.
 
 This refactor prioritizes business correctness while simplifying hot-path self-checks, permanent local fault states, duplicated shadow code, and obsolete compatibility layers. Completed refactoring, passing regression tests, real host acceptance, and a published Release are separate states. Changes across ten repositories do not establish that all four testing tiers or the final installed combination have passed.
 
@@ -12,9 +12,9 @@ This refactor prioritizes business correctness while simplifying hot-path self-c
 
 ## Current Engineering Priorities
 
-1. **Close `0.0.2` and Make Benchmark Delivery Routine**
-   - Repair business regressions in consent migration, Windows context protection, timeout chains, and source identity; connect final component SHAs to actual plugin installation paths, then verify local contracts, A2/A3 integration, real hosts, and upgrades on that combination.
-   - Publish benchmark JSON, Markdown, and checksums with every code repository Release. Aggregate the ten reports and their limits in the product record, publishing components before plugins under the [paired-release rules](release-compatibility-and-update.en.md). Resolve any existing tag/release conflict explicitly with evidence instead of silently overwriting history.
+1. **Continuously Verify Unified Contribution and Deliver Release Benchmarks**
+   - Keep knowledge contribution, fault recording, ingestion, and pre-publication authorization tied to the same authority. Extend real host installation, upgrade, and background workflow coverage, prioritizing faults reported during actual operation.
+   - Retain benchmark JSON, Markdown, and checksums with every code repository Release. Aggregate ten reports and their limits in the product record, publishing components before plugins under the [paired-release rules](release-compatibility-and-update.en.md). Reduce the remote-dev live batch duration that currently exceeds the Tier 2 target.
    - Continue separate end-to-end Ascend task evaluation for operator debugging, model migration, and inference tuning. Core microbenchmarks and functional acceptance do not establish productivity percentages without a controlled comparison.
 2. **Broader Host & Domain Coverage**
    - **DSH Adapter Evolution**: Continue refining native entry, Stop capture/redaction/summary indexing, auto-fork contribution, feedback, and diagnostics in [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh), and extend `mindie-bench` with G3 native capture and live remote-NPU evaluation.

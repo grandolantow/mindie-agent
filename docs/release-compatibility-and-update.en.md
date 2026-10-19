@@ -13,6 +13,8 @@ This document explains how MindIE Agent coordinates paired component and plugin 
 
 MindIE Agent ships **verified combinations of components and plugins**. Each repository maintains its own independent version sequence (for example, plugin release `0.0.1` locks `diagnostics v0.4.1`, `remote-dev v0.9.5`, and `knowledge v0.11.0` without renumbering or rolling back component versions). Components with no code changes simply reuse their existing published Releases.
 
+Starting with `0.0.2`, the Codex, Claude Code, Kimi Code, and DSH plugins align their version with the product. Shared components and `mindie-bench` keep independent versions. This release's explicit one-time refresh of the existing DSH `0.0.2` records the old source and its upgrade boundary in the [release notes](releases/0.0.2.en.md#dsh-same-version-update).
+
 ### Topological Release Order & Checklist
 
 Releases always follow a **bottom-up dependency order**:
