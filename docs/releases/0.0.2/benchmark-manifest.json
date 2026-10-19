@@ -103,7 +103,7 @@
     },
     {
       "repository": "mindie-agent/mindie-bench",
-      "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
+      "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
       "version": "0.3.0",
       "required_cases": [
         "retrieval-scoring"

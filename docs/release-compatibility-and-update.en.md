@@ -13,7 +13,7 @@ This document explains how MindIE Agent coordinates paired component and plugin 
 
 MindIE Agent ships **verified combinations of components and plugins**. Starting with `0.0.2`, the OpenAI Codex CLI, Claude Code, Kimi Code, and DeepSeek Harness (DSH) plugins align their version number with the main product. Shared runtime components (`diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`) and `mindie-bench` maintain independent version sequences, and unchanged components reuse their existing formal Releases.
 
-> **DSH `0.0.2` Same-Version Refresh Note**: DSH remains at `0.0.2` for this release as an authorized one-time replacement of the earlier `0.0.2` tag (`828c375...`). Existing installations of the earlier `0.0.2` require a one-time explicit refresh of both the runtime and plugin bundle followed by a full DSH process restart; see the [`0.0.2` Release Notes](releases/0.0.2.en.md#5-dsh-002-same-version-refresh-notice).
+> **DSH `0.0.2` Same-Version Refresh Note**: DSH remains at `0.0.2` for this release as an authorized one-time replacement of the earlier `0.0.2` tag (`828c375...`). Existing installations of the earlier `0.0.2` require a one-time explicit refresh of both the runtime and plugin bundle followed by a full DSH process restart; see the [`0.0.2` Release Notes](releases/0.0.2.en.md#4-dsh-002-same-version-refresh-notice).
 
 ### Topological Release Order & Checklist
 
@@ -48,7 +48,7 @@ Every new code repository Release ships the following alongside its wheel/sdist 
 
 Any failed, missing, or timed-out required scenario—or any checkout modification during measurement—blocks publication. Public reports contain synthetic workload descriptions, environment metadata, and numeric measurements only, excluding credentials, user transcripts, and local paths.
 
-Product `0.0.2` and subsequent release records aggregate the ten code repositories: `diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, the four Harness plugins, and `mindie-bench` (see the [`0.0.2` Release Notes](releases/0.0.2.en.md#4-ten-repository-release-benchmarks)). Component CPU microbenchmarks provide reproducible single-operation baselines and are recorded separately from live A2/A3 hardware integration and end-to-end task evaluations.
+Product `0.0.2` and subsequent release records verify and aggregate the formal benchmark and real-task evaluation reports across all ten code repositories: `diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, the four Harness plugins, and `mindie-bench` (see the [`0.0.2` Release Notes](releases/0.0.2.en.md#3-benchmark-results-and-003-roadmap)).
 
 > **Note**: `knowledge` is a software runtime package governed by this release checklist, whereas `knowledge-vllm-ascend` is a domain content repository updated continuously under `publication-contract.json` without requiring a new software release for every new knowledge package.
 

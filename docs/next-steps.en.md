@@ -10,8 +10,8 @@ The current release is [`0.0.2`](releases/0.0.2.en.md), which aligns the product
 
 ## Upcoming Priorities
 
-1. **Controlled End-to-End Ascend Task Evaluations**
-   - Use `mindie-bench` (`v0.2.0`) to run controlled task comparisons measuring how domain knowledge retrieval and the experience loop affect operator debugging, model migration, and inference tuning on real Ascend workloads—keeping end-to-end task evaluation distinct from per-release CPU microbenchmarks.
+1. **`0.0.3` Knowledge Retrieval Latency & Context Efficiency Optimization**
+   - In the `0.0.2` live Ascend evaluations, enabling `mindie-knowledge` raised solved counts from `2/3` to `3/3` on both `dp2` and `dsh`, while introducing retrieval and long-context reading overhead. `0.0.3` will focus on optimizing retrieval granularity and context delivery so we keep the solve-rate gains while reducing latency overhead.
 2. **Host Lifecycle Reliability & Live Test Speed**
    - Monitor real-world usage of the unified contribution and fault-reporting pipeline, prioritize fixes for reported tool faults, and expand automated cross-platform upgrade verification.
    - Streamline the `remote-dev` live A2/A3 integration suite so its total execution time drops from ~51 seconds into the 25-second Tier 2 design budget.

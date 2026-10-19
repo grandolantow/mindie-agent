@@ -4,8 +4,8 @@
     "dirty": false,
     "editable": true,
     "installation": "explicit_source",
-    "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-    "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+    "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+    "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
     "version": "0.3.0"
   },
   "component_cases": [
@@ -305,7 +305,7 @@
     "dsh": "d3a1e1282356b65b51fba49072c1842918746f8f",
     "kimi": "0e78f0422162a61e8c56850e049f9e5fc4d290b5",
     "knowledge": "4e328305323eafc7fd43ecc0c53eb3cc0541fdef",
-    "mindie-bench": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
+    "mindie-bench": "68d90d7a689f836c61a64ab054a0282e7361fd16",
     "npu-top": "9bbf6de590b12fe1109040e0ef86817bd2c5f3e0",
     "remote-dev": "a6649222aae4851deec5774513f8319aece09051"
   },
@@ -3341,8 +3341,8 @@
     }
   },
   "runner_release": {
-    "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-    "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+    "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+    "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
     "version": "0.3.0"
   },
   "runner_release_reviews": [
@@ -3354,8 +3354,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3368,8 +3368,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3382,8 +3382,8 @@
         "version": "0.3.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3396,8 +3396,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3410,8 +3410,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3424,8 +3424,8 @@
         "version": "0.3.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3438,8 +3438,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3452,8 +3452,8 @@
         "version": "0.2.0"
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The recorded runner and original task result are retained. Earlier gateway, native-host and cleanup repairs are disclosed in the runner patch history. Later changes separate local evidence errors from lease cleanup, serialize short Git metadata edits, repair installed-package provenance and bind publication to reviewed sources. These are measurement infrastructure and delivery changes, not new measurements of the final runner. Task inputs, models, budgets, treatment components and recorded costs are not rewritten."
@@ -3471,8 +3471,8 @@
         }
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The original runner checkout observations are retained, including any dirty state or changed revision. They do not establish an exact final runner measurement. The scenarios use the separately recorded noneditable component revisions; the final coordinator scenario has its own source record. Later runner changes repair package-origin discovery and report publication, without changing these scenario outcomes or measurements."
@@ -3490,8 +3490,8 @@
         }
       },
       "release": {
-        "revision": "18a19aa582d55d3c6eba2544f9dae002dcec1215",
-        "source_sha256": "4acf068da7a6ea58d8bfd602bf7ee0e6e83ac82d86ebdb3643d92f3c24306368",
+        "revision": "68d90d7a689f836c61a64ab054a0282e7361fd16",
+        "source_sha256": "34239620d47ab9205e04fd8bfaf4a3577edfeb35b0c08f9cff57cf90ba160001",
         "version": "0.3.0"
       },
       "scope": "The original runner checkout observations are retained, including any dirty state or changed revision. They do not establish an exact final runner measurement. The scenarios use the separately recorded noneditable component revisions; the final coordinator scenario has its own source record. Later runner changes repair package-origin discovery and report publication, without changing these scenario outcomes or measurements."

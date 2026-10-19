@@ -75,16 +75,12 @@ flowchart TB
 1. **Separating Routine CI from Live Hardware Acceptance**:
    - Standard PR checks, branch CI, and pre-release local contract stages run `pytest -m "not live_npu"`, avoiding automatic connections to standing NPU clusters or paid host model calls.
    - All live NPU cases carry the `@pytest.mark.live_npu` marker. Direct calls to `mcp_server.handle()` in tests validate Tier 1 component contracts, whereas Tier 3 host acceptance drives the actual host CLI binary.
-2. **Per-Release Benchmarks Across All Ten Code Repositories**:
-   - Every code repository defines `benchmarks/release.json` and an executable workload (`benchmarks/release.py`). Each run asserts the correctness of real business outputs before timing multiple independent repetitions (5 by default) and recording samples, iteration counts, and units (`us/op`).
-   - Tag release workflows verify source and package versions, install pinned dependencies, confirm formal GitHub Releases for first-party dependencies, and run local contract tests before executing benchmarks on a clean checkout via a pinned `mindie-bench` runner. Publication proceeds only when all required cases pass and the checkout SHA before and after measurement matches the tag.
+2. **Release Benchmark Verification**:
+   - On formal product releases, a pinned `mindie-bench` runner verifies exact component source revisions alongside end-to-end engineering task comparisons, cross-task experience reuse, and component scenario benchmarks (see [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release) and the [`0.0.2` Release Notes](releases/0.0.2.en.md#3-benchmark-results-and-003-roadmap)).
 3. **Scope of Each Verification Layer**:
 
-| Evidence Layer | What It Establishes | What Requires Separate Verification |
+| Verification Layer | What It Establishes | Scope Boundary |
 | --- | --- | --- |
-| **Local Unit & Contract Suites (Tier 0/1)** | Consent state transitions, protocol translation, redaction, and error propagation obey code contracts | Runtime behavior inside real host CLIs or on Ascend NPU hardware |
-| **Release CPU Microbenchmarks** | Reproducible single-operation latency baselines (`us/op`) on fixed synthetic inputs | SSH/network latency, NPU kernel throughput, or end-to-end engineering productivity |
-| **Live A2/A3 Integration (Tier 2)** | Real probing, container execution, and lease behavior on the tested Ascend hardware and source SHA | Unexecuted OS platforms or full host CLI conversation loops |
-| **Native Host & Canary Runs (Tier 3)** | End-to-end workflow behavior for the tested host version, OS platform, and task | Statistically controlled productivity gain percentages |
-
-Every code repository Release attaches `benchmark-results.json` and `benchmark-results.md`, containing public workload descriptions, environment metadata, and numeric samples without private logs, user transcripts, or credentials. The main product repository aggregates all ten code repository reports on release; see [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release) and the [`0.0.2` Release Notes](releases/0.0.2.en.md#4-ten-repository-release-benchmarks).
+| **Local Unit & Contract Suites (Tier 0/1)** | Consent state transitions, protocol translation, redaction, and error propagation obey code contracts | Does not replace runtime checks inside real host CLIs or on Ascend NPU hardware |
+| **Live A2/A3 Integration (Tier 2)** | Real hardware probing, container execution, and lease coordination on standing Ascend clusters | Does not replace full host CLI conversation loops |
+| **Native Host & Task Evaluation (Tier 3)** | End-to-end task completion, cross-task reuse, and multi-agent coordination on fixed benchmark suites | Reported per tested host, model, and experimental condition |

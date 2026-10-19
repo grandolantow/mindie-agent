@@ -13,7 +13,7 @@
 
 MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0.0.2` 起，OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件跟随主产品统一版本号；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件可直接复用已有正式 Release。
 
-> **DSH `0.0.2` 同版本刷新说明**：DSH 本次保持 `0.0.2` 版本号并对早先发布的 `0.0.2`（`828c375...`）做单次授权替换；已安装旧 `0.0.2` 的环境需按[`0.0.2` 发布说明](releases/0.0.2.md#五dsh-002-同版本刷新说明)显式刷新一次运行环境与插件包并重启整个 DSH 进程。
+> **DSH `0.0.2` 同版本刷新说明**：DSH 本次保持 `0.0.2` 版本号并对早先发布的 `0.0.2`（`828c375...`）做单次授权替换；已安装旧 `0.0.2` 的环境需按[`0.0.2` 发布说明](releases/0.0.2.md#四dsh-002-同版本刷新说明)显式刷新一次运行环境与插件包并重启整个 DSH 进程。
 
 ### 发布顺序与依赖闭环
 
@@ -48,7 +48,7 @@ MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0
 
 若必选基准场景失败、缺失、超时，或测量期间工作区源码发生变化，发布流水线将直接拦截。公开报告仅包含合成输入描述、环境信息与测量数值，不包含凭据、用户对话或私有路径。
 
-主仓库 `0.0.2` 及后续版本发布自动聚合 `diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、四个宿主插件与 `mindie-bench` 共十个代码仓的正式基准报告（详见 [`0.0.2` 版本发布说明](releases/0.0.2.md#四十仓发布基准测试release-benchmarks)）。组件 CPU 微基准测试用于建立核心纯逻辑操作的可复现耗时基线，与常备 A2/A3 实机功能验收、端到端任务提效评测各自独立记录。
+主仓库 `0.0.2` 及后续版本发布自动校验并汇总 `diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、四个宿主插件与 `mindie-bench` 共十个代码仓的正式评测报告与任务实测结果（详见 [`0.0.2` 版本发布说明](releases/0.0.2.md#三实测收益与-003-优化计划)）。
 
 > **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 `knowledge-vllm-ascend` 是领域知识内容仓库，按固定的内容契约（`publication-contract.json`）持续合入更新，日常新增知识包无需同步发布软件版本。
 
