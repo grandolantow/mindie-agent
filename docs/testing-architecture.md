@@ -2,9 +2,9 @@
 
 [English](testing-architecture.en.md) · [返回文档中心](README.md)
 
-本文定义 MindIE Agent 全栈仓库（`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`diagnostics`、各宿主插件与评测仓 `mindie-bench`）统一的**用例有效性红线**与**四级测试金字塔（Tier 0 ~ Tier 3）**。我们的测试体系建立在**默认常备 A2（Ascend 910B）与 A3（Ascend 910C）昇腾 NPU 真机集群**的前提之上，追求极致的信噪比与执行速度。
+本文定义 MindIE Agent 各仓库（`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`diagnostics`、四个宿主插件与评测仓 `mindie-bench`）统一的**用例有效性红线**与**四级测试金字塔（Tier 0 ~ Tier 3）**。
 
-这是测试设计目标，不表示所有仓库已完成四层验收或达到表中的耗时预算。发布记录必须写明实际源码、用例范围、环境、耗时与未覆盖项；不能把单个探测通过扩展为整个发布组合已经通过。
+> **说明**：表中的四级分类与耗时预算是工程测试体系的设计目标；每次版本发布实际覆盖的源码 SHA、测试范围、运行环境、实测耗时与已知限制均在对应版本的[发布说明](releases/0.0.2.md)中如实记录。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
 
@@ -68,17 +68,23 @@ flowchart TB
 ### 3.4 Tier 3：宿主 CLI 与 `mindie-bench` Canary 闭环
 - 在 `mindie-bench` 中，测试套件聚焦于验证 Recipe 构建器、环境隔离（Source Projection / Worktree）、Verifier 判定逻辑、遥测计费对账与 Canary 任务实机闭环，确保评测基础设施本身严谨、快速且无死分支冗余。
 
-## 四、CI 分层与发布 benchmark
+---
 
-普通 PR、分支 CI 和发布前本地组件检查使用 `pytest -m "not live_npu"` 或等价的显式组件入口，不自动连接常备集群或调用付费宿主模型。所有真实 NPU 用例统一标记 `live_npu`；环境变量 opt-in 可以作为第二道运行选择，但不能替代标记。直接调用 `mcp_server.handle()` 的测试仍属于组件契约，只有真实宿主 CLI 路径才构成 Tier 3 宿主验收。
+## 四、CI 分层与随包发布基准测试（Release Benchmarks）
 
-各代码仓维护 `benchmarks/release.json` 和实际工作负载。benchmark 每次执行真实业务操作并校验结果，记录多次独立重复、样本数、迭代次数、数值与单位。发布工作流先验证本地组件契约及正式依赖，再由固定 SHA 的 `mindie-bench` 运行器测量干净的候选源码；只有必需场景全部通过、测量前后 SHA 相同并与 Tag 一致，才可进入发布。
+1. **常规 CI 与实机测试分层**：
+   - 日常 PR、分支 CI 与发布前本地组件检查默认执行 `pytest -m "not live_npu"`，不自动连接常备昇腾集群或消耗付费宿主模型 Token。
+   - 所有真实 NPU 集成用例统一标记 `@pytest.mark.live_npu`。在单测中直接调用 `mcp_server.handle()` 属于 Tier 1 组件契约测试；驱动真实宿主 CLI 才属于 Tier 3 宿主验收。
+2. **十个代码仓随 Release 自动交付基准测试**：
+   - 每个代码仓维护 `benchmarks/release.json` 与可执行基准脚本（`benchmarks/release.py`）。每次运行先校验真实业务函数的输出不变量，再统计固定输入下多次独立重复（默认 5 次）的样本值、迭代次数与单位（`us/op`）。
+   - Tag 发布流水线先完成源码与版本校验、实际依赖安装、第一方依赖正式 Release 核验及本地合同测试，随后通过固定 SHA 的 `mindie-bench` 运行器在干净工作区上执行基准测试。仅当必选场景全部通过、测量前后源码 SHA 未发生变化且与 Tag 一致时，才允许构建并发布 Release。
+3. **四类验证证据的职责边界**：
 
-| 证据 | 能支持的判断 | 不能替代的验证 |
+| 证据类别 | 验证的核心事实 | 不替代的验证范围 |
 | --- | --- | --- |
-| 本地业务回归测试 | 授权、协议、状态与错误传播满足指定契约 | 真实宿主或 NPU 运行结果 |
-| CPU 微 benchmark | 固定输入下某个核心操作的延迟或吞吐 | 网络性能、NPU 性能、Agent 提效 |
-| A2/A3 无损集成 | 指定硬件、容器与源码上的实际行为 | 未运行的平台或整个宿主闭环 |
-| 真实宿主与 Canary | 指定版本、平台与任务链路的闭环行为 | 有统计设计的整体生产力提升 |
+| **本地单元与合同测试（Tier 0/1）** | 授权状态机、协议转换、数据脱敏与错误传播符合代码契约 | 真实宿主客户端或昇腾 NPU 硬件上的运行行为 |
+| **随包 CPU 微基准测试** | 固定公开输入下核心纯逻辑操作的单次延迟基线（`us/op`） | SSH/网络传输开销、NPU 算子吞吐或端到端研发提效比例 |
+| **A2/A3 实机无损集成（Tier 2）** | 指定昇腾硬件、容器拓扑与源码版本下的真实探测、执行与租约行为 | 未测操作系统平台或完整宿主 CLI 会话回路 |
+| **真实宿主与 Canary 验收（Tier 3）** | 指定宿主客户端版本、平台与任务链路的端到端闭环可用性 | 具备统计对照设计的研发生产力提升百分比 |
 
-每个 Release 附带 `benchmark-results.json`、`benchmark-results.md`、`benchmark-SHA256SUMS`，并纳入完整 `SHA256SUMS`。公共报告只包含可公开的工作负载说明与测量数据；原始失败日志、用户输入和凭据不随报告公开。产品主仓聚合十个代码仓结果，本身不添加文档 benchmark；完整规则见[版本兼容与配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)。
+每个代码仓的正式 GitHub Release 均随构建产物附上 `benchmark-results.json`、`benchmark-results.md`、`benchmark-SHA256SUMS` 与总 `SHA256SUMS`（公开报告仅包含合成输入说明、运行环境与测量数值，不含私有日志、用户对话或凭据）。主仓库（`mindie-agent`）在版本发布时汇总十个代码仓的正式基准报告，详见[组件与插件配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)与 [`0.0.2` 版本发布说明](releases/0.0.2.md#四十仓发布基准测试release-benchmarks)。
