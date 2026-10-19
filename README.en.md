@@ -332,14 +332,10 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 
 ---
 
-## 📊 Ecosystem & Telemetry Dashboard
+## 📊 Repository & Download Statistics
 
 <p align="center">
   <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md">
-    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.en.svg" alt="MindIE Agent Ecosystem & Telemetry Dashboard" width="100%">
+    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.en.svg" alt="MindIE Agent Repository & Download Statistics" width="100%">
   </a>
-</p>
-
-<p align="center">
-  <sub>Auto-refreshed every 12 hours via <a href="./.github/workflows/telemetry-dashboard.yml">GitHub Actions</a> onto the <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md"><code>telemetry-data</code></a> branch (click the dashboard for interactive repository links and the <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/telemetry-history.json">cumulative historical ledger</a>).</sub>
 </p>

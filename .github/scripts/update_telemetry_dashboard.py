@@ -17,7 +17,7 @@ dashboards (dashboard.zh.svg, dashboard.en.svg) plus a detailed Markdown report.
 
 [Timeouts & Locks]
 - Each GitHub REST API request enforces a bounded 15-second HTTP timeout.
-- Total script execution Across 15+ repositories completes within < 60 seconds.
+- Total script execution across 13+ repositories completes within < 60 seconds.
 
 [Side-Effect Policy]
 - Read-only against GitHub REST APIs; writes output artifacts strictly into the
@@ -38,28 +38,27 @@ import urllib.request
 ORG = "mindie-agent"
 HTTP_TIMEOUT_SECONDS = 15
 
-# Core repositories displayed in the dashboard in architectural order.
-CORE_REPOS: list[tuple[str, str, str, str, str]] = [
-    # (repo, category_zh, category_en, role_zh, role_en)
-    ("mindie-agent", "产品总入口", "Product Entry", "顶层架构、工程原则与发行记录", "Architecture, principles & release records"),
-    ("awesome-mindie-skills", "社区生态", "Ecosystem", "昇腾 AI Infra 精选 Skills 目录", "Curated Ascend AI Infra Agent Skills"),
-    ("mindie-agent-codex", "宿主插件", "Host Plugin", "OpenAI Codex CLI 原生插件", "OpenAI Codex CLI native plugin"),
-    ("mindie-agent-cc", "宿主插件", "Host Plugin", "Claude Code 原生插件", "Claude Code native plugin"),
-    ("mindie-agent-kimi", "宿主插件", "Host Plugin", "Kimi Code CLI 原生插件", "Kimi Code CLI native plugin"),
-    ("mindie-agent-dsh", "宿主插件", "Host Plugin", "DeepSeek Harness (DSH) 插件", "DeepSeek Harness (DSH) adapter"),
-    ("knowledge", "共享底座", "Core Runtime", "本地 BM25 检索与确定性脱敏引擎", "BM25 retrieval & deterministic redaction"),
-    ("knowledge-vllm-ascend", "领域知识源", "Knowledge Feed", "vLLM-Ascend 与算子开发工程知识库", "vLLM-Ascend & operator knowledge corpus"),
-    ("remote-dev", "共享底座", "Core Runtime", "19 个 SSH/容器远端开发孪生工具", "19 SSH/container remote dev tool twins"),
-    ("coordinator", "共享底座", "Core Runtime", "远端昇腾环境、NPU 探测与租约管理", "Ascend fleet, NPU probe & lease manager"),
-    ("npu-top", "可视化监控", "Observability", "昇腾 NPU Web 实时看板与 90 天热力图", "Ascend NPU live web UI & 90d heatmap"),
-    ("diagnostics", "共享底座", "Core Runtime", "有界日志轮转与白名单故障诊断上报", "Bounded JSONL logs & issue reporting"),
-    ("mindie-bench", "评测门禁", "Benchmark", "发布门禁与性能/生产力评测运行器", "Release gate & benchmark runner"),
+CORE_REPOS: list[tuple[str, str, str, str]] = [
+    # (repo, category_zh, category_en, badge_color)
+    ("mindie-agent", "产品入口", "Main Entry", "#7045F5"),
+    ("awesome-mindie-skills", "技能目录", "Skills Hub", "#0F766E"),
+    ("mindie-agent-codex", "客户端插件", "Client Plugin", "#10A37F"),
+    ("mindie-agent-cc", "客户端插件", "Client Plugin", "#D97757"),
+    ("mindie-agent-kimi", "客户端插件", "Client Plugin", "#2563EB"),
+    ("mindie-agent-dsh", "客户端插件", "Client Plugin", "#0EA5E9"),
+    ("knowledge", "运行时组件", "Core Runtime", "#475569"),
+    ("knowledge-vllm-ascend", "领域知识库", "Knowledge Repo", "#0D9488"),
+    ("remote-dev", "运行时组件", "Core Runtime", "#475569"),
+    ("coordinator", "运行时组件", "Core Runtime", "#475569"),
+    ("npu-top", "NPU 监控", "Observability", "#D97706"),
+    ("diagnostics", "运行时组件", "Core Runtime", "#475569"),
+    ("mindie-bench", "评测工具", "Benchmark", "#64748B"),
 ]
 
 PLUGIN_REPOS: list[tuple[str, str, str]] = [
-    ("mindie-agent-codex", "OpenAI Codex CLI", "#10A37F"),
+    ("mindie-agent-codex", "OpenAI Codex", "#10A37F"),
     ("mindie-agent-cc", "Claude Code", "#D97757"),
-    ("mindie-agent-kimi", "Kimi Code CLI", "#2563EB"),
+    ("mindie-agent-kimi", "Kimi Code", "#2563EB"),
     ("mindie-agent-dsh", "DeepSeek Harness", "#0EA5E9"),
 ]
 
@@ -84,7 +83,19 @@ def github_get(path: str, token: str) -> object:
 
 
 def is_auxiliary_asset(name: str) -> bool:
-    return name.endswith("SHA256SUMS") or name.startswith("benchmark-") or name == "product-release-provenance.json"
+    return (
+        name.endswith("SHA256SUMS")
+        or name.startswith("benchmark-")
+        or name == "product-release-provenance.json"
+    )
+
+
+def format_release_tag(tag: str) -> str:
+    if tag.startswith("knowledge-v") and len(tag) > 18:
+        return tag[:18]
+    if len(tag) > 16:
+        return tag[:15] + "…"
+    return tag
 
 
 def load_history(history_path: Path) -> dict:
@@ -114,7 +125,7 @@ def collect_org_telemetry(token: str, history: dict) -> tuple[dict, list[dict]]:
     repos_meta = history.setdefault("repositories", {})
     rows: list[dict] = []
 
-    for repo, cat_zh, cat_en, role_zh, role_en in CORE_REPOS:
+    for repo, cat_zh, cat_en, badge_color in CORE_REPOS:
         info = github_get(f"/repos/{ORG}/{repo}", token)
         assert isinstance(info, dict)
         clones_data = github_get(f"/repos/{ORG}/{repo}/traffic/clones", token)
@@ -144,7 +155,6 @@ def collect_org_telemetry(token: str, history: dict) -> tuple[dict, list[dict]]:
         views_14d = int(views_data.get("count", 0))
         views_14d_uniq = int(views_data.get("uniques", 0))
 
-        # Ensure cumulative totals are at least the 14-day window total
         cum_clones = max(cum_clones, clones_14d)
         cum_clone_uniques = max(cum_clone_uniques, clones_14d_uniq)
         cum_views = max(cum_views, views_14d)
@@ -184,8 +194,7 @@ def collect_org_telemetry(token: str, history: dict) -> tuple[dict, list[dict]]:
                 "repo": repo,
                 "cat_zh": cat_zh,
                 "cat_en": cat_en,
-                "role_zh": role_zh,
-                "role_en": role_en,
+                "badge_color": badge_color,
                 "stars": stars,
                 "forks": forks,
                 "clones_14d": clones_14d,
@@ -220,123 +229,122 @@ def render_svg(rows: list[dict], updated_at_cst: str, lang: str) -> str:
     total_pkg_dl = sum(r["pkg_dl"] for r in rows)
     total_all_dl = sum(r["all_asset_dl"] for r in rows)
 
-    plugin_14d_clones = sum(by_repo[p[0]]["clones_14d"] for p in PLUGIN_REPOS)
     plugin_cum_clones = sum(by_repo[p[0]]["cum_clones"] for p in PLUGIN_REPOS)
     plugin_14d_uniq = sum(by_repo[p[0]]["clones_14d_uniq"] for p in PLUGIN_REPOS)
 
     title = (
-        "MindIE Agent 社区生态与使用统计看板"
+        "MindIE Agent 开源仓库与下载统计"
         if is_zh
-        else "MindIE Agent Ecosystem & Telemetry Dashboard"
+        else "MindIE Agent Repository & Download Statistics"
     )
-    subtitle = (
-        f"GitHub 官方 API 自动汇总 · 每 12 小时刷新 · 最近更新：{updated_at_cst} (UTC+8)"
+    sync_badge = (
+        f"每 12 小时自动更新 · {updated_at_cst} (UTC+8)"
         if is_zh
-        else f"Auto-aggregated via GitHub REST API · Refreshed every 12h · Last synced: {updated_at_cst} (UTC+8)"
+        else f"Updated every 12h · {updated_at_cst} (UTC+8)"
     )
 
     kpis = [
         (
-            "主仓 Star / Fork (安装触达)" if is_zh else "Main Repo Stars / Forks",
+            "Stars / Forks",
             f"{fmt_num(main_row['stars'])} ★  ·  {fmt_num(main_row['forks'])} ⑂",
-            f"全组织累计 {fmt_num(total_stars)} Stars · {fmt_num(total_forks)} Forks"
+            f"全组织合计 {fmt_num(total_stars)} Stars · {fmt_num(total_forks)} Forks"
             if is_zh
             else f"Org total: {fmt_num(total_stars)} Stars · {fmt_num(total_forks)} Forks",
             "#7045F5",
         ),
         (
-            "四大宿主插件 Clone 量" if is_zh else "Host Plugin Clones",
-            f"{fmt_num(plugin_cum_clones)}" + (" 次" if is_zh else ""),
-            f"近 14 天 {fmt_num(plugin_14d_clones)} 次 ({fmt_num(plugin_14d_uniq)} 独立 IP)"
+            "客户端插件 Clone" if is_zh else "Client Plugin Clones",
+            fmt_num(plugin_cum_clones),
+            f"近 14 天 {fmt_num(plugin_14d_uniq)} 个独立环境"
             if is_zh
-            else f"14d: {fmt_num(plugin_14d_clones)} clones ({fmt_num(plugin_14d_uniq)} unique)",
+            else f"{fmt_num(plugin_14d_uniq)} unique cloners (14d)",
             "#10A37F",
         ),
         (
-            "全组织 Git Clone 总量" if is_zh else "Org-Wide Git Clones",
-            f"{fmt_num(total_cum_clones)}" + (" 次" if is_zh else ""),
-            f"近 14 天 {fmt_num(total_14d_clones)} 次 · 覆盖 {len(rows)} 个核心仓"
+            "全仓库 Git Clone" if is_zh else "Total Git Clones",
+            fmt_num(total_cum_clones),
+            f"覆盖 {len(rows)} 个公开仓库"
             if is_zh
-            else f"14d: {fmt_num(total_14d_clones)} clones across {len(rows)} core repos",
+            else f"Across {len(rows)} public repositories",
             "#2563EB",
         ),
         (
-            "Release 产物累计下载" if is_zh else "Release Package Downloads",
-            f"{fmt_num(total_pkg_dl)}" + (" 次" if is_zh else ""),
-            f"含校验/评测附件共 {fmt_num(total_all_dl)} 次永久下载"
+            "Release 下载量" if is_zh else "Release Downloads",
+            fmt_num(total_pkg_dl),
+            f"含全部附件共 {fmt_num(total_all_dl)} 次"
             if is_zh
-            else f"{fmt_num(total_all_dl)} total asset downloads (all-time)",
+            else f"{fmt_num(total_all_dl)} total asset downloads",
             "#0F766E",
         ),
     ]
 
     width = 960
-    row_height = 32
-    table_top = 340
-    table_height = 42 + len(rows) * row_height
-    height = table_top + table_height + 46
+    row_height = 33
+    table_top = 314
+    table_height = 40 + len(rows) * row_height
+    height = table_top + table_height + 44
 
     lines: list[str] = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" fill="none">',
         "  <style>",
-        "    .font { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif; }",
+        "    .font { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif; }",
         "    .mono { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; }",
-        "    .title { font-size: 18px; font-weight: 700; fill: #0F172A; }",
-        "    .subtitle { font-size: 12px; font-weight: 400; fill: #64748B; }",
+        "    .title { font-size: 17px; font-weight: 700; fill: #0F172A; }",
+        "    .sync { font-size: 11.5px; font-weight: 500; fill: #64748B; }",
         "    .kpi-label { font-size: 12px; font-weight: 600; fill: #475569; }",
         "    .kpi-val { font-size: 22px; font-weight: 700; fill: #0F172A; }",
         "    .kpi-sub { font-size: 11px; font-weight: 400; fill: #64748B; }",
-        "    .sec-title { font-size: 13px; font-weight: 700; fill: #1E293B; }",
+        "    .sec-title { font-size: 12.5px; font-weight: 700; fill: #1E293B; }",
         "    .th { font-size: 11.5px; font-weight: 700; fill: #475569; }",
         "    .td-repo { font-size: 12px; font-weight: 600; fill: #0F172A; }",
-        "    .td-cat { font-size: 11px; font-weight: 500; fill: #475569; }",
+        "    .td-cat { font-size: 11px; font-weight: 500; fill: #334155; }",
         "    .td-num { font-size: 12px; font-weight: 500; fill: #1E293B; }",
+        "    .td-bold { font-size: 12px; font-weight: 600; fill: #0F172A; }",
         "    .td-sub { font-size: 11px; font-weight: 400; fill: #64748B; }",
         "    .footer { font-size: 11px; fill: #64748B; }",
         "  </style>",
         f'  <rect x="1" y="1" width="{width - 2}" height="{height - 2}" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5"/>',
-        f'  <rect x="1" y="1" width="{width - 2}" height="68" rx="12" fill="#F8FAFC"/>',
-        f'  <line x1="1" y1="69" x2="{width - 1}" y2="69" stroke="#E2E8F0" stroke-width="1"/>',
-        f'  <text x="24" y="34" class="font title">{html.escape(title)}</text>',
-        f'  <text x="24" y="54" class="font subtitle">{html.escape(subtitle)}</text>',
+        f'  <rect x="1" y="1" width="{width - 2}" height="56" rx="12" fill="#F8FAFC"/>',
+        f'  <line x1="1" y1="57" x2="{width - 1}" y2="57" stroke="#E2E8F0" stroke-width="1"/>',
+        f'  <text x="24" y="35" class="font title">{html.escape(title)}</text>',
+        f'  <text x="{width - 24}" y="35" text-anchor="end" class="font sync">{html.escape(sync_badge)}</text>',
     ]
 
-    # Render 4 KPI Cards
+    # 4 KPI Cards
     card_w = 216
     card_gap = 16
     for idx, (label, val, sub, accent) in enumerate(kpis):
         cx = 24 + idx * (card_w + card_gap)
-        cy = 84
+        cy = 72
         lines.extend(
             [
-                f'  <rect x="{cx}" y="{cy}" width="{card_w}" height="88" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>',
-                f'  <rect x="{cx}" y="{cy}" width="4" height="88" rx="2" fill="{accent}"/>',
-                f'  <text x="{cx + 14}" y="{cy + 24}" class="font kpi-label">{html.escape(label)}</text>',
-                f'  <text x="{cx + 14}" y="{cy + 54}" class="font kpi-val">{html.escape(val)}</text>',
-                f'  <text x="{cx + 14}" y="{cy + 74}" class="font kpi-sub">{html.escape(sub)}</text>',
+                f'  <rect x="{cx}" y="{cy}" width="{card_w}" height="86" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>',
+                f'  <rect x="{cx}" y="{cy}" width="4" height="86" rx="2" fill="{accent}"/>',
+                f'  <text x="{cx + 14}" y="{cy + 23}" class="font kpi-label">{html.escape(label)}</text>',
+                f'  <text x="{cx + 14}" y="{cy + 52}" class="font kpi-val">{html.escape(val)}</text>',
+                f'  <text x="{cx + 14}" y="{cy + 72}" class="font kpi-sub">{html.escape(sub)}</text>',
             ]
         )
 
-    # Render Client Plugin Share Bar Section
-    bar_sec_y = 192
+    # Client Plugin Distribution Section
+    bar_sec_y = 174
     sec_label = (
-        "🔌 四大宿主客户端插件安装与 Clone 分布（累计 / 近 14 天独立 IP）"
+        "客户端插件拉取分布"
         if is_zh
-        else "🔌 Host Client Plugin Clone Distribution (Cumulative / 14d Unique IPs)"
+        else "Client Plugin Distribution"
     )
     lines.extend(
         [
-            f'  <rect x="24" y="{bar_sec_y}" width="{width - 48}" height="130" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>',
+            f'  <rect x="24" y="{bar_sec_y}" width="{width - 48}" height="124" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>',
             f'  <text x="40" y="{bar_sec_y + 24}" class="font sec-title">{html.escape(sec_label)}</text>',
         ]
     )
 
-    # Stacked horizontal bar
     stack_x = 40
     stack_y = bar_sec_y + 36
     stack_w = width - 80
-    stack_h = 14
-    lines.append(f'  <rect x="{stack_x}" y="{stack_y}" width="{stack_w}" height="{stack_h}" rx="7" fill="#E2E8F0"/>')
+    stack_h = 12
+    lines.append(f'  <rect x="{stack_x}" y="{stack_y}" width="{stack_w}" height="{stack_h}" rx="6" fill="#E2E8F0"/>')
 
     cur_x = float(stack_x)
     denom = max(plugin_cum_clones, 1)
@@ -345,32 +353,32 @@ def render_svg(rows: list[dict], updated_at_cst: str, lang: str) -> str:
         seg_w = (c_val / denom) * stack_w
         if seg_w > 0:
             lines.append(
-                f'  <rect x="{cur_x:.1f}" y="{stack_y}" width="{max(seg_w, 4.0):.1f}" height="{stack_h}" rx="3" fill="{color}"/>'
+                f'  <rect x="{cur_x:.1f}" y="{stack_y}" width="{max(seg_w - 1.5, 3.0):.1f}" height="{stack_h}" rx="3" fill="{color}"/>'
             )
             cur_x += seg_w
 
-    # 4 legend boxes below stacked bar
     leg_w = (width - 80) // 4
     for idx, (repo_name, host_name, color) in enumerate(PLUGIN_REPOS):
         r_data = by_repo[repo_name]
         lx = 40 + idx * leg_w
-        ly = bar_sec_y + 70
+        ly = bar_sec_y + 68
         pct = (r_data["cum_clones"] / denom) * 100.0
+        title_line = f"{host_name} ({pct:.1f}%)"
         stat_line = (
-            f"累计 {fmt_num(r_data['cum_clones'])} ({pct:.1f}%) · 14d 独立 {fmt_num(r_data['clones_14d_uniq'])}"
+            f"{fmt_num(r_data['cum_clones'])} Clones · 14d 独立 {fmt_num(r_data['clones_14d_uniq'])}"
             if is_zh
-            else f"Total {fmt_num(r_data['cum_clones'])} ({pct:.1f}%) · 14d uniq {fmt_num(r_data['clones_14d_uniq'])}"
+            else f"{fmt_num(r_data['cum_clones'])} clones · {fmt_num(r_data['clones_14d_uniq'])} unique"
         )
         lines.extend(
             [
                 f'  <circle cx="{lx + 6}" cy="{ly}" r="5" fill="{color}"/>',
-                f'  <text x="{lx + 16}" y="{ly + 4}" class="font td-repo">{html.escape(host_name)}</text>',
-                f'  <text x="{lx + 16}" y="{ly + 22}" class="mono td-sub">{html.escape(repo_name)}</text>',
-                f'  <text x="{lx + 16}" y="{ly + 38}" class="font td-sub">{html.escape(stat_line)}</text>',
+                f'  <text x="{lx + 16}" y="{ly + 4}" class="font td-repo">{html.escape(title_line)}</text>',
+                f'  <text x="{lx + 16}" y="{ly + 21}" class="mono td-sub">{html.escape(repo_name)}</text>',
+                f'  <text x="{lx + 16}" y="{ly + 37}" class="font td-sub">{html.escape(stat_line)}</text>',
             ]
         )
 
-    # Render Repository Breakdown Table
+    # Repository Table
     lines.extend(
         [
             f'  <rect x="24" y="{table_top}" width="{width - 48}" height="{table_height}" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>',
@@ -380,23 +388,21 @@ def render_svg(rows: list[dict], updated_at_cst: str, lang: str) -> str:
     )
 
     col_repo = 40
-    col_cat = 225
-    col_ver = 330
-    col_sf = 460
-    col_c14 = 605
-    col_ccum = 730
-    col_v14 = 830
+    col_cat = 240
+    col_ver = 355
+    col_sf = 540
+    col_ccum = 665
+    col_c14 = 815
     col_dl = 920
 
     headers = (
         [
-            (col_repo, "start", "仓库 (Repository)"),
-            (col_cat, "start", "定位分类"),
-            (col_ver, "start", "最新 Release"),
+            (col_repo, "start", "仓库"),
+            (col_cat, "start", "类型"),
+            (col_ver, "start", "最新版本"),
             (col_sf, "end", "Star / Fork"),
-            (col_c14, "end", "近14天 Clone (独立)"),
             (col_ccum, "end", "累计 Clone"),
-            (col_v14, "end", "近14天浏览 (独立)"),
+            (col_c14, "end", "近 14 天 Clone (独立)"),
             (col_dl, "end", "Release 下载"),
         ]
         if is_zh
@@ -405,9 +411,8 @@ def render_svg(rows: list[dict], updated_at_cst: str, lang: str) -> str:
             (col_cat, "start", "Category"),
             (col_ver, "start", "Latest Release"),
             (col_sf, "end", "Star / Fork"),
-            (col_c14, "end", "14d Clones (Uniq)"),
             (col_ccum, "end", "Total Clones"),
-            (col_v14, "end", "14d Views (Uniq)"),
+            (col_c14, "end", "14d Clones (Unique)"),
             (col_dl, "end", "Release DL"),
         ]
     )
@@ -430,33 +435,30 @@ def render_svg(rows: list[dict], updated_at_cst: str, lang: str) -> str:
 
         ty = ry + 21
         cat = r["cat_zh"] if is_zh else r["cat_en"]
-        tag_disp = r["latest_tag"]
-        if len(tag_disp) > 16:
-            tag_disp = tag_disp[:15] + "…"
+        tag_disp = format_release_tag(r["latest_tag"])
         sf_str = f"{r['stars']} / {r['forks']}"
-        c14_str = f"{fmt_num(r['clones_14d'])} ({fmt_num(r['clones_14d_uniq'])})"
         ccum_str = fmt_num(r["cum_clones"])
-        v14_str = f"{fmt_num(r['views_14d'])} ({fmt_num(r['views_14d_uniq'])})"
+        c14_str = f"{fmt_num(r['clones_14d'])} ({fmt_num(r['clones_14d_uniq'])})"
         dl_str = fmt_num(r["pkg_dl"]) if r["pkg_dl"] > 0 else "-"
 
         lines.extend(
             [
-                f'  <text x="{col_repo}" y="{ty}" class="mono td-repo">{html.escape(r["repo"])}</text>',
+                f'  <circle cx="{col_repo + 4}" cy="{ty - 4}" r="3.5" fill="{r["badge_color"]}"/>',
+                f'  <text x="{col_repo + 14}" y="{ty}" class="mono td-repo">{html.escape(r["repo"])}</text>',
                 f'  <text x="{col_cat}" y="{ty}" class="font td-cat">{html.escape(cat)}</text>',
                 f'  <text x="{col_ver}" y="{ty}" class="mono td-sub">{html.escape(tag_disp)}</text>',
                 f'  <text x="{col_sf}" y="{ty}" text-anchor="end" class="mono td-num">{html.escape(sf_str)}</text>',
+                f'  <text x="{col_ccum}" y="{ty}" text-anchor="end" class="mono td-bold">{html.escape(ccum_str)}</text>',
                 f'  <text x="{col_c14}" y="{ty}" text-anchor="end" class="mono td-num">{html.escape(c14_str)}</text>',
-                f'  <text x="{col_ccum}" y="{ty}" text-anchor="end" class="mono td-num">{html.escape(ccum_str)}</text>',
-                f'  <text x="{col_v14}" y="{ty}" text-anchor="end" class="mono td-sub">{html.escape(v14_str)}</text>',
                 f'  <text x="{col_dl}" y="{ty}" text-anchor="end" class="mono td-num">{html.escape(dl_str)}</text>',
             ]
         )
 
-    footer_y = table_top + table_height + 26
+    footer_y = table_top + table_height + 25
     footer_note = (
-        "注：安装协议默认通过 gh 执行 Star & Fork (--clone=false)，主仓 Star/Fork 代表独立安装用户基数；底层组件 Clone 含插件环境初始化与 CI 验证流量。"
+        "数据来源：GitHub REST API · Star / Fork 与 Release 下载为历史累计值，Git Clone 按日自动归档累加（括号内为近 14 天去重数）"
         if is_zh
-        else "Note: Standard installation stars & forks mindie-agent (--clone=false); runtime component clones include plugin bootstrap & CI verification."
+        else "Source: GitHub REST API · Stars, Forks, and Release downloads are all-time totals; Git Clones are archived daily (14d unique in parentheses)"
     )
     lines.append(f'  <text x="24" y="{footer_y}" class="font footer">{html.escape(footer_note)}</text>')
     lines.append("</svg>\n")
@@ -472,38 +474,38 @@ def render_markdown_report(rows: list[dict], updated_at_cst: str) -> str:
     total_all_dl = sum(r["all_asset_dl"] for r in rows)
 
     md = [
-        "# 📊 MindIE Agent 社区生态与使用统计报表 (Telemetry Archive)",
+        "# 📊 MindIE Agent 开源仓库与下载统计",
         "",
-        f"> **最近更新时间**：`{updated_at_cst} (UTC+8)` · 由 GitHub Actions 每 12 小时自动拉取并归档至 `telemetry-data` 分支。",
+        f"> **最近更新**：`{updated_at_cst} (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。",
         "",
-        "![MindIE Agent Telemetry Dashboard](./dashboard.zh.svg)",
+        "![MindIE Agent Repository & Download Statistics](./dashboard.zh.svg)",
         "",
-        "## 核心仓库实时明细（可点击跳转）",
+        "## 仓库统计明细",
         "",
-        "| 分类 | 仓库 | 最新 Release | Stars | Forks | 近 14 天 Clone (独立) | 历史累计 Clone | 近 14 天浏览 (独立) | Release 产物下载 (全附件) |",
+        "| 类型 | 仓库 | 最新版本 | Stars | Forks | 累计 Clone | 近 14 天 Clone (独立) | 近 14 天浏览 (独立) | Release 下载 (含附件) |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for r in rows:
         repo_link = f"[`{r['repo']}`](https://github.com/{ORG}/{r['repo']})"
         md.append(
             f"| {r['cat_zh']} | {repo_link} | `{r['latest_tag']}` | {r['stars']} | {r['forks']} "
-            f"| {fmt_num(r['clones_14d'])} ({fmt_num(r['clones_14d_uniq'])}) "
             f"| **{fmt_num(r['cum_clones'])}** "
+            f"| {fmt_num(r['clones_14d'])} ({fmt_num(r['clones_14d_uniq'])}) "
             f"| {fmt_num(r['views_14d'])} ({fmt_num(r['views_14d_uniq'])}) "
             f"| {fmt_num(r['pkg_dl'])} ({fmt_num(r['all_asset_dl'])}) |"
         )
     md.append(
-        f"| **合计** | **全组织 {len(rows)} 个核心仓** | — | **{fmt_num(total_stars)}** | **{fmt_num(total_forks)}** "
-        f"| **{fmt_num(total_14d_clones)}** | **{fmt_num(total_cum_clones)}** | — | **{fmt_num(total_pkg_dl)}** ({fmt_num(total_all_dl)}) |"
+        f"| **合计** | **{len(rows)} 个公开仓库** | — | **{fmt_num(total_stars)}** | **{fmt_num(total_forks)}** "
+        f"| **{fmt_num(total_cum_clones)}** | **{fmt_num(total_14d_clones)}** | — | **{fmt_num(total_pkg_dl)}** ({fmt_num(total_all_dl)}) |"
     )
     md.extend(
         [
             "",
-            "## 数据文件说明",
+            "## 数据文件",
             "",
-            "- [`dashboard.zh.svg`](./dashboard.zh.svg)：中文首页动态统计看板 SVG",
-            "- [`dashboard.en.svg`](./dashboard.en.svg)：英文首页动态统计看板 SVG",
-            "- [`telemetry-history.json`](./telemetry-history.json)：按天（`YYYY-MM-DD`）去重累加的历史 Clone 与浏览时间序列账本（突破 GitHub 14 天清除限制）",
+            "- [`dashboard.zh.svg`](./dashboard.zh.svg)：中文统计看板 SVG",
+            "- [`dashboard.en.svg`](./dashboard.en.svg)：英文统计看板 SVG",
+            "- [`telemetry-history.json`](./telemetry-history.json)：按日归档累加的历史统计 JSON",
             "",
         ]
     )

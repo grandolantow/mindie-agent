@@ -334,14 +334,10 @@ MindIE Agent 在持续演进中沉淀了一套严格的 **[工程设计原则](.
 
 ---
 
-## 📊 社区生态与使用统计看板
+## 📊 开源仓库与下载统计
 
 <p align="center">
   <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md">
-    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.zh.svg" alt="MindIE Agent 社区生态与使用统计看板" width="100%">
+    <img src="https://raw.githubusercontent.com/mindie-agent/mindie-agent/telemetry-data/dashboard.zh.svg" alt="MindIE Agent 开源仓库与下载统计" width="100%">
   </a>
-</p>
-
-<p align="center">
-  <sub>由 <a href="./.github/workflows/telemetry-dashboard.yml">GitHub Actions</a> 每 12 小时自动汇总并归档至 <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/README.md"><code>telemetry-data</code></a> 分支（点击看板可查看各仓库可跳转明细与 <a href="https://github.com/mindie-agent/mindie-agent/blob/telemetry-data/telemetry-history.json">历史累计账本</a>）</sub>
 </p>
