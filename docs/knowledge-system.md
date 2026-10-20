@@ -71,6 +71,8 @@ MindIE Agent 把可复用的工程结论组织为带适用条件、来源和版�
 
 每个检索结果包含 `id`、`revision`、`tier`、`category`、`evidence_strength`、`conditions`、`provenance`、`applicability`、`route`、`score` 和 `inherited_rules`。`inherited_rules` 是闭包中**独立匹配**的父单元完整正文；未匹配的父单元进入 `inheritance_excluded` 并带原因；预算不足的父单元标记为 `budget_excluded`，不会返回被截断的规则。`body_token_estimate` 只覆盖正文摘录与继承正文，不包含返回元数据，也不等于宿主请求的实际 token 数。
 
+预算先分配给匹配的 L1 继承前提，再生成工作流摘录。独立返回的 L1 也保留完整正文；放不下时，其 ID 进入 `excluded_budget`。这样长工作流不会挤掉数值或硬件前提，过小预算也不会产生缺少条件的半条公理。
+
 当前内容中的实际关系：
 
 - vLLM-Ascend：`unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow`（L3）和 `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation`（L2）都继承两个 `_common` L1；带完整条件查询 `Qwen3.5 GatedDeltaNet decode` 时，L3、L2 与两个 L1 `inherited_rules` 同时出现。
@@ -135,41 +137,34 @@ flowchart LR
 
 ## 5. L4 RSI 去偏探索引擎
 
-实现位于 [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench)，契约版本 `mindie-bench-rsi/1`。它把 L3 的常规优化停滞转成一次可审计的 L4 探索，而不是继续重复 L3 启发式。
+实现位于 [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench)，契约版本 `mindie-bench-rsi/1`。当前提供上下文组装、调度计划、结果判断和进度记录；真实执行由 `TaskClient` / `coordinator` 接入。
 
 ### 5.1 L3 停滞检测
 
-`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` 逐条检查 L3 尝试：
-
-- Gate 1（编译 / oracle）失败；
-- Gate 2（测量守卫）失败；
-- 没有测得 speedup，或 speedup 低于目标（默认 `1.05`）；
-- `gate_reached < 4`。
-
-连续 `max_stalled_attempts` 次停滞才升级；中间出现一次健康尝试会把计数清零。返回 `(bool, reason)`，原因保留具体失败门与实测值。
+`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` 消费四门评估结果。连续有效实验未通过正确性、消融或目标收益时才累计停滞。编译失败、测量无效和消融未完成先进入修复／继续验证；它们会清零连续停滞计数。成功实验同样清零。重复查询或恢复同一 `run_id` 只算一次实验，使用该运行的最新记录。
 
 ### 5.2 去偏上下文
 
-`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=...)` 的硬约束：
+`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=..., conditions=...)`：
 
 - **L3 单元正文绝不进入 L4 上下文**；只把其 ID 放进 `stripped_l3_ids`，`stripped_tiers` 为 `["L3"]`；
 - 挂载 L1 Foundation（保留 `foundation_baseline` 字段，冷查询时可为具体基线）、L2 瓶颈观测、L4 mutator；
-- 继承规则中若出现 L3，同样不挂载；
-- 从 `experiment-ledger.jsonl` 中 `verdict == "refuted"` 的条目提取 `conditional_avoid`，已支持的候选不会产生 avoid 规则；
+- 从所有嵌套 `inherited_rules` 中移除 L3 正文，同时保留并去重其中的 L1 前提；即使检索只返回了 L3 子单元，其 L1 父单元也进入底座；
+- 只从 `refuted` 条目提取与当前观测条件逐项一致的 `conditional_avoid`，保留原 `conditions`、候选、原因和 `run_id`。硬件、输入形状或软件前提变化时，允许重新尝试；缺失条件不作为命中；
 - 输出 `mounted_tiers == ["L1", "L2", "L4"]`，并保留 `foundation_axioms`、`measurement_rules`、`inherited_rules` 等扁平字段供消费者使用。
 
 算子 `fused-rmsnorm-gate` 的验证中，真实查询返回的 L3 `unit-rmsnorm-five-stage-ablation-workflow` 被剥离；L1 `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms`、`unit-ascend-operator-roofline-and-four-view-measurement`，L2 `unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence`，L4 `unit-residual-free-rmsnorm-fastpath` 以及 refuted 候选的 `conditional_avoid` 被挂载。
 
 ### 5.3 编译与计时调度
 
-`plan_rsi_compile_and_timing(candidates, npu_device=0, max_compile_slots=3)` 产生两个阶段：
+`plan_rsi_compile_and_timing(candidates, state_dir=..., npu_device=0, max_compile_slots=3)` 产生两个阶段：
 
 | 阶段 | 并行 | 资源 | 规则 |
 | --- | --- | --- | --- |
 | `compile` | 是 | `npu_count: 0` | 最多 `max_compile_slots` 个 CPU-only 编译；按 wave 切分；`CoordinatorService` 是唯一进度所有者 |
 | `timing` | 否 | `devices: [0]` | 只在编译证明成功的候选上串行、独占 NPU 计时 |
 
-编译证明缺失或失败的候选进入 `skipped_candidates`，原因分别为 `compile_proof_missing` / `compile_proof_not_succeeded`。`state_dir` 由候选 ID、设备和槽位数确定性生成，便于复盘。
+编译结果缺失或失败的候选进入 `skipped_candidates`。`state_dir` 直接使用调用方已有的 coordinator 状态目录；实际运行沿用执行器返回的 `run_id`。规划器不通过内容摘要创建另一套运行身份或调度目录。
 
 ### 5.4 四门漏斗与持久化
 
@@ -180,15 +175,14 @@ flowchart LR
 3. **Gate 3**：leave-one-out ablation 归因是否保留；
 4. **Gate 4**：speedup 是否达到目标（默认 `1.05`）。
 
-全部通过为 `supported`，`distill_ready == true`；任一失败为 `refuted`，并生成带 `candidate_id` 与失败原因的 `conditional_avoid`。每个条目都有确定性的 `run_id` 与 `gate_reached`。
+全部通过为 `supported`，`distill_ready == true`。正确性失败、有效消融淘汰或有效测量未达到目标为 `refuted`，生成带条件的负向经验。编译失败、无有效测量或尚未完成消融为 `inconclusive`，保留原因供下一步修复。未执行的后续门保持 `passed: null`；消融未传入时保持待完成。
 
 `append_ledger_and_render_progress` 以追加方式写 `experiment-ledger.jsonl`，再原子替换确定性的 `PROGRESS.md`：
 
 - “Best Supported Candidate”按 speedup 降序选最佳；
 - “Active Hypotheses”列出 supported 候选；
-- “Refuted Directions”列出所有 refuted 条目的 `conditional_avoid`。
-
-算子验证使用了三个候选：refuted 的 `oversized_fused_tile`（Gate 2）、refuted 的 `dispatch_registration_only`（Gate 4）和 supported 的 `native_residual_free_fastpath`（`1.6767473221869322x`）。三个编译项均为 `npu_count: 0`，一个并行 wave；计时项为 `devices: [0]` 串行；ledger 三行与 `PROGRESS.md` 均落盘。supported 结果再经 Hermes 提炼为算子领域的 L2 reviewed unit。
+- “Refuted Directions”列出负向经验及其观测条件；
+- “Experiments To Complete”列出尚无结论的实验与已有运行 ID。
 
 ## 6. 原生领域路由与授权边界
 
@@ -210,7 +204,7 @@ Markdown 是内容权威；路由与检索索引可以从它重建。SQLite 保�
 
 ## 8. 闭环验证边界
 
-端到端闭环验证使用真实知识运行时、真实领域内容（`vllm-ascend` 与 `operators`）和真实 RSI 探索模块（`rsi_explorer`），覆盖三大代表性场景：
+当前本地闭环验证使用知识运行时、两域内容和 RSI 规划／结果模块，覆盖下列路径。真实宿主提炼和 NPU 执行接线继续按具体任务验证。
 
 | 场景 | 验证闭环 |
 | --- | --- |
@@ -219,3 +213,15 @@ Markdown 是内容权威；路由与检索索引可以从它重建。SQLite 保�
 | `fused-rmsnorm-gate` 算子优化 | 连续 L3 停滞触发 L4 RSI 升级；去偏置上下文剥离 L3（记录 `stripped_l3_ids`）并挂载 L1/L2/L4 + `conditional_avoid`；并行 `npu_count: 0` CPU 编译 + 串行 `devices: [0]` NPU 计时；四门禁漏斗；`experiment-ledger.jsonl` 与 `PROGRESS.md` 落盘；supported 结果经 Hermes 提炼回流 |
 
 一次完整交付应分别记录：单元审核通过、公共仓库合并、指定 Feed 修订被客户端安装，以及真实宿主任务完成 `query`、`explain`、反馈和领域路由。组件单测、检索耗时或成功安装各自只能支持对应结论；版本级研发收益需在相同模型和任务条件下另外比较。
+
+## 9. 后续接线与设计参考
+
+Hermes 的下一步是在原生宿主已确认的里程碑提供一次轻量提炼提示，复用 `knowledge_distill` 的 `task_state=verified_milestone` 和已选择的输入；同主题经验优先修订已有单元。RSI 的下一步由同一个 TaskClient 执行编译队列和计时队列，将实际运行结果交给现有评估函数。知识检索、模型构思、资源协调各自沿用已有组件。
+
+这两条接线采用以下已有实践：
+
+- [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载操作经验，从成功路径、错误修复和用户纠偏中更新已有技能。
+- [Anthropic 长程任务 Harness](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：用 Git 和简短进度文件接续，每次完成可验证的增量。
+- [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)：通过执行和评分选择下一轮候选，将候选构思与实验评估分开。
+
+本地调试记录补充了两条实际约束：编译错误应先落到具体实现修复；一次输入形状或环境下的负向结果只约束相同前提。运行记录保留已有 ID、条件、结果与下一步即可。

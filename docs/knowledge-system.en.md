@@ -69,6 +69,8 @@ A cold operators query returns:
 
 Each result carries `id`, `revision`, `tier`, `category`, `evidence_strength`, `conditions`, `provenance`, `applicability`, `route`, `score` and `inherited_rules`. `inherited_rules` contains the complete bodies of closure parents that **independently match**. A parent that does not match appears in `inheritance_excluded` with its reason; a parent that does not fit the budget is marked `budget_excluded`. No rule is returned with a truncated premise. `body_token_estimate` covers body excerpts and inherited bodies only; it excludes response metadata and is not the actual token count of the host request.
 
+Matching L1 premises receive budget before the workflow excerpt. Standalone L1 results also retain their complete bodies; an ID that cannot fit appears in `excluded_budget`. Long workflows therefore retain their numerical and hardware premises, and a small budget cannot produce half an axiom.
+
 The current content relationships are:
 
 - vLLM-Ascend: `unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow` (L3) and `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation` (L2) both inherit the two `_common` L1 units. A complete-condition query for `Qwen3.5 GatedDeltaNet decode` returns L3, L2 and both L1 `inherited_rules`.
@@ -133,41 +135,34 @@ Both paths used the real `prepare_request` redaction, `build_prompt`, `parse_val
 
 ## 5. The L4 RSI de-biased exploration engine
 
-The implementation lives in [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench) with contract version `mindie-bench-rsi/1`. It converts a routine L3 optimization stall into one auditable L4 exploration instead of repeating the same L3 heuristic.
+The implementation lives in [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench) with contract version `mindie-bench-rsi/1`. It currently provides context assembly, scheduling plans, result evaluation and progress records. Execution connects through `TaskClient` / `coordinator`.
 
 ### 5.1 L3 stall detection
 
-`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` inspects each L3 attempt:
-
-- Gate 1 (compile / oracle) failed;
-- Gate 2 (measurement guard) failed;
-- no measured speedup, or speedup below the target (default `1.05`);
-- `gate_reached < 4`.
-
-Escalation requires `max_stalled_attempts` consecutive stalls; a healthy attempt in between resets the count. It returns `(bool, reason)` and preserves the specific gate and measured value in the reason.
+`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` consumes the four-gate evaluation results. Consecutive valid experiments that fail correctness, ablation or the performance target count as stalls. Compile failures, invalid measurements and pending ablation call for repair or further verification and reset the streak. A successful experiment also resets it. Polling or resuming one `run_id` counts as one experiment, using its latest record.
 
 ### 5.2 De-biased context
 
-`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=...)` enforces:
+`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=..., conditions=...)`:
 
 - **L3 unit bodies never enter the L4 context**; only their IDs survive in `stripped_l3_ids`, with `stripped_tiers == ["L3"]`;
 - mount the L1 Foundation (the `foundation_baseline` field is retained and may carry a cold-query baseline), L2 bottleneck observations and L4 mutators;
-- an L3 parent inside `inherited_rules` is likewise not mounted;
-- `conditional_avoid` comes only from `verdict == "refuted"` ledger entries; supported candidates do not create avoid rules;
+- removes L3 bodies from nested `inherited_rules` while retaining and deduplicating their L1 premises; a query that returns only an L3 child still supplies its L1 parents to the foundation;
+- selects `conditional_avoid` only from `refuted` entries whose recorded conditions match the current observations. Each rule retains its `conditions`, candidate, reason and `run_id`. Changed hardware, shapes or software premises permit a new attempt; missing conditions do not match;
 - the output reports `mounted_tiers == ["L1", "L2", "L4"]` and keeps flat `foundation_axioms`, `measurement_rules` and `inherited_rules` fields for consumers.
 
 In the `fused-rmsnorm-gate` verification, the real query's L3 `unit-rmsnorm-five-stage-ablation-workflow` was stripped. L1 `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms` and `unit-ascend-operator-roofline-and-four-view-measurement`, L2 `unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence`, L4 `unit-residual-free-rmsnorm-fastpath` and the refuted candidate's `conditional_avoid` were mounted.
 
 ### 5.3 Compile and timing schedule
 
-`plan_rsi_compile_and_timing(candidates, npu_device=0, max_compile_slots=3)` produces two phases:
+`plan_rsi_compile_and_timing(candidates, state_dir=..., npu_device=0, max_compile_slots=3)` produces two phases:
 
 | Phase | Parallel | Resources | Rule |
 | --- | --- | --- | --- |
 | `compile` | yes | `npu_count: 0` | Up to `max_compile_slots` CPU-only compiles, split into waves; `CoordinatorService` is the single progress owner |
 | `timing` | no | `devices: [0]` | Serial, exclusive NPU timing only for candidates with a proved compile |
 
-Candidates with a missing or failed compile proof appear in `skipped_candidates` with `compile_proof_missing` / `compile_proof_not_succeeded`. `state_dir` is deterministically derived from candidate IDs, device and slot count for replay.
+Candidates with missing or failed compile results appear in `skipped_candidates`. The caller supplies its existing coordinator `state_dir`; evaluation uses the executor's `run_id`. The planner does not derive a second run identity or scheduling directory from content digests.
 
 ### 5.4 Four-gate funnel and persistence
 
@@ -178,15 +173,14 @@ Candidates with a missing or failed compile proof appear in `skipped_candidates`
 3. **Gate 3**: leave-one-out ablation attribution retained;
 4. **Gate 4**: speedup reaches the target (default `1.05`).
 
-All four passing yields `supported` with `distill_ready == true`; any failure yields `refuted` with a `conditional_avoid` carrying the `candidate_id` and failure reason. Every entry has a deterministic `run_id` and `gate_reached`.
+All four passing yields `supported` with `distill_ready == true`. Failed correctness, valid ablation rejection or a valid measurement below target yields `refuted` with conditional negative experience. Compile failure, invalid measurement and pending ablation yield `inconclusive`, retaining the reason for the next repair. Later stages that did not execute retain `passed: null`; omitted ablation remains pending.
 
 `append_ledger_and_render_progress` appends `experiment-ledger.jsonl` and atomically replaces a deterministic `PROGRESS.md`:
 
 - "Best Supported Candidate" is the supported entry with the highest speedup;
 - "Active Hypotheses" lists supported candidates;
-- "Refuted Directions" lists the `conditional_avoid` rules of all refuted entries.
-
-The operators verification used three candidates: refuted `oversized_fused_tile` (Gate 2), refuted `dispatch_registration_only` (Gate 4) and supported `native_residual_free_fastpath` (`1.6767473221869322x`). All three compile items were `npu_count: 0` in one parallel wave; timing items were serial on `devices: [0]`; the three ledger rows and `PROGRESS.md` were written. The supported result was then distilled through Hermes into a reviewed L2 unit in the operators domain.
+- "Refuted Directions" lists negative experience with its observed conditions;
+- "Experiments To Complete" lists inconclusive experiments and their existing run IDs.
 
 ## 6. Native domain routing and consent
 
@@ -208,7 +202,7 @@ After the user enables contribution, the runtime publisher uses the configured G
 
 ## 8. Closed-loop verification boundary
 
-End-to-end closed-loop verification exercises the real knowledge runtime, real domain corpora (`vllm-ascend` and `operators`), and the real RSI exploration module (`rsi_explorer`) across the three target scenarios:
+Current local verification exercises the knowledge runtime, both domain corpora and RSI planning/evaluation through the paths below. Native host distillation and NPU execution connections continue to be verified on concrete tasks.
 
 | Scenario | Verified closed-loop behavior |
 | --- | --- |
@@ -217,3 +211,15 @@ End-to-end closed-loop verification exercises the real knowledge runtime, real d
 | `fused-rmsnorm-gate` operator optimization | Consecutive L3 stalls escalate to L4 RSI; de-biased context strips L3 (`stripped_l3_ids`) and mounts L1/L2/L4 + `conditional_avoid`; parallel `npu_count: 0` CPU compiles + serial `devices: [0]` NPU timing; four-gate funnel; `experiment-ledger.jsonl` + `PROGRESS.md` persistence; Hermes distillation of supported candidates |
 
 A complete delivery records unit review, public repository merge, installation of the exact Feed revision by a client, and actual host-task completion of `query`, `explain`, feedback, and domain routing separately. Component tests, retrieval timings, and successful installation each support only their corresponding claims; version-level engineering productivity gains require matched comparisons under identical model and task conditions.
+
+## 9. Next connections and design references
+
+The next Hermes connection is a lightweight distillation prompt at a milestone confirmed by the native host, using the existing `knowledge_distill` inputs and `task_state=verified_milestone`. Experience on an existing topic should revise that unit first. The next RSI connection uses one TaskClient for the compile and timing queues and passes actual run results to the existing evaluator. Retrieval, model generation and resource coordination retain their existing component owners.
+
+These connections adopt established practices:
+
+- [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills): load procedures on demand and update skills from successful workflows, error recovery and user corrections.
+- [Anthropic's long-running harness](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents): continue from Git and a short progress file, completing a verifiable increment each time.
+- [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/): execute and score programs to select subsequent candidates, separating proposal generation from evaluation.
+
+Local debugging transcripts add two practical constraints: repair compilation failures at the implementation level, and apply a negative result only under the conditions that produced it. Existing run IDs, conditions, outcomes and next actions are sufficient for continuation.
