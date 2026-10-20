@@ -10,7 +10,7 @@
 | Python, component wheels and PyPI packages | uv invoked by plugin installers and updaters | Caller proxy, system trust, explicit CA and package indexes |
 | Gitleaks and DSH Release downloads | Python standard-library HTTPS | System trust, explicit CA and caller proxy |
 | Knowledge PRs and diagnostic Issues | Git and gh | Existing consent, gh login and service launch environment |
-| Kimi plugin API and DSH summary API | Python adapters | Direct loopback connection |
+| Knowledge RPC, Kimi plugin API and DSH summary API | Shared knowledge client and Python adapters | Direct loopback connection |
 | Bench model egress and local RPC | mindie-bench gateway and shims | Proxy and `NO_PROXY` for model egress; direct local RPC |
 | SSH uploads, downloads and artifact synchronization | remote-dev | SSH configuration and selected host/container |
 | Resource coordination and NPU observation | coordinator and npu-top | SSH and local APIs; remote Docker owns image-download networking |
@@ -22,7 +22,7 @@ Following [design principles](design-principles.en.md) 1, 8, 9, 10, 14 and 15:
 1. Enable system trust in native launch commands before uv downloads Python. Internal installers use the environment default supported by older uv versions and retain explicit `UV_SYSTEM_CERTS` and `UV_NATIVE_TLS` choices. Custom `SSL_CERT_FILE`, `SSL_CERT_DIR` and indexes remain effective. Kimi uses uv for both initial setup and updates instead of maintaining a separate ensurepip-dependent installer.
 2. Declare proxy, CA, package-index and gh configuration variables in the shared knowledge service context. Reuse the existing one-use context transfer. Installation configuration stores names; the process waking the service supplies values.
 3. Reuse the diagnostic service's environment-file mechanism. Automatically write selected proxy, CA and gh configuration paths into its private service directory, without copying API tokens. An explicitly configured file takes precedence. Refresh network settings while preserving consent and publication receipts. Kimi scheduled updates reuse this shared implementation, with explicit current caller values taking precedence.
-4. Use `ProxyHandler({})` for Kimi registration, DSH summaries, and Bench SSH, knowledge and replay RPC. Local operations must work without a caller-maintained `NO_PROXY`.
+4. Use `ProxyHandler({})` for knowledge's own RPC client, Kimi registration, DSH summaries, and Bench SSH, knowledge and replay RPC. Local operations must work without a caller-maintained `NO_PROXY`.
 5. Preserve publication outcomes. Never replay uncertain Git pushes, PRs, Issues or model calls. Retain certificate errors and use system or explicitly configured trust; never trust a certificate merely because a peer returned it.
 6. Route Bench model egress using the parent process's `HTTPS_PROXY` / `ALL_PROXY` and `NO_PROXY`. Reuse standard-library HTTP CONNECT and system TLS verification. Send proxy credentials only to the proxy, never to the provider or journal. Connect directly to local HTTP relays. Preserve streaming, metering, timeouts and no automatic retries. The current enterprise proxy uses `http://`; reject unsupported proxy protocols before model submission instead of silently connecting directly.
 
