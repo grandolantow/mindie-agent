@@ -38,11 +38,12 @@ Knowledge units are organized by **semantic `category`** (the `tier: L1..L4` fie
 
 ## 3. Foundational Baselines and Premise Inheritance (`_common` & `inherits_from`)
 
-### 3.1 Routing Index Construction and Inheritance Closure
+### 3.1 Routing Index Construction, Deep Hierarchical Subdivision, and Inheritance Closure
 
 `RoutingIndex.from_root(root)` scans `mindie-graded-unit/1` Markdown files under the repository root and computes each unit's `inherits_from` closure:
-- Every parent unit must exist; missing dependencies or cycles raise an immediate validation error;
-- At query time, each parent in the closure **independently checks its own applicability conditions** before its full body is injected into `inherited_rules`—premises are never truncated mid-rule.
+- **Arbitrary-depth hierarchical directory subdivision (`<domain>/<subdomain>/<topic>/<subtopic>/<unit_id>.md`)**: As cold-start corpora and operational experience grow, knowledge trees can be subdivided to arbitrary depth by operator family, compiler dialect, or failure mechanism. `query(..., domain_path=...)` natively supports prefix matching (`preferred_domain` boost) at any depth, and the shard planner (`shard_plan`) evaluates capacity at each leaf's immediate parent branch (`parts[:-1]`, with advisory thresholds of `25` units / `25,000` estimated tokens per leaf, `120` units per immediate parent subtree, and `5,000` units per federation), allowing deeper subdivision to naturally relieve directory growth;
+- **Strict inheritance graph validation**: Every parent unit must exist; missing dependencies or cycles raise an immediate validation error;
+- **Lossless premise injection**: At query time, each parent in the closure **independently checks its own applicability conditions** before its full body is injected into `inherited_rules`—premises are never truncated mid-rule.
 
 ### 3.2 Condition Matching and Automatic Baseline Mounting (`foundation_baseline`)
 
