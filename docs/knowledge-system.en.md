@@ -62,9 +62,13 @@ When a query provides hardware or repository `conditions`, any condition-matched
 
 Each query hit includes `id`, `revision`, `tier`, `category`, `evidence_strength`, `conditions`, `provenance`, `applicability`, `route`, `score`, and `inherited_rules`. Token budget is allocated to matched `L1` premises first before workflow excerpts, ensuring long workflows never crowd out essential hardware alignment or numerical parity rules.
 
-### 3.4 Exact Revision Inspection and Feedback
+### 3.4 Exact Revision Inspection, Subword Tokenization, and Declarative Retrieval Evaluation
 
 `GradedRepository.query` attaches `ref`, `unit_ref`, and `feedback_ref` to each hit and records the observed revision via `feedback.observe`. Agents can read the exact revision via `explain` and record `helpful` / `not_helpful` votes via `feedback.record_vote`.
+
+To balance exact API symbol matching with semantic recall, the retrieval engine incorporates **Ascend identifier subword tokenization and declarative retrieval evaluation** distilled from [CANNBot Knowledge](https://gitcode.com/cann/cannbot-knowledge):
+- **Compound symbol and subword dual indexing**: CamelCase, PascalCase, `snake_case`, and digit-boundary identifiers (such as `DataCopyPad`, `PipeBarrier`, `SetFlag`/`WaitFlag`, `GatedDeltaNet`, `Ascend910B4`, and `npu_fused_infer_attention_score`) are indexed both as full compound tokens and as constituent subwords (`data`, `copy`, `pad`), preserving exact-symbol boosts while preventing false misses on sub-concepts;
+- **Declarative retrieval evaluation harness (`evaluate_retrieval_suite`)**: Evaluates declarative test cases (`query`, `conditions`, `mode="standard"|"explore"`, `expected_unit_ids`, `forbidden_unit_ids`) in memory to compute **`Recall@K`**, **`MRR` (Mean Reciprocal Rank)**, **`foundation_baseline_rate`**, and `L3` stripping compliance under `mode="explore"`.
 
 ## 4. Experience Distillation and Cross-Task Reuse Loop
 
@@ -144,6 +148,7 @@ After each run, `append_ledger_and_render_progress` appends `experiment-ledger.j
 ## 8. Industry References
 
 MindIE Agent's knowledge loop and exploration workflow build on established engineering practices:
+- [CANNBot Ecosystem (`cannbot` / `cannbot-knowledge` / `cannbot-skills` / `cannbot-dsl` / `cannbot-sentry` / `cann-bench`)](https://gitcode.com/cann/cannbot): Ascend operator and inference knowledge governance (OKF v0.2 profiles, Ascend API subword tokenization, declarative retrieval evaluation), Ascend C synchronization auditing (`ascendc-sync-audit`), complex operator DSL patterns, dual-verification trajectory auditing (`sift` process compliance + result consistency), and Hardware-Anchored Performance (`HAP`) scoring.
 - [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills): loading operational procedures on demand and updating skills in place from verified fixes and user corrections.
 - [Anthropic's Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents): using Git and structured progress files (`PROGRESS.md` + experiment ledgers) to hand off state cleanly across fresh context windows.
 - [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/): decoupling candidate generation from deterministic execution and scoring to guide iterative optimization.

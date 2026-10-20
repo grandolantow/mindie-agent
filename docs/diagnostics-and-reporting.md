@@ -78,3 +78,18 @@
 - **有界磁盘占用**：本地日志严格限制单条记录与单个分片文件大小，并在日常周期性维护时自动清理过期分片（即使未开启远程上报也会自动清理旧日志）。
 - **保护活跃读写者**：日志轮转时会自动保护正在写入的进程和已登记的读取游标，绝不覆盖尚未读完的分片。
 - **不截断业务输出**：在 `remote-dev` 中，用户远端命令产生的 `stdout`/`stderr` 属于正式的作业输出产物（Artifacts），由作业生命周期完整保留，绝不会被当成诊断日志截断。
+
+---
+
+## 7. 确定性昇腾 NPU 与 CANN 故障分诊（`npu_fault_triage`）
+
+除记录工具自身诊断日志外，`diagnostics` 组件还内置了吸收自 [CANNBot Skills](https://gitcode.com/cann/cannbot-skills) 的**零模型依赖、确定性昇腾 NPU 运行时故障分诊器（`triage_npu_fault`）**，帮助 Agent 从容器或主机的报错日志中直接识别根因分类、提取标准错误码并给出对应的 CANN 原生取证工具命令：
+
+| 故障分类（`category`） | 典型 CANN / 驱动错误码与特征签名 | 关联的 CANN 确定性取证与恢复指引 |
+| --- | --- | --- |
+| **`aicore_exception`** | `EZ9999`、`507015`、`Aicore Error`、`BIU`/`MTE2`/`MTE3`/`VEC`/`CUBE` 异常位图、非法访存或除零越界 | 使用 `asys collect` 收集一键异常快照，调用 `msaicerr -i <dump_dir>` 解码故障寄存器，并结合 `npu-objdump` 映射出错 PC 指令与 UB/GM 32B 对齐边界 |
+| **`ascendc_sync_hazard`** | `SetFlag`/`WaitFlag` 配对失衡、`CrossCoreWaitFlag` 跨核等待挂死、分支内不等价流水屏障导致的 Stream 挂死（`507018`） | 静态执行 `ascendc-sync-audit` 核查分支对称性、循环跨拍双缓冲释放与 `HardEvent`（`MTE2_V` / `V_MTE3` / `MTE1_M` / `M_FIX`）配对完整性 |
+| **`hccl_comm_fault`** | `EI0002`（链路断开）、`EI0004`（拓扑不一致）、`EI0006` / `Notify Wait Timeout`、`HCCL_BUFFSIZE` 溢出或 Idle-DP 空批挂死 | 开启 `HCCL_ENTRY_LOG_ENABLE=1`，使用 `hccn_tool` / `npu-smi info -t topo` 核查 RoCE/HCCS/SIO 链路，或用 `HVM` 独立验证集合通信算子 |
+| **`device_oom`** | `EL0004`、`E80000`、`NPU out of memory`、`ACL_ERROR_RT_MEMORY_ALLOCATION` | 核查各 Rank 的 Workspace 峰值增量（`max_rank_workspace_delta_bytes`）、KV Cache 预分配比例及 GE 图内存复用配置 |
+| **`npugraph_compile_or_capture`** | `torch.npugraph_ex` Guard 失效、静态图 Capture 期间发生 Host-Device 同步或动态 Shape 符号推导失败 | 启用 `npugraph_ex` DFX 二分排查（Compile/Runtime/Perf Triage），固定静态 Bucket Padded Shape 并剥离 Capture 区间的动态流分配 |
+| **`device_hardware_or_driver`** | `507035`、ECC 多比特翻转、设备掉卡或驱动握手异常 | 执行 `asys check` 与 `msnpureport` 导出设备侧固件黑匣子日志，并通过 `coordinator` 隔离故障物理卡/Die |

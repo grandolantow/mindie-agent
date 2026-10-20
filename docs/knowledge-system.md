@@ -62,9 +62,13 @@ MindIE Agent 将可复用的昇腾研发经验组织为带适用条件、代码�
 
 每条检索命中返回 `id`、`revision`、`tier`、`category`、`evidence_strength`、`conditions`、`provenance`、`applicability`、`route`、`score` 与 `inherited_rules`。Token 预算优先保障匹配的 `L1` 前置约束完整返回，再分配给上层工作流正文；超出预算的条目记录在 `excluded_budget` / `budget_excluded` 中，确保长工作流不会挤掉关键的硬件对齐或数值精度前提。
 
-### 3.4 精确版本精读与有用性反馈
+### 3.4 精确版本精读、昇腾符号子词检索与声明式检索评测
 
 `GradedRepository.query` 为每条命中生成精确引用（`ref`、`unit_ref`、`feedback_ref`），并通过 `feedback.observe` 记录本次实际返回的 `unit_id` 与 `revision`。调用 `explain` 时按精确版本读取完整内容；执行任务后可通过 `feedback.record_vote` 提交 `helpful` / `not_helpful` 反馈，为后续修订提供依据。
+
+为兼顾精确 API 匹配与跨概念召回，检索引擎吸收了 [CANNBot Knowledge](https://gitcode.com/cann/cannbot-knowledge) 的**昇腾标识符子词切分（Subword Tokenization）与声明式检索评测**机制：
+- **复合符号与子词双轨索引**：针对 `DataCopyPad`、`PipeBarrier`、`SetFlag`/`WaitFlag`、`GatedDeltaNet`、`Ascend910B4`、`npu_fused_infer_attention_score` 等驼峰（CamelCase/PascalCase）、下划线与数字边界符号，在保留完整复合符号精确加权的同时自动拆分 constituent 子词（如 `data`、`copy`、`pad`），避免因大小写或复合词形态差异漏检；
+- **声明式检索评测套件（`evaluate_retrieval_suite`）**：支持按声明式用例（查询词、环境 `conditions`、`mode="standard"|"explore"`、期望命中 `expected_unit_ids`、禁出条目 `forbidden_unit_ids`）确定性度量 **`Recall@K`**、**`MRR`（平均倒数排名）**、**`_common` 基础约束挂载率（`foundation_baseline_rate`）** 以及探索模式下 `L3` 常规工作流的剥离完备率。
 
 ## 4. 经验提炼与跨任务复用闭环
 
@@ -144,6 +148,7 @@ flowchart LR
 ## 8. 业界实践参考
 
 本系统的知识组织与长程探索机制吸纳了以下成熟的社区工程实践：
+- [CANNBot 仓群（`cannbot` / `cannbot-knowledge` / `cannbot-skills` / `cannbot-dsl` / `cannbot-sentry` / `cann-bench`）](https://gitcode.com/cann/cannbot)：昇腾算子与推理优化领域的知识卡治理（OKF v0.2 Profile、昇腾 API 子词分词、声明式检索评测）、Ascend C 同步审计（`ascendc-sync-audit`）、复杂算子 DSL 范式、Agent 轨迹双重审计（`sift` 过程合规 + 结果一致性）与硬件锚定性能评分（`HAP`）。
 - [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载领域操作规程，并在成功排障或纠偏后原地演进已有技能文档。
 - [Anthropic Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：通过 Git 版本控制与结构化进度文件（`PROGRESS.md` + 实验台账）在多个独立上下文窗口之间接力推进长程研发任务。
 - [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)：将候选方案生成与确定性实验评估解耦，依靠编译、精度与实机计时结果筛选下一轮演进方向。

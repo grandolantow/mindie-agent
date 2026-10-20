@@ -198,6 +198,16 @@ flowchart LR
 | **`subgraph`** | 子图跨算子融合收益预判与并发关键路径核算 | `--dag <subgraph_dag.json>`, `--profile-report <analyze.json>`, `--candidate-fusion <fusion_spec.json>` | 可消除 GM 往返字节数、片上容量可行性、并发掩盖下的端到端理论省时区间 $[0, \Delta_{\max}]$ 与不可合原因 |
 | **`net`** | 整网与多维并行理论预测（含 `msmodeling` / `tensor_cast` 桥接） | `--model-spec <spec.json>`, `--parallel <dp_tp_ep_pp_dcp.json>`, `--provider-source <msmodeling_dir>` | 三值分离报告（`ideal_hardware_lower_bound_ms`, `model_predicted_ms`, `measured_device_ms`）及 Step/TPOT 分解 |
 
+### 5.1 硬件锚定性能评分（`HAP`）与 MFU / 带宽利用率闭环
+
+为解决传统加速比（Speedup）在基线较慢时虚高、无法反映候选算子逼近硬件物理极限程度的问题，`mindie-sim` 吸收了 [`cann-bench`](https://gitcode.com/cann/cann-bench) 的**硬件锚定性能（Hardware-Anchored Performance，`HAP`）**与 [`cannbot-skills`](https://gitcode.com/cann/cannbot-skills) 的 **`MFU` / Pipe 瓶颈归因**方法，将 `mindie-sim` 求解出的硬件理论时间下界 $T_{\text{HW}}$（`t_hw_us`）直接作为性能评分锚点：
+
+$$\text{HAP}_i = \frac{T_{\text{baseline},i} - T_{\text{HW},i}}{(T_{\text{cand},i} - T_{\text{HW},i}) + (T_{\text{baseline},i} - T_{\text{HW},i})}$$
+
+- **物理直觉与单调饱和特性**：当候选耗时退化（$T_{\text{cand}} > T_{\text{baseline}}$）时 $\text{HAP} \in (0, 0.5)$；与基线持平（$T_{\text{cand}} = T_{\text{baseline}}$）时 $\text{HAP} = 0.5$；优于基线（$T_{\text{cand}} < T_{\text{baseline}}$）时 $\text{HAP} \in (0.5, 1.0)$；逼近或超越硬件理论下界（$T_{\text{cand}} \le T_{\text{HW}}$）时 $\text{HAP} \ge 1.0$。
+- **异常锚点安全守卫**：当 $T_{\text{cand}} \le 0$、$T_{\text{HW}} \le 0$ 或分母 $(T_{\text{cand}} - T_{\text{HW}}) + (T_{\text{baseline}} - T_{\text{HW}}) \le 0$ 时，`compute_hap_score` 显式返回 `None`，绝不产出 $\pm\infty$ 或负分。
+- **联合输出 MFU 与受限 Pipe**：`evaluate_operator_hap` 同时返回算子在目标 SKU 上的理论下界 $T_{\text{HW}}$、主导受限单元（`cube_bound` / `vector_bound` / `mte_bound`）、实测算力利用率（`achieved_mfu`）、带宽利用率（`achieved_bw_utilization`）与 `hap_score`，直接供给 `mindie-bench` 与 `mode="explore"` 门禁决策。
+
 ---
 
 ## 6. 分级测试验收标准（遵循 [`testing-architecture.md`](testing-architecture.md)）

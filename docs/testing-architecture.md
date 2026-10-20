@@ -69,6 +69,12 @@ flowchart TB
 
 ### 3.4 Tier 3：宿主 CLI 与 `mindie-bench` Canary 闭环
 - 在 `mindie-bench` 中，测试套件聚焦于验证 Recipe 构建器、环境隔离（Source Projection / Worktree）、Verifier 判定逻辑、遥测计费对账与 Canary 任务实机闭环，确保评测基础设施本身严谨、快速且无死分支冗余。
+- **硬件锚定性能（`HAP`）与 L1–L5 算子复杂度评分**（吸收自 [`cann-bench`](https://gitcode.com/cann/cann-bench)）：
+  - 除传统加速比外，算子评测同步计算以 `mindie-sim` 硬件理论下界 $T_{\text{HW}}$ 为锚点的 $\text{HAP}_i = \frac{T_{\text{baseline},i} - T_{\text{HW},i}}{(T_{\text{cand},i} - T_{\text{HW},i}) + (T_{\text{baseline},i} - T_{\text{HW},i})}$ 以及综合得分 $\text{EachOperatorScore} = \left[w_c \delta_{\text{pass}} + \frac{1}{|\text{cases}|}\sum_i \delta_{\text{acc},i}(w_f + w_p \text{HAP}_i)\right] \times 100$（默认 $w_c=0.2, w_f=0.3, w_p=0.5$），并按 **L1（逐元素/激活）$\to$ L2（归约/归一化）$\to$ L3（矩阵乘/MoE/多维 Tiling）$\to$ L4（融合 Attention/序列状态）$\to$ L5（稀疏/动态控制流/Lightning Indexer）** 五级复杂度分层统计。
+- **Sentry 轨迹双重验证审计与六泳道归因**（吸收自 [`cannbot-sentry`](https://gitcode.com/cann/cannbot-sentry) 的 `sift` 与 `insight`）：
+  - **过程合规性审计（Process Compliance）**：校验 Agent 轨迹是否按声明契约执行了编译前置检查、隐藏输入泛化检验与多因子留一法消融，并附带 `step_index` 证据回链；
+  - **结果一致性审计（Result Consistency）**：核对 Agent 宣称的精度/加速结论与独立 Verifier 回执是否完全一致，拦截伪造或未验证的收益声明；
+  - **六泳道耗时与 Token 归因（Swimlane Attribution）**：按 `explore / design / code / compile / verify / distill` 六个工程阶段聚合调用次数、Token 消耗与墙钟耗时，支撑有/无知识库或不同版本间的精细化 A/B 对照。
 
 ---
 
