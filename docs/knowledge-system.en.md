@@ -6,6 +6,8 @@ MindIE Agent represents reusable engineering conclusions as knowledge units with
 
 The runtime lives in [`knowledge`](https://github.com/mindie-agent/knowledge). Domain content lives in [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) and [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators). See [Architecture](architecture.en.md) for ownership and [Harness Boundaries](harness-boundary-and-lifecycle.en.md) for consent and session identity.
 
+This document describes the three implemented loops: the **L1/L2 Foundation** that mounts condition-matched `_common` baselines and `inherits_from` premises; the **L3 Hermes self-evolution loop** that turns a verified milestone into a `reviewed_change` through `knowledge_distill` and reuses it through P3 queries with recorded feedback; and the **L4 RSI de-biased exploration engine** that strips routine L3 bias after consecutive L3 stalls and runs a CPU-parallel compile, serial-NPU-timing, four-gate funnel that writes `experiment-ledger.jsonl` and `PROGRESS.md`. Implemented, verified and still-design-only claims are marked separately.
+
 ## 1. Knowledge units and source materials
 
 | Content | Purpose | Authoritative content |
@@ -15,7 +17,7 @@ The runtime lives in [`knowledge`](https://github.com/mindie-agent/knowledge). D
 
 Task materials are extracted and redacted deterministically, then split into roughly 16KB blocks. A lightweight native model supplies titles, summaries and navigation without rewriting the source bodies. A graded unit may distill reviewed material, source code, specifications or experiment records into a new engineering conclusion. It must retain provenance and cannot present itself as a verbatim source or claim stronger evidence than its inputs support. Existing bodies and user consent are preserved; development formats are converted directly and derived indexes are rebuilt.
 
-`0.0.3` adopts the current format through a breaking refactor, without parallel compatibility paths for old clients or development snapshots. The single publication path and simpler references and digests below are requirements for this refactor. Runtime, content and plugin completion are tracked separately; editing this document does not establish implementation.
+`0.0.3` adopts the current format through a breaking refactor, without parallel compatibility paths for old clients or development snapshots. Runtime, content and plugin completion are tracked separately; editing this document does not establish implementation.
 
 ## 2. Tier describes use; evidence describes support
 
@@ -28,28 +30,165 @@ Task materials are extracted and redacted deterministically, then split into rou
 
 Tier is separate from confidence. `evidence_strength` records `hardware_spec`, `reproduced_empirical`, `single_observation` or `hypothesis`; L1 accepts only the first two. Compile failures, infrastructure failures, invalid measurements and unfinished runs cannot establish reproduced evidence. One successful observation does not establish a general rule.
 
-A unit uses a stable `id` and `revision`, with a title, domain path, category, conditions, triggers, inheritance and provenance. Source references reuse the repository, Git revision and file path; experiments reference existing run IDs and results. Callers do not compute additional digests for these identities or maintain separate SHA256 bindings for bodies, conditions, inheritance closures, manifests and entire trees. Existing fields such as `content_digest` and `source_digest` are simplified together with consumers in this refactor. Internal digests remain only where they provide actual content addressing or download integrity.
+A unit uses a stable `id` and `revision`, with a title, domain path, category, conditions, triggers, inheritance and provenance. Source references reuse the repository, Git revision and file path; experiments reference existing run IDs and results. Callers do not compute additional digests for these identities or maintain separate SHA256 bindings for bodies, conditions, inheritance closures, manifests and entire trees. Internal digests remain only where they provide actual content addressing or download integrity.
 
-## 3. Match conditions, then read exact references
+## 3. L1/L2 Foundation: `_common` baselines and `inherits_from`
+
+### 3.1 Index construction and inheritance closure
+
+`RoutingIndex.from_root(root)` scans `mindie-graded-unit/1` Markdown units under the domain root and skips derived or non-unit directories such as `index`, `docs`, `tasks` and `feedback`. Building the index also computes each unit's `inherits_from` closure:
+
+- every parent must exist; a missing dependency is an immediate error;
+- an inheritance cycle is an immediate error;
+- the closure is stored in stable order and shared by retrieval and `reviewed_change` validation.
+
+Inheritance therefore does not mean concatenating every parent body into the child at runtime. **Each parent independently matches its own conditions** before it is injected as a complete rule. A parent rule is never returned with its premises truncated.
+
+### 3.2 Condition matching and `foundation_baseline`
+
+`query(query, conditions=..., domain_path=..., token_budget=..., limit=...)` runs `match_conditions` independently for every candidate:
+
+- every declared condition must hold;
+- ordinary lists describe allowed alternatives;
+- `exact_set` binds a complete case collection so a shape from one workload cannot be paired with a dtype from another;
+- missing facts, uninterpretable versions and `unknown` values retain their reasons and are excluded from matched injection by default. `include_unknown=True` only exposes entries whose applicability is unknown; it does not make them matched.
+
+When a query supplies `conditions` and an L1 unit is not hit by the query terms but its conditions match, the index mounts it with `route == 'foundation_baseline'` if its path is `_common` (or the requested domain path). Each L1 is mounted once; if a higher-scoring matched unit already injects the same parent through `inherits_from`, it is not mounted twice. The baseline score is fixed at `0.05`; it means "the foundation premise is mounted", not relevance or confidence.
+
+This is why a cold query remains useful. For example, `conditions={'repository': 'vllm-ascend', 'npu_model': 'Ascend910B4'}` with completely novel query terms returns the two `_common` L1 units:
+
+- `unit-vllm-ascend-npu-runtime-and-graph-invariants`
+- `unit-vllm-ascend-verification-and-state-parity-gates`
+
+A cold operators query returns:
+
+- `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms`
+- `unit-ascend-operator-roofline-and-four-view-measurement`
+
+### 3.3 `inherited_rules` in query results
+
+Each result carries `id`, `revision`, `tier`, `category`, `evidence_strength`, `conditions`, `provenance`, `applicability`, `route`, `score` and `inherited_rules`. `inherited_rules` contains the complete bodies of closure parents that **independently match**. A parent that does not match appears in `inheritance_excluded` with its reason; a parent that does not fit the budget is marked `budget_excluded`. No rule is returned with a truncated premise. `body_token_estimate` covers body excerpts and inherited bodies only; it excludes response metadata and is not the actual token count of the host request.
+
+The current content relationships are:
+
+- vLLM-Ascend: `unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow` (L3) and `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation` (L2) both inherit the two `_common` L1 units. A complete-condition query for `Qwen3.5 GatedDeltaNet decode` returns L3, L2 and both L1 `inherited_rules`.
+- vLLM-Ascend: `unit-vllm-ascend-hybrid-recurrent-dp-state-hermes-workflow` (L3) and `unit-vllm-ascend-idle-dp-gdn-state` (L2, `reproduced_empirical`) also inherit both L1 units. A query with DP=2 and `affected_state` `conv_state`/`ssm_state` returns them.
+- Operators: `unit-rmsnorm-five-stage-ablation-workflow` (L3), `unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence` (L2) and `unit-residual-free-rmsnorm-fastpath` (L4) inherit the two `_common` L1 units.
+
+### 3.4 P3 reuse and feedback
+
+`GradedRepository.query` builds on `RoutingIndex.query` and adds `ref`, `unit_ref` and `feedback_ref` to every hit. It calls `feedback.observe` to record the `unit_id` and `revision` actually returned. `explain` reads that exact revision; a withdrawn or replaced revision is reported explicitly, without substituting bytes. `helpful` / `not_helpful` feedback goes through `feedback.record_vote` and binds the observed revision; votes alone do not establish correctness.
+
+## 4. The L3 Hermes self-evolution loop
 
 ```mermaid
 flowchart LR
-    Q["Question and observed environment facts"] --> D["Explicit configured domain"]
-    D --> C["Check all applicability conditions"]
-    C --> R["Lexical retrieval and domain ranking"]
-    R --> B["Budgeted excerpts and complete inherited rules"]
-    B --> E["Read and give feedback on a unit revision"]
+    Q["Task conditions and query"] --> F["L1 _common foundation_baseline"]
+    Q --> R["L2/L3 retrieval + inherits_from"]
+    R --> H["knowledge_distill"]
+    H --> V["mindie-distill-decision/1 validation"]
+    V --> C["mindie-reviewed-change/1"]
+    C --> P3["P3 query/explain + feedback"]
 ```
 
-Every declared condition must hold. Framework requirements are conjunctive. Ordinary lists describe allowed values; `exact_set` binds a complete case collection so a shape from one workload cannot be paired with a dtype from another. Missing facts, uninterpretable versions and `unknown` values retain their reasons and are excluded from matched injection by default. Explicitly requesting unknown entries does not make their conditions established.
+### 4.1 Trigger and evidence selection
 
-Conditions describe premises that can be checked before using the knowledge, such as source revision, hardware, framework, input and dtype. Reference patch, oracle and measurement report digests, and verification status, belong in evidence rather than retrieval prerequisites. Steps still to perform, a known fix and a reviewer's conclusion also do not belong in matching conditions.
+`knowledge_distill(inputs, task_state, domain=...)` is called only when the task reaches `verified_milestone` or `completed`; an ordinary Stop is not completion. The caller submits only selected, already-authorized evidence, and every item declares:
 
-Content import or modification checks units and inheritance, rejects missing dependencies and cycles, and builds the local routing index. Queries use that index without revalidating the entire tree. Each inherited unit must independently match the task. If a parent rule does not fit the budget, its omission is reported rather than returning a rule with its premises truncated. The current budget estimates tokens from UTF-8 bytes and covers body excerpts and inherited bodies only. It excludes response metadata and is not the actual token count of the entire host request.
+- `kind`: `experiment_ledger`, `run_manifest`, `authorized_transcript`, `ecosystem_repo`, `hardware_spec` or `ablation_receipt`;
+- `outcome`: `observed`, `verified`, `compile_failed`, `infra_failed`, `measurement_invalid` or `in_flight`;
+- `source_locator`, body, `evidence_refs` and repetitions.
 
-The target read and feedback interface uses the unit ID and revision returned by `query`. `explain` reads that revision; a withdrawn or unavailable revision is reported explicitly so the caller can query again. Existing digest references change with this interface, without an old-reference compatibility layer. Optional `helpful` / `not_helpful` feedback records the revision actually used; votes alone cannot establish correctness.
+`prepare_request` redacts the selected evidence once with Gitleaks and deterministic privacy rules, producing a `mindie-distill-request/1` with a `request_digest`. `value_gate` returns `noop` for `in_flight` or empty input, producing no unit.
 
-## 4. Native domain routing and consent
+### 4.2 Decision validation and local admission
+
+`build_prompt` hands the redacted evidence and the `mindie-distill-decision/1` output schema to the native model. The model may propose new units, revisions or `noop`. `parse_validate_result` / `validate_decision` validate locally:
+
+- the decision binds the same `session_digest` and `evidence_inputs`;
+- unit `provenance.source_locator`, `source_digest` and `evidence_refs` must bind to the selected evidence; no source may be invented;
+- `evidence_strength` cannot exceed the evidence: L1 accepts only `hardware_spec` / `reproduced_empirical`; `reproduced_empirical` needs repeated `verified` evidence; L4 also needs a baseline-bound ablation receipt whose final combination is verified;
+- `tier` / `category` must describe the same use.
+
+`apply_decision` performs local admission only. It does not open a PR, write a remote or trigger publication.
+
+### 4.3 `reviewed_change` review and application
+
+A reviewed change uses the `mindie-reviewed-change/1` plan:
+
+- `base_generation` must equal the corpus generation seen at review time; a corpus changed after review is rejected;
+- every change supplies a stable `id`, `expected_revision`, complete unit bytes and a `review_reference`;
+- a new unit starts at revision 1; a semantic body change advances the revision; a location-only move retains it;
+- `prepare_change` projects the complete inheritance graph in memory and rejects missing dependencies, cycles, path conflicts and stale revisions;
+- `apply_change` validates before the first write, writes atomically and rebuilds the routing index. It does not commit, push or publish.
+
+### 4.4 Verified loop
+
+This deterministic end-to-end verification exercised two Hermes paths in a sandbox copy of `knowledge-vllm-ascend`:
+
+1. **Qwen3.5-0.8B 0day bring-up**: distilled L2 `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation` from revision 2 to revision 3. `apply_change` returned `applied`; the P3 query hit revision 3; `feedback.observe` + `record_vote` recorded that revision.
+2. **k3-gdn-idle-dp-state diagnosis**: created the L2 milestone unit `unit-vllm-ascend-idle-dp-gdn-state-milestone` (revision 1) inheriting both L1 units. The P3 query hit the new unit and recorded feedback.
+
+Both paths used the real `prepare_request` redaction, `build_prompt`, `parse_validate_result` validation and `reviewed_change` writes. The model call was replaced by a deterministic reviewed decision; no paid model was invoked.
+
+## 5. The L4 RSI de-biased exploration engine
+
+The implementation lives in [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench) with contract version `mindie-bench-rsi/1`. It converts a routine L3 optimization stall into one auditable L4 exploration instead of repeating the same L3 heuristic.
+
+### 5.1 L3 stall detection
+
+`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` inspects each L3 attempt:
+
+- Gate 1 (compile / oracle) failed;
+- Gate 2 (measurement guard) failed;
+- no measured speedup, or speedup below the target (default `1.05`);
+- `gate_reached < 4`.
+
+Escalation requires `max_stalled_attempts` consecutive stalls; a healthy attempt in between resets the count. It returns `(bool, reason)` and preserves the specific gate and measured value in the reason.
+
+### 5.2 De-biased context
+
+`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=...)` enforces:
+
+- **L3 unit bodies never enter the L4 context**; only their IDs survive in `stripped_l3_ids`, with `stripped_tiers == ["L3"]`;
+- mount the L1 Foundation (the `foundation_baseline` field is retained and may carry a cold-query baseline), L2 bottleneck observations and L4 mutators;
+- an L3 parent inside `inherited_rules` is likewise not mounted;
+- `conditional_avoid` comes only from `verdict == "refuted"` ledger entries; supported candidates do not create avoid rules;
+- the output reports `mounted_tiers == ["L1", "L2", "L4"]` and keeps flat `foundation_axioms`, `measurement_rules` and `inherited_rules` fields for consumers.
+
+In the `fused-rmsnorm-gate` verification, the real query's L3 `unit-rmsnorm-five-stage-ablation-workflow` was stripped. L1 `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms` and `unit-ascend-operator-roofline-and-four-view-measurement`, L2 `unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence`, L4 `unit-residual-free-rmsnorm-fastpath` and the refuted candidate's `conditional_avoid` were mounted.
+
+### 5.3 Compile and timing schedule
+
+`plan_rsi_compile_and_timing(candidates, npu_device=0, max_compile_slots=3)` produces two phases:
+
+| Phase | Parallel | Resources | Rule |
+| --- | --- | --- | --- |
+| `compile` | yes | `npu_count: 0` | Up to `max_compile_slots` CPU-only compiles, split into waves; `CoordinatorService` is the single progress owner |
+| `timing` | no | `devices: [0]` | Serial, exclusive NPU timing only for candidates with a proved compile |
+
+Candidates with a missing or failed compile proof appear in `skipped_candidates` with `compile_proof_missing` / `compile_proof_not_succeeded`. `state_dir` is deterministically derived from candidate IDs, device and slot count for replay.
+
+### 5.4 Four-gate funnel and persistence
+
+`evaluate_rsi_candidate_gates` checks, in order:
+
+1. **Gate 1**: compile and oracle / correctness freezer;
+2. **Gate 2**: measurement guard (synchronization, warmup, valid measurement);
+3. **Gate 3**: leave-one-out ablation attribution retained;
+4. **Gate 4**: speedup reaches the target (default `1.05`).
+
+All four passing yields `supported` with `distill_ready == true`; any failure yields `refuted` with a `conditional_avoid` carrying the `candidate_id` and failure reason. Every entry has a deterministic `run_id` and `gate_reached`.
+
+`append_ledger_and_render_progress` appends `experiment-ledger.jsonl` and atomically replaces a deterministic `PROGRESS.md`:
+
+- "Best Supported Candidate" is the supported entry with the highest speedup;
+- "Active Hypotheses" lists supported candidates;
+- "Refuted Directions" lists the `conditional_avoid` rules of all refuted entries.
+
+The operators verification used three candidates: refuted `oversized_fused_tile` (Gate 2), refuted `dispatch_registration_only` (Gate 4) and supported `native_residual_free_fastpath` (`1.6767473221869322x`). All three compile items were `npu_count: 0` in one parallel wave; timing items were serial on `devices: [0]`; the three ledger rows and `PROGRESS.md` were written. The supported result was then distilled through Hermes into a reviewed L2 unit in the operators domain.
+
+## 6. Native domain routing and consent
 
 Explicit `domain_configs` bind each domain to its storage, Feed and configuration. Registration makes a domain selectable; it does not enable capture or contribution, load every domain into a session, or copy another domain's consent. Cross-domain reuse uses declared configuration and references while preserving provenance and conditions.
 
@@ -57,15 +196,7 @@ Capture processes only the verified current task within an authorized project. T
 
 Source materials, local drafts, reviewed public units and feedback serve different purposes. Public content carries admitted bodies and source identities; local paths, private run directories and credentials cannot serve as public evidence links.
 
-## 5. Distillation, review and revisions
-
-Distillation receives a selected set of sources and evidence. The model can propose units or revisions, or return no change when evidence is inadequate. Code validates citations, evidence strength, conditions and the inheritance graph. Proposals cannot introduce unprovided sources or promote failed experiments to reproduced evidence.
-
-`reviewed_change` checks and applies reviewed changes. New units start at revision 1; content changes increase the revision; location-only moves retain it. Review records reference the actual review conclusion without adding signature or digest proof chains. Applying C6 locally updates local content only. Opening a PR, merging remotely and synchronizing a client remain separate steps.
-
-Updates and withdrawals check affected inheritance relationships. Revision history reuses the content repository. A rollback restores a known revision and rebuilds the index. Failed experiments retain their actual outcomes.
-
-## 6. Feed publication and consumption
+## 7. Feed publication and consumption
 
 Graded Feeds use the current content format. Synchronization reads one Git revision, parses units and checks their actual references, then builds the local index before switching the installed collection. Format and body read failures are reported directly. A fixed contract-file SHA256 is not a compatibility switch, and content already identified by Git does not acquire additional layers of digest admission.
 
@@ -75,4 +206,14 @@ Markdown is authoritative; routing and retrieval indexes are rebuildable. SQLite
 
 After the user enables contribution, the runtime publisher uses the configured GitHub channel to open or update a target corpus PR; the existing publisher uses `gh`. Installation does not require a Star or Fork. A personal Fork is prepared when contribution to that corpus requires it. An uncertain remote write is reconciled through reads before any retry.
 
-Delivery records unit review, public merge, installation of the exact Feed revision and actual native-host use of `query`, `explain`, feedback and routing as separate outcomes. Unit tests, retrieval timings and successful installation support their respective claims. Version-level engineering benefit requires a separate comparison under matched models and task conditions.
+## 8. Closed-loop verification boundary
+
+End-to-end closed-loop verification exercises the real knowledge runtime, real domain corpora (`vllm-ascend` and `operators`), and the real RSI exploration module (`rsi_explorer`) across the three target scenarios:
+
+| Scenario | Verified closed-loop behavior |
+| --- | --- |
+| `Qwen/Qwen3.5-0.8B` 0day adaptation | Cold-query `foundation_baseline` mounting `_common` L1 axioms; targeted L3 + L2 + L1 `inherited_rules` retrieval; Hermes distillation producing a new `revision`; P3 downstream query and `knowledge_feedback` |
+| `k3-gdn-idle-dp-state` issue diagnosis | DP=2 / `Ascend910_93` conditioned query returning the L3 Hermes workflow + `reproduced_empirical` L2 + L1 foundation; milestone distillation and P3 feedback |
+| `fused-rmsnorm-gate` operator optimization | Consecutive L3 stalls escalate to L4 RSI; de-biased context strips L3 (`stripped_l3_ids`) and mounts L1/L2/L4 + `conditional_avoid`; parallel `npu_count: 0` CPU compiles + serial `devices: [0]` NPU timing; four-gate funnel; `experiment-ledger.jsonl` + `PROGRESS.md` persistence; Hermes distillation of supported candidates |
+
+A complete delivery records unit review, public repository merge, installation of the exact Feed revision by a client, and actual host-task completion of `query`, `explain`, feedback, and domain routing separately. Component tests, retrieval timings, and successful installation each support only their corresponding claims; version-level engineering productivity gains require matched comparisons under identical model and task conditions.
