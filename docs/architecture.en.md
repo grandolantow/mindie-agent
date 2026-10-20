@@ -1,102 +1,78 @@
-# MindIE Agent Architecture & Module Boundaries
+# MindIE Agent Architecture and Ownership
 
-[中文](architecture.md) · [Back to Documentation Center](README.en.md)
+[中文](architecture.md) · [Documentation](README.en.md)
 
-This document explains what MindIE Agent does, how its repositories are organized, and how remote Ascend execution, the knowledge & experience loop, NPU observability, and fault diagnostics work together.
+MindIE Agent adds Ascend knowledge, remote execution, resource coordination and diagnostics to existing coding agents. The `0.0.3` delivery scope prioritizes **vLLM-Ascend and operators** across model 0day development, performance optimization for a fixed model or operator case, and issue diagnosis. Broader inference infrastructure remains an extension path and must not be counted as completed coverage for this release.
 
-- For task identity and lifecycle rules, see [Harness Boundary & Lifecycle](harness-boundary-and-lifecycle.en.md).
-- For knowledge package format and search design, see [Knowledge & Experience System](knowledge-system.en.md).
-- Every component is governed by the [Engineering Design Principles](design-principles.en.md).
-- For current paired component versions and benchmarks, see the [`0.0.2` Release Notes](releases/0.0.2.en.md) (initial release: [`0.0.1`](releases/0.0.1.en.md)).
+This document describes ownership and implementation boundaries. [Release records](README.en.md) identify formal versions, exact sources and measured results. See [Knowledge](knowledge-system.en.md), [Harness Boundaries](harness-boundary-and-lifecycle.en.md) and [Design Principles](design-principles.en.md) for their respective contracts.
 
----
-
-## 1. Product Scope & Trigger Modes
-
-MindIE Agent targets the **Ascend NPU AI Infra workflow—spanning architecture design, feature development, operator implementation, and testing/verification**—by extending existing coding CLIs (**Claude Code**, **OpenAI Codex CLI**, **Kimi Code**, **DeepSeek Harness**) with domain knowledge retrieval, remote container execution, and privacy-redacted experience capture.
-
-- **No reinvented wheels**: We do not ship a proprietary foundation model, replace your host's conversation UI, or take over your source code repository. You work inside your existing terminal and business codebase.
-- **Two clear trigger modes (Manual On-Demand vs. Default Auto-Triggered)**:
-  - **Manual `/mindie-agent` Trigger (Knowledge, Experience & Skill System)**: When designing features, troubleshooting Ascend workloads, adapting operators, or tuning inference, type `/mindie-agent` (or `$mindie-agent` in Codex; DSH uses its native `/mindie-agent` user gesture) followed by your problem description to invoke the Ascend Skill workflow, search historical experience packages, and bind the session's experience loop—staying out of the way during ordinary non-Ascend coding.
-  - **Default Auto-Trigger for `remote-dev` (Remote Ascend Execution)**: `remote-dev` is registered as an always-ready MCP server. Whenever you mention a remote host, container, or NPU command in normal conversation, your Agent automatically invokes `remote-dev` for remote file I/O, patching, and background job execution without needing a slash command.
-- **Configure once, persist across sessions**: After setting your unified contribution preference, public target repository, and project scope once, eligible tasks associate automatically. Historical experience is advisory reference material for the Agent—never a mandatory step.
-- **Prerequisite: Authenticated GitHub Channel (`gh` CLI) & Two-Stage On-Demand Fork Policy**: Plugin marketplace fetches, locked release verification, `knowledge-vllm-ascend` sync, automated knowledge PR publication (via `gh api` and `!gh auth git-credential`), and opt-in fault reporting all use an authenticated `gh` (GitHub CLI) channel. Installation does not require a Star or a Fork. When the user enables contribution to a target knowledge repository, create or reuse its personal Fork and bind `fork` (`<GH_USER>/<repo>`) for publishing. Stars are optional.
-- **Current coverage & roadmap**: Current knowledge packages and Skills focus on `vLLM` / `vLLM-Ascend` feature development and testing as well as `AscendC` / `Triton` operator engineering, with broader Ascend software stack domains expanding over time.
-
----
-
-## 2. Repository & Component Ownership
-
-MindIE Agent uses a decoupled architecture across **native Harness plugins**, **shared runtime components**, and **open Markdown knowledge repositories**:
-
-| Component / Repository | Core Responsibility |
-| --- | --- |
-| [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) (this repo) | Overall architecture, domain boundaries, engineering design principles, cross-component contracts, and unified release records (documentation only, no runtime code) |
-| [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc), [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex), [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi), [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | **Native Harness Plugins (`v0.0.2`)**: Host task identity verification, first-time setup, Hook bridging, public conversation projection, native lightweight model invocation, plugin installation, and silent background updates |
-| [`knowledge`](https://github.com/mindie-agent/knowledge) | **Knowledge & Experience Engine (`v0.12.2`)**: Durable admission cursors, deterministic privacy redaction, task package assembly, `TechnicalTokenizerV1`-based ReMe lexical & file-graph search (BM25 + `StrictFileGraph` + citation lineage merging), usefulness feedback, and automated PR creation |
-| [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) | **Public Domain Knowledge Corpus**: Reviewed, redacted `vLLM-Ascend` Markdown knowledge packages distributed via GitHub for incremental client sync |
-| [`remote-dev`](https://github.com/mindie-agent/remote-dev) | **Remote Ascend Execution Substrate (`v0.10.1`)**: SSH-backed remote twins for file I/O, AST/symbol outlines, line-scoped editing, patching, grep/glob search, managed long-running background jobs, cancellation, and artifact syncing—compatible with local tool schemas across 6 Harnesses (Codex, Claude Code, Cursor, Kimi Code, DSH, Antigravity) and consuming `coordinator`'s `endpoints.json` |
-| [`coordinator`](https://github.com/mindie-agent/coordinator) | **Remote Ascend Environment & Lease Manager (`v0.5.2`, Agent-Facing, Standalone Install)**: Owns the shared machine inventory (`machines.json` -> auto-synced `endpoints.json`), SSH key bootstrap & multi-node container mesh (`mindie_hosts`), container binding & provisioning (`mindie_container`), agentless NPU/server/mount probing & capacity ranking (`mindie_probe`), NPU/port lease coordination (`mindie_lease`), and Git-snapshot task execution (`mindie_run`) |
-| [`npu-top`](https://github.com/mindie-agent/npu-top) | **Visual Cluster Telemetry Dashboard (`v0.1.9`, Human-Facing, Standalone Install)**: Reads `coordinator`'s `machines.json` to serve a live local Web UI (`127.0.0.1:8788`) and 90-day SQLite utilization heatmaps |
-| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | **Structured Diagnostics & Fault Reporting (`v0.4.3`)**: Bounded local structured logs, actionable fault IDs, and deduplicated GitHub Issue reporting controlled by the unified contribution switch |
-| [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | **Evaluation & Release Benchmark Harness (`v0.2.0`)**: End-to-end task evaluation sandbox, per-release repository benchmark runner, and ten-repository report collector |
-
-**Bundled vs. Standalone Boundary**: The four host plugins bundle and register `knowledge`, `remote-dev`, and `diagnostics`, while keeping host-specific session identity and transcript extraction inside each adapter. `coordinator` and `npu-top` are installed standalone on demand. Product release records aggregate versions, exact source SHAs, and benchmark reports across all ten code repositories; see [Paired Component and Plugin Releases](release-compatibility-and-update.en.md#paired-component-and-plugin-releases).
-
----
-
-## 3. The Knowledge Capture & Experience Reuse Loop
-
-How does a hard-won Ascend debugging session become reusable community knowledge without leaking private data or slowing down your terminal?
+## 1. Native hosts and shared components
 
 ```mermaid
-flowchart LR
-    A["Everyday Ascend Engineering Session"] --> C{"Experience sharing enabled for this project?"}
-    C -->|Not configured or disabled| R["Return clear status only when queried"]
-    C -->|Configured and enabled| H["Fast Stop Hook<br/>Commits task cursor in milliseconds"]
-    H --> L["Extract public dialogue & run deterministic redaction<br/>Save 16KB-chunked immutable Markdown blocks"]
-    L --> M["Host's lightweight native model generates block titles,<br/>summaries & short task navigation (tasks/&lt;32-char task hash&gt;/index.md)"]
-    M --> P["Assemble complete task package<br/>Automatically open GitHub PR"]
-    P --> B["Grok Bot reviews safety & compliance"]
-    B --> K["Merge into public corpus<br/>(knowledge-vllm-ascend)"]
-    K --> S["Clients incrementally sync & rebuild local search index"]
-    S --> N["Future tasks search & read relevant<br/>historical blocks on demand"]
-    N -.-> F["Optionally submit helpful / not_helpful<br/>feedback after real use"]
-    F -.-> B
+flowchart TB
+    H["Codex / Claude Code / Kimi Code / DSH"] --> P["Native host plugins"]
+    P --> K["knowledge: routing, retrieval and capture"]
+    P --> R["remote-dev: files, commands and managed jobs"]
+    P --> D["diagnostics: local logs and optional reporting"]
+    K <--> F["vLLM-Ascend / operators repositories"]
+    T["Optional TaskClient / coordinator installation"] --> Q["Machines, containers, devices and port leases"]
+    Q --> R
+    R --> N["Remote hosts and NPU containers"]
+    M["Optional npu-top installation"] -.-> N
+    B["mindie-bench"] --> T
+    B --> H
 ```
 
-### Why This Loop Is Both Safe and Fast
+Each plugin preserves its host's sessions, tools, model calls and lifecycle. `/mindie-agent` provides an explicit domain entry point; Codex also supports `$mindie-agent`. Registered `remote-dev` tools can be used directly as the task requires. Configured current-task capture follows lifecycle events without a per-task activation ritual. Actual configuration and project consent determine capture and public contribution.
 
-1. **Honest, distinct states**: Unconfigured, explicitly disabled, out-of-scope project, and component fault are reported as four distinct states—never disguised as "succeeded with empty output."
-2. **Millisecond Stop Hooks**: When a turn finishes, the Stop Hook simply records a lightweight durable admission cursor in SQLite and exits immediately with neutral output so it never blocks your terminal or triggers extra model turns.
-3. **100% deterministic body redaction; small models only build the table of contents**:
-   - Saved blocks contain only **user input**, **public assistant progress**, and **final answers** (stripping raw tool payloads, hidden reasoning traces, and system prompts). Before touching disk or any model, Gitleaks and deterministic privacy rules strip secrets, private IPs, SSH `user@host` strings, and local home paths.
-   - The adapter's lightweight native model **only generates titles, search summaries, and the `tasks/<32-char task hash>/index.md` outline—it never rewrites or truncates the primary conversation blocks**.
+Plugins depend on `knowledge`, `remote-dev` and `diagnostics`. `coordinator` and `npu-top` are separate, optional installations. Host adapters own protocol compatibility.
 
----
+## 2. Repository ownership
 
-## 4. Knowledge Package Format & Local State Protection
+| Repository | Responsibility |
+| --- | --- |
+| [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) | Architecture, domain boundaries, entry documentation, cross-repository contracts and release records; no runtime bootstrap, MCP server or dependency lock |
+| [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex), [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc), [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi), [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | Native session identity, Hook bridges, public transcript projection, lightweight host model integration, installation and component pins |
+| [`knowledge`](https://github.com/mindie-agent/knowledge) | Consent and capture state, redaction, task materials, graded units, conditional retrieval, domain routing, exact references, feedback and publication queues |
+| [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend), [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) | Domain bodies, provenance, applicability, validated Feeds and derived routing indexes; content revisions are independent of runtime versions |
+| [`remote-dev`](https://github.com/mindie-agent/remote-dev) | SSH file access, precise edits, search, patches, commands, managed jobs, cancellation and artifact synchronization |
+| [`coordinator`](https://github.com/mindie-agent/coordinator) | Machine and container inventory, probing, NPU and port leases, shared queues, managed task identity, resource cleanup and execution endpoints |
+| [`npu-top`](https://github.com/mindie-agent/npu-top) | Human-facing cluster observation and bounded history; reads machine inventory and does not schedule tasks |
+| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | Bounded structured logs, actionable fault identifiers and authorized allowlisted reporting |
+| [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | Fixed tasks and oracles, isolated host runs, actual outcomes and costs, component benchmarks, cross-task reuse and release verification |
 
-Tracked locally via `current.json` dual-channel pointers (`draft` / `feed`), every task package is stored under `tasks/<32-char task hash>/` using plain, readable Markdown:
-- `index.md`: Top-level `mindie-material-task/1` manifest (embedding the `mindie-entry/3` navigation directory) containing the overall task summary, applicability `conditions`, and an ordered table of blocks.
-- `blocks/<64-char block hash>.md`: Immutable, 16KB-chunked conversation blocks (`mindie-material-block/1`). When searching, an Agent inspects `index.md` first and loads only the specific block(s) it needs rather than flooding its context window with an entire transcript.
+The product release record aggregates versions, source SHAs and benchmark artifacts across ten code repositories. Domain content has separate repository revisions. A new code tag does not prove that content was published or consumed. See [Paired Releases](release-compatibility-and-update.en.md#paired-component-and-plugin-releases).
 
-Under the hood:
-- **Markdown files are the sole source of truth** for content;
-- **SQLite** stores compact cursors, queues, consent bindings, and external operation receipts;
-- **ReMe** maintains a derived search index built on `TechnicalTokenizerV1` (tailored for Ascend/vLLM technical identifiers), combining **BM25 lexical search + Markdown heading/file graph (`StrictFileGraph`) + citation lineage merging** (`blocks.sqlite3` incremental checkpoints, without requiring heavy local Embedding vector computation) that can be rebuilt from the Markdown files at any time. If SQLite is missing or corrupted, the runtime reports a clear error while preserving all existing Markdown files rather than treating the error as a "fresh install" and wiping local data.
+## 3. Remote task execution and completion
 
----
+Native sessions attach to managed tasks through an explicit client, session identity and TaskClient. Tasks prepare their environment, select resources and acquire leases as needed, then execute through `remote-dev` on the declared host and container. Agents share queues and resource inventory. A3 physical-device and dual-Die mappings follow actual probe results; an arbitrary logical device number does not establish whole-card ownership.
 
-## 5. Usefulness Feedback & Corpus Evolution
+Run Manifests record execution facts: source and configuration identity, environment, inputs, resources, steps, state, timing and artifact references. Hypothesis judgments, benefit attribution and knowledge conclusions are separate interpretations. A successful command supports that command's result. Process draining, lease release, port cleanup and workspace cleanup need their own outcomes.
 
-After consulting a knowledge package in a real task, an Agent can optionally submit `helpful` or `not_helpful` feedback:
-- Feedback is an advisory signal, not a certification of absolute truth, and skipping feedback is completely fine.
-- When `vLLM-Ascend` or CANN evolves and an older workaround becomes obsolete, `not_helpful` feedback gives maintainers and automated review a clear signal to update or retire that entry while preserving Git history.
+After a connection interruption, query the original task ID first. Cancellation and recovery preserve that identity instead of replaying work that might still be running. Preparation, execution and cleanup have explicit budgets, with outer waits covering inner budgets and cleanup time. Preserve `completed`, `failed` and uncertain external writes as distinct outcomes. A local receipt failure must not erase a successful remote result.
 
----
+## 4. Knowledge in a new task
 
-## 6. Silent Background Updates & Fault Diagnostics
+Graded units express rules, procedures, workflows or transformations; task materials preserve their sources. Explicit domain configuration selects content. Retrieval checks every applicability condition and returns matched units and complete inherited rules within a body budget. Missing facts remain unknown, even when keywords look relevant.
 
-- **Compatibility-checked silent updates**: Each plugin Release declares its verified Harness version range in `harness-compatibility.json`. Once 24 hours have elapsed since the last check, routine use asynchronously prepares the highest compatible Release in an isolated `uv` environment and switches atomically when the service is idle—preserving your existing consent settings without manual reloads. See [Release Compatibility & Silent Update](release-compatibility-and-update.en.md).
-- **Structured logs and one contribution switch**: Components write bounded local structured logs. The installation profile's contribution switch controls both knowledge sharing and fault reporting. Once explicitly enabled, fault reporting uploads only allowlisted execution metadata (component, version, stage, error category, duration, exit code) and **never includes transcripts, command arguments, file paths, or credentials**. Disabling stops both outgoing paths while local logs and remote development remain available. See [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md).
+Reads and feedback bind exact content digests. Updates, withdrawals, Feed synchronization and local rollback validate the complete reference graph. Old references never silently point to new bodies. Retrieval indexes are rebuildable; Markdown remains authoritative.
+
+Authorized public task projections are redacted before storage and navigation generation. Newly distilled conclusions retain provenance and require review. Public contribution follows the user's configuration. Domain registration, successful retrieval, capture and contribution are separate states; routing cannot copy consent or enable outbound publication.
+
+## 5. Acceptance for the three scenarios
+
+| Scenario | Objects to fix and verify |
+| --- | --- |
+| Model 0day development | Starting source, model and weight revisions, a compatible environment, the complete selected inference chain, an independent numerical reference and predeclared acceptance criteria; a CPU reference does not establish NPU acceptance |
+| Fixed-case performance optimization | Fixed inputs and software/hardware conditions, correctness checks, a comparable baseline and optimized result; operator or component timings support only that measured scope |
+| Issue diagnosis | A reproducible fault, diagnosis, behavior before and after the fix, and resource cleanup; source interpretation and actual runtime observations remain distinct |
+
+Component tests check interfaces and local behavior. Live NPU runs check concrete tasks in concrete environments. Four-host acceptance checks formal plugin installation and native tool consumption. These forms of evidence do not substitute for one another or imply coverage of every host/device/task combination.
+
+Version comparisons hold the model, task, environment, budget and benchmark revision constant across a no-plugin baseline, the previous formal release and the current formal combination. Record task success, completion time, model usage, human intervention and cross-task reuse. Reuse additionally retains the source task, frozen knowledge, an unexposed downstream task family and costs for each stage. Missing and unknown results remain visible; component microbenchmarks cannot be converted into overall productivity gains.
+
+## 6. Releases, updates and diagnostics
+
+Plugins pin actual dependency artifacts. Compatibility records identify the host and component objects that were verified. Formal publication, candidate tests, isolated installation and upgrades to a user's daily configuration are separate outcomes. Publishing a release does not make an existing user installation a verified instance.
+
+Background updates follow compatibility selection, environment preparation and idle switching; see [Release Compatibility](release-compatibility-and-update.en.md). Knowledge sharing and fault reporting follow the active installation's contribution settings. Disabling outbound reporting preserves local diagnostics and remote execution. Reports accept allowlisted facts only and exclude transcripts, command arguments, machine paths and credentials. See [Diagnostics](diagnostics-and-reporting.en.md).

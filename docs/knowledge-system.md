@@ -1,95 +1,76 @@
-# 知识与经验闭环设计（Knowledge & Experience System）
+# 知识与经验系统
 
 [English](knowledge-system.en.md) · [返回文档中心](README.md)
 
-本文介绍 MindIE Agent 如何将开发者在昇腾（Ascend）NPU 上的真实排障与开发过程转化为可复用的结构化知识包，同时保障本地隐私安全与检索效率。
+MindIE Agent 把可复用的工程结论组织为带适用条件、来源和版本的知识单元，同时保留脱敏后的原始任务材料供追溯。`0.0.3` 的交付范围集中在 **vLLM-Ascend 与算子两个领域**，服务于模型 0day 开发、固定 case 的模型或算子性能优化、问题定位三个场景。其他领域可以通过同一接口扩展，是否已完成内容建设和实际验收应分别查看发布记录。
 
-- 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
-- 核心引擎仓库：[`mindie-agent/knowledge`](https://github.com/mindie-agent/knowledge)
-- 公共领域语料库：[`mindie-agent/knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)
+运行时由 [`knowledge`](https://github.com/mindie-agent/knowledge) 维护；领域内容分别放在 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 与 [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)。整体职责见[系统架构](architecture.md)，授权及会话边界见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)。
 
----
+## 1. 知识单元与原始材料
 
-## 1. 为什么这样设计？（五大核心理念）
+两类内容承担不同职责：
 
-1. **保留原汁原味的排障正文，绝不用摘要代替正文**
-   - 很多经验系统喜欢让大模型把一次排障改写成几句话的“总结”，结果把最关键的报错栈、寄存器状态和排查转折点全丢了。
-   - 在 MindIE Agent 中，公开对话的提取和脱敏完全由**确定性程序**完成，原样保存为按 16KB 切分的不可变 Markdown 对话分块（`tasks/<32位任务哈希>/blocks/<64位块哈希>.md`），绝不让大模型篡改正文，也绝不对长任务做掐头去尾的截断。
-2. **用原生小模型做“目录导航”，实现按需精读**
-   - 为了不让 Agent 每次检索都被长篇对话撑爆上下文，宿主插件会调用自带的轻量原生小模型，专门为每个分块生成标题、检索摘要和一份任务总目录（`tasks/<32位任务哈希>/index.md`，即顶层 `mindie-material-task/1` 清单，内嵌 `mindie-entry/3` 导航目录）。
-   - Agent 检索时先看 `index.md` 了解来龙去脉，再按需精准读取某一个具体分块（`blocks/<64位块哈希>.md`）。
-3. **公共知识与本地经验双通道指针隔离，一套格式通吃**
-   - 社区公共知识库（`feed`）和本机私有排障经验（`draft`）在本地通过 `current.json` 双通道指针隔离维护，共享完全一致的 `mindie-material-task/1` 知识包结构与基于 `TechnicalTokenizerV1` 的 ReMe 检索索引（`blocks.sqlite3` 增量 Checkpoint）。
-4. **隐私安全默认关闭外发（Fail-Closed）**
-   - 未经用户明确授权项目范围，绝不采集；任何正文字节在写入磁盘、送给索引小模型或发起公开 PR 之前，都必须通过确定性隐私脱敏规则与 Gitleaks 密钥扫描。
-5. **知识仅供参考，支持真实使用后的独立反馈**
-   - 任何经验条目都只提供参考线索，不具备强制决策权威。Agent 在实际参考某条经验解决问题后，可以按需提交 `helpful` 或 `not_helpful` 反馈，推动知识库持续优胜劣汰。
+| 内容 | 用途 | 权威来源 |
+| --- | --- | --- |
+| 分级知识单元 `mindie-graded-unit/1` | 表达有条件的规则、操作步骤、工作流或代码变换，支持检索、精读、继承与版本反馈 | 领域仓库内 `<domain_path>/<unit_id>.md` 的正文和元数据 |
+| 任务材料 `mindie-material-task/1` | 保留一次任务的公开对话投影、过程与上下文，作为结论的来源 | `tasks/<task_hash>/index.md` 和不可变的 `blocks/<block_hash>.md` |
 
----
+任务材料经确定性提取与脱敏后按约 16KB 分块。宿主轻量模型生成标题、摘要和导航，不改写这些原始正文。分级单元可以由经审核的材料、源码、规范或实验记录提炼而来；它是新增的工程结论，必须绑定来源，不能冒充原文或比原始证据更强的结论。旧任务材料可在本地与分级单元共存，不会因为迁移索引而被清空；采用新版发布契约的公共内容树不混入旧 `tasks/` 布局。
 
-## 2. 从一次对话到知识包的全流程
+## 2. 分级描述用途，证据描述可信范围
+
+| 层级 | 类别 | 应表达的内容 |
+| --- | --- | --- |
+| L1 | `axiom` / `measurement` | 有规范支持的约束，或在声明条件下复现的测量结论 |
+| L2 | `sop` | 在具体前提下执行的诊断、开发或验证步骤 |
+| L3 | `workflow` | 由多个步骤及依赖组成的任务流程 |
+| L4 | `mutator` | 有来源和验证证据的代码变换方法 |
+
+层级不是置信度。`evidence_strength` 单独记录 `hardware_spec`、`reproduced_empirical`、`single_observation` 或 `hypothesis`；L1 只接受前两类。编译失败、基础设施失败、测量无效或尚未完成的运行不能成为已复现实测结论。一次成功观测也不能自动升级为通用规律。
+
+每个单元至少包含稳定的 `id`、`revision`、`content_digest`、标题、领域路径、类别、适用条件、触发词、继承关系与来源。来源绑定 `source_locator`、精确 `source_digest` 及相应的 `evidence_refs`。单元 ID 不随目录搬迁变化；语义摘要排除路径和修订编号，位置调整与内容修订因此可以区分。
+
+## 3. 按适用条件检索，再按精确引用读取
 
 ```mermaid
-flowchart TB
-    T["宿主原生会话记录 (Transcript)"] --> P["1. 确定性提取公开对话<br/>(仅保留用户输入、公开进展、最终回答)"]
-    P --> R["2. 本地确定性隐私规则 + Gitleaks 扫描脱敏"]
-    R --> B["3. 落盘按 16KB 切分的不可变 Markdown 分块<br/>(tasks/&lt;32位任务哈希&gt;/blocks/&lt;64位块哈希&gt;.md)"]
-    B --> I["4. 宿主原生小模型增量生成目录导航<br/>(更新 tasks/&lt;32位任务哈希&gt;/index.md 并推进 SQLite 游标)"]
-    I --> L["5. 更新本地 ReMe 派生检索索引 (blocks.sqlite3)<br/>(TechnicalTokenizerV1 BM25 + StrictFileGraph + 引用谱系归并)"]
-    I --> O{"用户是否开启了社区共享？"}
-    O -->|否（仅本地复用）| L
-    O -->|是| G["6. 自动向公开知识库发起 PR<br/>(knowledge-vllm-ascend)"]
-    G --> Bot["7. Grok Bot 安全与合规审核并合入"]
-    Bot --> Sync["8. 客户端增量同步公共知识库并更新 current.json (draft / feed)"]
+flowchart LR
+    Q["问题与已知环境事实"] --> D["显式选择已配置领域"]
+    D --> C["逐项核对适用条件"]
+    C --> R["词法检索与领域排序"]
+    R --> B["预算内正文摘录与完整继承规则"]
+    B --> E["按内容摘要精读与反馈"]
 ```
 
-### 2.1 第一步：确定性提取公开对话（Transcript Projection）
-- 宿主插件只读取已核实归属的当前任务 Transcript，绝不乱扫历史会话。
-- **只保留三类公开内容**：用户输入（User Input）、助手公开进展（Public Assistant Progress）与最终回答（Final Answer）。
-- **自动剔除内部噪音**：工具调用的原始大段输出、隐藏思维链（Reasoning）、系统注入提示词以及宿主的重复事件包装都会被干净剥离。
+所有声明的条件必须同时满足。框架依赖逐项比较，普通列表表达允许的候选值；需要绑定完整 case 集合时使用 `exact_set`，避免把一个 workload 的形状与另一个 workload 的 dtype 错配。缺少环境事实、版本无法解释或值为 `unknown` 时，结果保留原因，默认不作为匹配知识注入。显式请求查看未知适用性条目也不会把它变成已匹配。
 
-### 2.2 第二步：多层隐私脱敏与安全门禁（Redaction & Safety Gate）
-- 在写入磁盘、送入小模型或外发 PR 前，强制执行 `mindie_knowledge.redact` 与 Gitleaks 扫描。
-- 自动识别并抹除：API Key / Token、私钥、内网 IPv4 地址段、SSH `user@host` 敏感端点、本地个人主目录路径（如 `/Users/xxx`、`/home/xxx`、`C:\Users\xxx`）以及邮箱地址。
-- **双重保险**：规则脱敏不能代替用户授权——只有处于用户明确授权项目范围内的任务才会进入采集流程。
+条件只能描述任务在使用知识前可以核实的前提。验证状态、尚待执行的步骤、已知修复答案以及评价者的结论不应成为检索条件。源码限定的结论应绑定仓库与版本；测量结论还应绑定实际硬件、输入和测量条件。
 
-### 2.3 第三步：不可变分块与小模型目录生成（Blocks & Navigation）
-- 脱敏后的对话按 16KB 边界顺序切分为不可变的 `mindie-material-block/1` 文件（`tasks/<32位任务哈希>/blocks/<64位块哈希>.md`）。
-- 轻量小模型读取新增分块，生成简明标题、摘要与适用条件（`conditions`），写入顶层 `mindie-material-task/1` 清单 `tasks/<32位任务哈希>/index.md`（内嵌 `mindie-entry/3` 导航目录），本地通过 `current.json` 维护 `draft` / `feed` 双通道指针。
-- 如果小模型调用因网络等原因失败，已落盘的正文分块完好保留，并如实记录“待索引”状态，绝不伪造完成，也不会盲目重复发起未知状态的付费调用。
+本地路由索引预先解析稳定 ID 和完整继承图，拒绝缺失依赖与循环。检索时每个父单元仍须独立满足条件；预算不足的父规则明确标记为未纳入，不能截掉前提后作为完整规则返回。当前预算用 UTF-8 字节数估算正文 token，只覆盖正文摘录与继承正文，不包含返回元数据，也不等于整个宿主请求的实际 token 数。
 
-### 2.4 第四步：基于 `gh` 通道与按需个人 Fork 的自动 PR 发布与只读对账
-- 当用户已开启社区贡献时，发件箱统一通过已认证的 **`gh`（GitHub CLI）通道**（Git 推送绑定 `!gh auth git-credential`，PR 接口调用 `gh api`）将知识包分支推送到用户账号下的 `<GH_USER>/<repo>` Fork 仓库（如 `<GH_USER>/knowledge-vllm-ascend`），并向目标公开知识库（如 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)）发起或更新跨 Fork PR。
-- **按需 Fork 目标知识库**：安装无需 Fork。用户开启目标公开知识库 `<owner/repo>`（默认 `mindie-agent/knowledge-vllm-ascend`）的社区贡献后，通过 `gh repo fork <owner/repo> --clone=false` 创建或复用个人 Fork，并将配置中的 `fork` 绑定为 `<GH_USER>/<repo>`，用于推送贡献分支和发起 PR。Star 由用户自愿选择。
-- 若网络超时导致 PR 写入回执未知（`unknown`），下次处理优先通过 `gh api` 只读对账远端 PR 状态，绝不盲目重推或强制覆盖（`--force`）。
+`query` 返回带内容摘要的精确引用，`explain` 读取该修订。单元被撤回或内容已替换时，旧引用明确报错，不会悄悄返回新正文。读取成功仅证明引用可解析，使用前仍须核对适用条件。`helpful` / `not_helpful` 反馈绑定实际使用的内容版本，不能单凭票数建立正确性。
 
----
+## 4. 原生领域路由与授权边界
 
-## 3. 任务知识包长什么样？（Package Format）
+各领域通过显式 `domain_configs` 绑定自己的存储、Feed 和配置。注册一个领域只是使其可被选择，不会自动开启采集、贡献或把所有领域全文加载进会话；路由也不复制另一个领域的授权。跨领域复用通过声明的配置与引用进行，保留来源和条件。
 
-无论是本机沉淀的草稿经验（`draft`），还是 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 中的公开条目（`feed`），本地通过 `current.json` 维护 `draft` / `feed` 双通道指针，每个任务知识包都存放在 `tasks/<32位任务哈希>/` 目录下：
+会话采集只处理已核实归属且在授权项目范围内的当前任务。公开投影保留用户输入、助手公开进展和最终回答，剔除隐藏推理、系统提示、原始工具载荷和重复宿主包装。写入知识材料、送入提炼流程或准备公开内容前，执行确定性隐私规则与 Gitleaks 扫描；未决敏感内容阻止该次操作。
 
-```text
-current.json                                # 本地维护 draft / feed 双通道指针
-tasks/<32位任务哈希>/
-├── index.md                                # 顶层 mindie-material-task/1 清单（内嵌 mindie-entry/3 导航目录、整体摘要与适用条件）
-└── blocks/
-    ├── <64位块哈希>.md                      # 按 16KB 切分的不可变脱敏对话分块 1（mindie-material-block/1）
-    ├── <64位块哈希>.md                      # 按 16KB 切分的不可变脱敏对话分块 2
-    └── ...
-```
+原始材料、本地草稿、审核后的公开单元和反馈有各自用途。公开发布只携带经过准入的正文和来源标识；本机路径、私有运行目录及凭据不能作为公共证据链接。
 
-- **先看目录（Task Read）**：查询 `tasks/<32位任务哈希>` 返回 `index.md`（顶层 `mindie-material-task/1` 清单，内嵌 `mindie-entry/3` 导航目录），让 Agent 一眼看清这个任务解决了什么问题、适用什么软硬件条件、共有哪些分块。
-- **按需精读（Block Read）**：按分块引用读取 `tasks/<32位任务哈希>/blocks/<64位块哈希>.md`，精确返回对应 16KB 不可变分块的正文、块哈希与上下相邻分块指针，既拿到了完整上下文证据，又极其节省 Token。
+## 5. 提炼、审核与修订
 
----
+提炼输入限定为已经选择的来源和证据。模型可以提出新单元或修订，也可以在证据不足时返回不变；程序验证其引用、证据强度、适用条件和继承图。它不能凭空引入未提供的来源，不能把失败实验提升为复现证据。
 
-## 4. 本地数据安全与派生索引
+审核后的变更通过 `reviewed_change` 在完整当前图上检查并应用：新单元从修订 1 开始，语义变化增加修订，单纯位置调整保留内容身份。`review_reference` 记录调用方给出的审核依据，本身不是认证签名或独立审核的证明。C6 的本地应用只更新本地内容；创建 PR、远端合并与客户端同步是后续的独立步骤。
 
-- **Markdown 正文是唯一权威**：
-  - 磁盘上的 Markdown 文件（`index.md` 与 `blocks/<64位块哈希>.md`）是正文的唯一权威来源；
-  - SQLite 只存轻量游标、队列、授权状态和外发回执；
-  - ReMe 检索索引基于针对昇腾/vLLM 专业标识符定制的 `TechnicalTokenizerV1`，实现 **BM25 词法检索 + Markdown 标题/文件图谱（`StrictFileGraph`）+ 引用谱系归并**（通过 `blocks.sqlite3` 维护增量 Checkpoint，不强制依赖重型本地 Embedding 向量计算）。检索索引完全是派生数据，随时可以从 Markdown 正文一键重建；哪怕状态库损坏，系统也会立即显式报错并保护所有 Markdown 文件，绝不误删任何一篇经验正文。
-- **字面引用与反馈演进**：
-  - 分块中的引用仅在被引用源自身也匹配当前搜索词时参与引用谱系归并展示，引用次数不代表“官方认证”。
-  - 消费方任务在实际用过某条经验后，可随时调用反馈接口标记 `helpful` 或 `not_helpful`，帮助后续检索排序与社区内容维护。
+更新或撤回也必须重新验证引用图，保留旧内容的可追溯记录。回滚恢复指定的已知内容，不能靠删除错误回执、替换旧引用正文或把失败标成成功实现。
+
+## 6. Feed 发布与客户端消费
+
+公共 Feed 使用 `publication-contract/2` 表达分级内容树及其派生路由索引。同步先验证整个候选树、单元数量与摘要、继承闭包和索引一致性，再切换本地已安装内容。读取失败或缺少 blob 是同步错误，不能解释为远端已删除该单元。
+
+Markdown 是内容权威；路由与检索索引可以从它重建。SQLite 保存游标、队列、授权和回执。状态库或索引损坏应显式报错并保留原始内容。
+
+用户开启社区贡献后，运行时发布器才使用其已配置的 GitHub 通道创建或更新目标知识库的 PR；现有发布器使用 `gh`。安装本身不要求 Star 或 Fork，个人 Fork 只在需要向目标知识库贡献时准备。远端写入超时且结果未知时，先只读对账，不能盲目重放。
+
+一次完整交付应分别记录：单元审核通过、公共仓库合并、指定 Feed 修订被客户端安装，以及真实宿主任务完成 `query`、`explain`、反馈和领域路由。组件单测、检索耗时或成功安装各自只能支持对应结论；版本级研发收益需在相同模型和任务条件下另外比较。
