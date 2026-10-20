@@ -6,6 +6,8 @@ MindIE Agent represents reusable engineering conclusions as knowledge units with
 
 The runtime lives in [`knowledge`](https://github.com/mindie-agent/knowledge). Domain content lives in [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) and [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators). See [Architecture](architecture.en.md) for ownership and [Harness Boundaries](harness-boundary-and-lifecycle.en.md) for consent and session identity.
 
+See the [detailed design](knowledge-context-and-exploration.en.md) for proposed context layers, token accounting and budgets, L3 decision experience, knowledge growth control, and open exploration. That document specifies target behavior; this page retains the current mechanisms and evidence.
+
 This document describes the three implemented loops: the **L1/L2 Foundation** that mounts condition-matched `_common` baselines and `inherits_from` premises; the **L3 Hermes self-evolution loop** that turns a verified milestone into a `reviewed_change` through `knowledge_distill` and reuses it through P3 queries with recorded feedback; and the **L4 RSI de-biased exploration engine** that strips routine L3 bias after consecutive L3 stalls and runs a CPU-parallel compile, serial-NPU-timing, four-gate funnel that writes `experiment-ledger.jsonl` and `PROGRESS.md`. Implemented, verified and still-design-only claims are marked separately.
 
 ## 1. Knowledge units and source materials

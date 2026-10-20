@@ -38,10 +38,12 @@ flowchart TB
 | [`remote-dev`](https://github.com/mindie-agent/remote-dev) | SSH 远端文件读写、精确编辑、搜索、补丁、命令执行、受管长任务、取消与产物同步 |
 | [`coordinator`](https://github.com/mindie-agent/coordinator) | 机器与容器台账、设备探测、NPU 与端口租约、共享队列、受管任务身份和资源回收；向执行工具提供端点 |
 | [`npu-top`](https://github.com/mindie-agent/npu-top) | 面向人的集群观测界面和有界历史数据；读取机器台账，不承担任务调度 |
-| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | 有界结构化日志、可定位的错误编号和经授权的白名单故障上报 |
+| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | 有界结构化日志、可定位的错误编号和经授权的白名单故障上报；同仓独立包 `mindie_profiler` 提供性能产物解析与对比 CLI |
 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | 固定任务与 oracle、隔离宿主运行、真实结果与成本记录、组件基准、跨任务复用及发行报告校验 |
 
 主仓发布记录汇总十个代码仓的版本、源码 SHA 和基准产物。领域内容另行绑定其仓库修订，不能把一个新代码标签当成知识内容已经发布或客户端已经消费的证明。配套规则见[组件与插件配套发布](release-compatibility-and-update.md#组件与插件配套发布)。
+
+`mindie_profiler` 与故障日志职责分开，复用现有远端执行与资源协调。面向 Agent 的渐进查询、推理调用关联、按需补采集和收益验证见 [Profiler 系统设计](profiler-system.md)；其中目标接口与后续验收不等于当前插件已完整接通。
 
 ## 3. 一次远端任务如何执行与结束
 
