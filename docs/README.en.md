@@ -11,6 +11,8 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | [Engineering Design Principles](design-principles.en.md) | [工程设计原则与演进准则](design-principles.md) | The core product and engineering principles governing tool boundaries, developer experience, mechanism reuse, and error visibility |
 | [Architecture & Module Boundaries](architecture.en.md) | [系统架构与模块分工](architecture.md) | How native Harness plugins, the knowledge engine, remote execution, NPU observability, and diagnostics fit together |
 | [Knowledge & Experience System](knowledge-system.en.md) | [知识与经验闭环设计](knowledge-system.md) | How troubleshooting sessions are redacted, indexed into lightweight Markdown packages, and shared with the community |
+| [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | Proposed token budgets, progressive loading, L3 decisions, knowledge growth control, and exploration feedback, with source comparisons and acceptance criteria |
+| [Profiler System Design](profiler-system.en.md) | [面向 Agent 的 Profiler 系统设计](profiler-system.md) | In-place Ascend profiling analysis, nanosecond interval accounting, Host-to-Device correlation, cross-run comparison, and controlled online capture |
 
 ## Runtime Lifecycle & Engineering Specifications
 

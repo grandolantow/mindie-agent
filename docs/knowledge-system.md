@@ -6,6 +6,8 @@ MindIE Agent 把可复用的工程结论组织为带适用条件、来源和版�
 
 运行时由 [`knowledge`](https://github.com/mindie-agent/knowledge) 维护；领域内容分别放在 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 与 [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)。整体职责见[系统架构](architecture.md)，授权及会话边界见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)。
 
+后续的上下文分层、Token 计量与预算、L3 决策经验、经验增长控制和开放探索方案见[详细设计](knowledge-context-and-exploration.md)。该文是目标设计；本页继续描述现有机制与证据。
+
 本文描述当前实现的三层闭环：**L1/L2 Foundation** 提供条件匹配的 `_common` 基线和 `inherits_from` 继承前提；**L3 Hermes 自演化循环**把已验证里程碑经 `knowledge_distill` 变成 `reviewed_change`，再由 P3 查询复用并记录反馈；**L4 RSI 去偏探索引擎**在 L3 连续停滞时剥离 L3 常规偏差，按“CPU 并行编译 + NPU 串行计时 + 四门漏斗”产出 `experiment-ledger.jsonl`、`PROGRESS.md` 与可提炼结论。已实现、已验证和仍属设计的内容在下文分别标注。
 
 ## 1. 知识单元与原始材料

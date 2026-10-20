@@ -38,10 +38,12 @@ Plugins depend on `knowledge`, `remote-dev` and `diagnostics`. `coordinator` and
 | [`remote-dev`](https://github.com/mindie-agent/remote-dev) | SSH file access, precise edits, search, patches, commands, managed jobs, cancellation and artifact synchronization |
 | [`coordinator`](https://github.com/mindie-agent/coordinator) | Machine and container inventory, probing, NPU and port leases, shared queues, managed task identity, resource cleanup and execution endpoints |
 | [`npu-top`](https://github.com/mindie-agent/npu-top) | Human-facing cluster observation and bounded history; reads machine inventory and does not schedule tasks |
-| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | Bounded structured logs, actionable fault identifiers and authorized allowlisted reporting |
+| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | Bounded structured logs, actionable fault identifiers and authorized allowlisted reporting; the distinct `mindie_profiler` package in this repository provides artifact-analysis and comparison CLIs |
 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | Fixed tasks and oracles, isolated host runs, actual outcomes and costs, component benchmarks, cross-task reuse and release verification |
 
 The product release record aggregates versions, source SHAs and benchmark artifacts across ten code repositories. Domain content has separate repository revisions. A new code tag does not prove that content was published or consumed. See [Paired Releases](release-compatibility-and-update.en.md#paired-component-and-plugin-releases).
+
+`mindie_profiler` has separate responsibilities from fault logging and reuses existing remote execution and resource coordination. See the [Profiler design](profiler-system.en.md) for progressive queries, inference correlation, targeted capture, and benefit verification. Proposed interfaces and acceptance criteria do not imply complete integration in installed plugins.
 
 ## 3. Remote task execution and completion
 
