@@ -13,7 +13,9 @@ The runtime lives in [`knowledge`](https://github.com/mindie-agent/knowledge). D
 | Graded unit, `mindie-graded-unit/1` | Conditional rules, procedures, workflows or code transformations, with retrieval, inheritance and revision feedback | Body and metadata in `<domain_path>/<unit_id>.md` |
 | Task material, `mindie-material-task/1` | The public conversation projection and context of a task, retained as source material | `tasks/<task_hash>/index.md` and immutable `blocks/<block_hash>.md` |
 
-Task materials are extracted and redacted deterministically, then split into roughly 16KB blocks. A lightweight native model supplies titles, summaries and navigation without rewriting the source bodies. A graded unit may distill reviewed material, source code, specifications or experiment records into a new engineering conclusion. It must retain provenance and cannot present itself as a verbatim source or claim stronger evidence than its inputs support. Existing task materials can coexist locally with graded units and are preserved during index migration. A public tree using the new publication contract does not mix in the legacy `tasks/` layout.
+Task materials are extracted and redacted deterministically, then split into roughly 16KB blocks. A lightweight native model supplies titles, summaries and navigation without rewriting the source bodies. A graded unit may distill reviewed material, source code, specifications or experiment records into a new engineering conclusion. It must retain provenance and cannot present itself as a verbatim source or claim stronger evidence than its inputs support. Existing bodies and user consent are preserved; development formats are converted directly and derived indexes are rebuilt.
+
+`0.0.3` adopts the current format through a breaking refactor, without parallel compatibility paths for old clients or development snapshots. The single publication path and simpler references and digests below are requirements for this refactor. Runtime, content and plugin completion are tracked separately; editing this document does not establish implementation.
 
 ## 2. Tier describes use; evidence describes support
 
@@ -26,7 +28,7 @@ Task materials are extracted and redacted deterministically, then split into rou
 
 Tier is separate from confidence. `evidence_strength` records `hardware_spec`, `reproduced_empirical`, `single_observation` or `hypothesis`; L1 accepts only the first two. Compile failures, infrastructure failures, invalid measurements and unfinished runs cannot establish reproduced evidence. One successful observation does not establish a general rule.
 
-A unit includes a stable `id`, `revision`, `content_digest`, title, domain path, category, applicability conditions, triggers, inheritance and provenance. Provenance binds a `source_locator`, an exact `source_digest` and relevant `evidence_refs`. IDs survive moves. The semantic digest excludes the path and revision number, allowing location changes to remain distinct from changes to the claim.
+A unit uses a stable `id` and `revision`, with a title, domain path, category, conditions, triggers, inheritance and provenance. Source references reuse the repository, Git revision and file path; experiments reference existing run IDs and results. Callers do not compute additional digests for these identities or maintain separate SHA256 bindings for bodies, conditions, inheritance closures, manifests and entire trees. Existing fields such as `content_digest` and `source_digest` are simplified together with consumers in this refactor. Internal digests remain only where they provide actual content addressing or download integrity.
 
 ## 3. Match conditions, then read exact references
 
@@ -36,16 +38,16 @@ flowchart LR
     D --> C["Check all applicability conditions"]
     C --> R["Lexical retrieval and domain ranking"]
     R --> B["Budgeted excerpts and complete inherited rules"]
-    B --> E["Read and give feedback on an exact digest"]
+    B --> E["Read and give feedback on a unit revision"]
 ```
 
 Every declared condition must hold. Framework requirements are conjunctive. Ordinary lists describe allowed values; `exact_set` binds a complete case collection so a shape from one workload cannot be paired with a dtype from another. Missing facts, uninterpretable versions and `unknown` values retain their reasons and are excluded from matched injection by default. Explicitly requesting unknown entries does not make their conditions established.
 
-Conditions describe premises that can be checked before using the knowledge. Readiness status, steps still to perform, a known fix and a reviewer's conclusion do not belong in matching conditions. Source-scoped claims bind the repository and revision. Measurement claims also bind the actual hardware, input and measurement conditions.
+Conditions describe premises that can be checked before using the knowledge, such as source revision, hardware, framework, input and dtype. Reference patch, oracle and measurement report digests, and verification status, belong in evidence rather than retrieval prerequisites. Steps still to perform, a known fix and a reviewer's conclusion also do not belong in matching conditions.
 
-The local routing index resolves stable IDs and the complete inheritance graph before queries, rejecting missing dependencies and cycles. Each inherited unit must independently match the task. If a parent rule does not fit the budget, its omission is reported rather than returning a rule with its premises truncated. The current budget estimates tokens from UTF-8 bytes and covers body excerpts and inherited bodies only. It excludes response metadata and is not the actual token count of the entire host request.
+Content import or modification checks units and inheritance, rejects missing dependencies and cycles, and builds the local routing index. Queries use that index without revalidating the entire tree. Each inherited unit must independently match the task. If a parent rule does not fit the budget, its omission is reported rather than returning a rule with its premises truncated. The current budget estimates tokens from UTF-8 bytes and covers body excerpts and inherited bodies only. It excludes response metadata and is not the actual token count of the entire host request.
 
-`query` returns references pinned to content digests; `explain` reads that revision. A withdrawn or replaced unit makes the old reference fail explicitly instead of silently returning different content. A readable reference does not establish applicability. Optional `helpful` / `not_helpful` feedback binds the content revision actually used; votes alone cannot establish correctness.
+The target read and feedback interface uses the unit ID and revision returned by `query`. `explain` reads that revision; a withdrawn or unavailable revision is reported explicitly so the caller can query again. Existing digest references change with this interface, without an old-reference compatibility layer. Optional `helpful` / `not_helpful` feedback records the revision actually used; votes alone cannot establish correctness.
 
 ## 4. Native domain routing and consent
 
@@ -59,17 +61,17 @@ Source materials, local drafts, reviewed public units and feedback serve differe
 
 Distillation receives a selected set of sources and evidence. The model can propose units or revisions, or return no change when evidence is inadequate. Code validates citations, evidence strength, conditions and the inheritance graph. Proposals cannot introduce unprovided sources or promote failed experiments to reproduced evidence.
 
-`reviewed_change` checks and applies reviewed changes against the complete current graph. New units start at revision 1; semantic changes increase the revision; location-only moves retain content identity. A `review_reference` records the caller's review basis; it is neither an authentication signature nor proof that an independent review occurred. Applying C6 locally updates local content only. Opening a PR, merging remotely and synchronizing a client remain separate steps.
+`reviewed_change` checks and applies reviewed changes. New units start at revision 1; content changes increase the revision; location-only moves retain it. Review records reference the actual review conclusion without adding signature or digest proof chains. Applying C6 locally updates local content only. Opening a PR, merging remotely and synchronizing a client remain separate steps.
 
-Updates and withdrawals revalidate the reference graph and preserve traceability. Rollback restores specified known content; it must not erase failed receipts, substitute content behind an old reference or relabel failure as success.
+Updates and withdrawals check affected inheritance relationships. Revision history reuses the content repository. A rollback restores a known revision and rebuilds the index. Failed experiments retain their actual outcomes.
 
 ## 6. Feed publication and consumption
 
-Graded Feed `publication-contract/2` describes the content tree and its derived routing index. Synchronization validates the complete candidate tree, unit count and digests, inheritance closure and index consistency before switching the installed collection. Read errors and missing blobs are synchronization errors, not evidence that a remote unit was deleted.
+Graded Feeds use the current content format. Synchronization reads one Git revision, parses units and checks their actual references, then builds the local index before switching the installed collection. Format and body read failures are reported directly. A fixed contract-file SHA256 is not a compatibility switch, and content already identified by Git does not acquire additional layers of digest admission.
 
-The `0.0.3` publication contract uses a separate `graded-v2` branch in each domain, with the client Feed and contribution target bound to the same branch. The legacy `main` branch retains its `publication-contract/1` contract for older clients; upgrading some clients does not justify replacing that contract in place. Content can keep evolving under a compatible contract. Changes to the contract format or pinned digest require a coordinated consumer compatibility change. Successful installation in four isolated native profiles establishes acceptance for those profiles, not an upgrade of every existing user.
+Both domains use `main`, with the client Feed and contribution target pointing to that same branch. Development formats do not retain long-term readers, dual writes or fallback paths. Plugins and shared components adopt the current implementation through the existing background updater. Any data conversion runs once while preserving user bodies, cursors and consent. Acceptance covers current-format installation and automatic updates of existing installations, without a historical-version combination matrix.
 
-Markdown is authoritative; routing and retrieval indexes are rebuildable. SQLite stores cursors, queues, consent and receipts. Database or index corruption is reported while source content remains intact.
+Markdown is authoritative; routing and retrieval indexes are rebuildable. SQLite stores cursors, queues, consent and receipts. Stale or damaged derived indexes are rebuilt directly. Body or persistent-state read/write failures remain visible, without fabricated empty data or permanent fault states.
 
 After the user enables contribution, the runtime publisher uses the configured GitHub channel to open or update a target corpus PR; the existing publisher uses `gh`. Installation does not require a Star or Fork. A personal Fork is prepared when contribution to that corpus requires it. An uncertain remote write is reconciled through reads before any retry.
 
