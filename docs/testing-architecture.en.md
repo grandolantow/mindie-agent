@@ -67,6 +67,12 @@ flowchart TB
 
 ### 3.4 Tier 3: Host CLI & `mindie-bench` Canary Loop
 - In `mindie-bench`, the test suite focuses on recipe materialization, workspace isolation (source projection / worktree), verifier soundness, telemetry/cost settlement, and live Canary task execution—keeping the benchmark harness fast, deterministic, and free of dead-branch filler tests.
+- **Hardware-Anchored Performance (`HAP`) & L1–L5 Complexity Grading** (distilled from [`cann-bench`](https://gitcode.com/cann/cann-bench)):
+  - Alongside raw speedup, operator evaluations compute Roofline-anchored performance $\text{HAP}_i = \frac{T_{\text{baseline},i} - T_{\text{HW},i}}{(T_{\text{cand},i} - T_{\text{HW},i}) + (T_{\text{baseline},i} - T_{\text{HW},i})}$ against `mindie-sim` hardware lower bounds $T_{\text{HW}}$ and the composite score $\text{EachOperatorScore} = \left[w_c \delta_{\text{pass}} + \frac{1}{|\text{cases}|}\sum_i \delta_{\text{acc},i}(w_f + w_p \text{HAP}_i)\right] \times 100$ (default $w_c=0.2, w_f=0.3, w_p=0.5$), stratified across **L1 (Element-wise) $\to$ L2 (Reduction/Norm) $\to$ L3 (Matmul/MoE/Tiling) $\to$ L4 (Fused Attention/Sequence) $\to$ L5 (Sparse/Stateful/Lightning Indexer)**.
+- **Sentry Dual-Verification Trajectory Audit & Swimlane Attribution** (distilled from [`cannbot-sentry`](https://gitcode.com/cann/cannbot-sentry) `sift` and `insight`):
+  - **Process Compliance Audit**: Verifies whether the trajectory obeyed declared engineering gates (compile-before-timing, hidden-input generalization, leave-one-out ablation) with `step_index` evidence back-links;
+  - **Result Consistency Audit**: Reconciles agent-reported accuracy and speedup claims against independent verifier receipts to prevent reward hacking;
+  - **Six-Swimlane Attribution (`explore / design / code / compile / verify / distill`)**: Aggregates turns, token usage, and wall time per engineering phase for granular A/B comparisons.
 
 ---
 

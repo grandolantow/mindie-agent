@@ -78,3 +78,18 @@ To prevent duplicate Issues and retain pending reports across transient network 
 - **Bounded disk usage**: Local logs enforce per-entry and per-segment size limits and automatically prune expired segments during routine maintenance (even when remote Issue reporting is disabled).
 - **Reader & writer safety**: Log rotation protects active writers and registered reader cursors so unread segments are never clobbered.
 - **User job outputs are never truncated as logs**: In `remote-dev`, `stdout`/`stderr` streams from your remote commands are preserved as formal job output artifacts under the job lifecycle—never truncated by diagnostic log limits.
+
+---
+
+## 7. Deterministic Ascend NPU & CANN Fault Triage (`npu_fault_triage`)
+
+Beyond internal tool telemetry, `diagnostics` includes a **zero-LLM, deterministic Ascend NPU runtime fault classifier (`triage_npu_fault`)** distilled from [CANNBot Skills](https://gitcode.com/cann/cannbot-skills), enabling Agents to classify CANN error codes and immediately invoke the right native forensic utilities:
+
+| Fault Category (`category`) | Canonical CANN / Driver Error Codes & Signatures | Deterministic CANN Toolchain Triage & Remediation |
+| --- | --- | --- |
+| **`aicore_exception`** | `EZ9999`, `507015`, `Aicore Error`, `BIU`/`MTE2`/`MTE3`/`VEC`/`CUBE` exception bitmaps, out-of-bounds GM/UB access | Run `asys collect` for one-shot dump collection, decode fault registers via `msaicerr -i <dump_dir>`, and map the faulting PC with `npu-objdump` to verify 32B alignment and tiling bounds |
+| **`ascendc_sync_hazard`** | `SetFlag`/`WaitFlag` pair mismatch, `CrossCoreWaitFlag` deadlock, or branch-divergent barriers causing stream timeout (`507018`) | Audit `SetFlag`/`WaitFlag` branch symmetry, loop-carried double-buffer release invariants, and `HardEvent` (`MTE2_V` / `V_MTE3` / `MTE1_M` / `M_FIX`) pairing |
+| **`hccl_comm_fault`** | `EI0002` (link down), `EI0004` (topology mismatch), `EI0006` / `Notify Wait Timeout`, `HCCL_BUFFSIZE` exhaustion, or idle-DP collective hang | Enable `HCCL_ENTRY_LOG_ENABLE=1`, inspect RoCE/HCCS/SIO links via `hccn_tool` and `npu-smi info -t topo`, or isolate the collective via `HVM` |
+| **`device_oom`** | `EL0004`, `E80000`, `NPU out of memory`, `ACL_ERROR_RT_MEMORY_ALLOCATION` | Audit `max_rank_workspace_delta_bytes`, KV Cache reservation ratios, and GE graph memory reuse settings |
+| **`npugraph_compile_or_capture`** | `torch.npugraph_ex` guard invalidation, host-device sync inside `ACLGraph` capture, or GE dynamic-shape symbolic tiling failure | Run `npugraph_ex` DFX bisect (Compile/Runtime/Perf triage), pin static bucket shapes, and remove host-dependent branches from capture regions |
+| **`device_hardware_or_driver`** | `507035`, uncorrectable ECC errors, lost NPU device, or driver handshake failure | Run `asys check` and `msnpureport` to export device firmware logs and quarantine the affected card/Die in `coordinator` |
