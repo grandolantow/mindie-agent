@@ -22,6 +22,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | [版本兼容与无感更新](release-compatibility-and-update.md) | Paired component/plugin release workflow, SemVer host compatibility matching, and background silent updates |
 | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | [诊断日志与故障上报](diagnostics-and-reporting.md) | Bounded local structured logs, strict privacy redaction rules, and opt-in GitHub Issue fault reporting |
 | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | [原生能力与系统机制复用](native-runtime-reuse.md) | How MindIE Agent reuses native plugin managers, `uv` locked environments, and OS process-tree primitives |
+| [Enterprise Network Transport](enterprise-network.en.md) | [企业网络下的配置与传输](enterprise-network.md) | Proxy and system trust, installation, updates, background uploads and direct local APIs |
 | [Tiered Testing Architecture](testing-architecture.en.md) | [分级测试体系与用例设计规范](testing-architecture.md) | Test validity redlines and the Tier 0 – Tier 3 pyramid backed by standing live A2/A3 Ascend NPU clusters |
 
 ## Release Records & Roadmap
