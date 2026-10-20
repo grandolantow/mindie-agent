@@ -14,6 +14,10 @@
 | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | 后续设计：Token 预算、渐进加载、L3 决策经验、知识增长控制与探索回流；含开源对照和验收方案 |
 | [面向 Agent 的 Profiler 系统设计](profiler-system.md) | [Profiler System Design](profiler-system.en.md) | 昇腾 Profiling 原地解析、纳秒区间计量、Host-Device 异步关联、跨 Run 对比与按需采集设计 |
 | [面向 Agent 的 NPU 仿真与边界求解系统设计](simulation-system.md) | — | `mindie-sim` 四层仿真（硬件/热态、算子微阶段周期求解、子图跨界融合、整网并行）及可编码 vs 不可硬编码边界 |
+| [A3 预测性能与应达性能双模型方案](a3-performance-modeling-plan.md) | — | 当前实现与外部工具审查、调度边界、shape 连锁、CV/MTE 与 KV/D2D 竞争建模及分层验收 |
+| [A3 最低模型覆盖集](a3-model-coverage.md) | — | se-tools 九个模型的逐层结构、状态、特性与双模型验收要求 |
+| [A3 双模型实现与验收](a3-performance-modeling-acceptance.md) | — | 原生调度对照、实际 A3 数据资产、独立算法检查和剩余验收项 |
+| [A5 通信展开与竞争校准 TODO](a5-communication-calibration-todo.md) | — | 待 A5 实机采集的 AICPU/AIV 展开、资源竞争、样本协议及回填验收矩阵 |
 | [核心能力落地与 GEAK 演化架构设计](core-implementation-and-geak-evolution-design.md) | — | L1–L4 知识上下文预算、三维经验演化与组件化落地记录 |
 
 ## 运行机制与工程规范
