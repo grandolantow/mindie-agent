@@ -2,228 +2,148 @@
 
 [English](knowledge-system.en.md) · [返回文档中心](README.md)
 
-MindIE Agent 把可复用的工程结论组织为带适用条件、来源和版本的知识单元，同时保留脱敏后的原始任务材料供追溯。`0.0.3` 的交付范围集中在 **vLLM-Ascend 与算子两个领域**，服务于模型 0day 开发、固定 case 的模型或算子性能优化、问题定位三个场景。其他领域可以通过同一接口扩展，是否已完成内容建设和实际验收应分别查看发布记录。
+MindIE Agent 将可复用的昇腾研发经验组织为带适用条件、代码来源和版本号的结构化知识条目（Knowledge Units），同时支持在本地保留脱敏后的排障会话记录供溯源查阅。当前版本重点覆盖 **vLLM-Ascend 与昇腾算子**两个核心领域，并配套提供推理核心机制、分布式通信、可观测性与算子兼容性知识库，服务于**新模型适配（0-day Bring-up）、模型与算子性能调优、运行时故障排查**三类场景。
 
-运行时由 [`knowledge`](https://github.com/mindie-agent/knowledge) 维护；领域内容分别放在 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 与 [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)。整体职责见[系统架构](architecture.md)，授权及会话边界见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)。
+检索引擎与经验提炼运行时由 [`knowledge`](https://github.com/mindie-agent/knowledge) 维护；领域知识分别存放在 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) 等内容仓库中。整体组件分工见[系统架构](architecture.md)，会话与授权管理见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)，上下文预算与探索机制的扩展设计见[上下文分层、经验演化与开放探索设计](knowledge-context-and-exploration.md)。
 
-后续的上下文分层、Token 计量与预算、L3 决策经验、经验增长控制和开放探索方案见[详细设计](knowledge-context-and-exploration.md)。该文是目标设计；本页继续描述现有机制与证据。
+本文说明当前已落地的三套核心机制：
+1. **底层约束基线与前置规则继承（`L1/L2` Foundation & `inherits_from`）**：按芯片型号与仓库条件自动挂载 `_common` 硬件约束与测量规范，并确保上层规程所依赖的前置规则完整注入。
+2. **经验沉淀与跨任务检索复用（`L3` 经验闭环）**：将实机验证通过的排障或适配结论经 `knowledge_distill` 校验后生成知识变更（`reviewed_change`），供后续同类任务检索复用与投票反馈。
+3. **跳出既有思路的独立探索模式（`L4` 独立探索，`mode="explore"`）**：当常规调优连续受阻时，自动剥离常规排障工作流（`L3`）以避免思维定势，仅挂载底层硬件约束、实测瓶颈与候选代码变换，在独立子会话中执行“CPU 并行编译 → NPU 串行计时 → 四步验证（编译、精度、性能、留一法消融）”，并输出实验台账（`experiment-ledger.jsonl`）与进度摘要（`PROGRESS.md`）。
 
-本文描述当前实现的三层闭环：**L1/L2 Foundation** 提供条件匹配的 `_common` 基线和 `inherits_from` 继承前提；**L3 Hermes 自演化循环**把已验证里程碑经 `knowledge_distill` 变成 `reviewed_change`，再由 P3 查询复用并记录反馈；**L4 RSI 去偏探索引擎**在 L3 连续停滞时剥离 L3 常规偏差，按“CPU 并行编译 + NPU 串行计时 + 四门漏斗”产出 `experiment-ledger.jsonl`、`PROGRESS.md` 与可提炼结论。已实现、已验证和仍属设计的内容在下文分别标注。
+## 1. 结构化知识条目与脱敏任务记录
 
-## 1. 知识单元与原始材料
+知识仓库中存放两类互补内容：
 
-两类内容承担不同职责：
-
-| 内容 | 用途 | 权威来源 |
+| 内容类型 | 工程用途 | 权威存储路径 |
 | --- | --- | --- |
-| 分级知识单元 `mindie-graded-unit/1` | 表达有条件的规则、操作步骤、工作流或代码变换，支持检索、精读、继承与版本反馈 | 领域仓库内 `<domain_path>/<unit_id>.md` 的正文和元数据 |
-| 任务材料 `mindie-material-task/1` | 保留一次任务的公开对话投影、过程与上下文，作为结论的来源 | `tasks/<task_hash>/index.md` 和不可变的 `blocks/<block_hash>.md` |
+| **结构化知识条目**（`mindie-graded-unit/1`） | 表达带适用条件的硬件约束、诊断步骤、排障工作流或代码优化方案，支持按条件检索、规则继承与版本反馈 | 领域仓库内 `<domain_path>/<unit_id>.md` 的正文与 Front-matter 元数据 |
+| **脱敏任务记录**（`mindie-material-task/1`） | 保存单次排障/调优任务的脱敏会话记录与关键过程，作为提炼结构化知识条目的原始依据 | `tasks/<task_hash>/index.md` 与只读分块 `blocks/<block_hash>.md` |
 
-任务材料经确定性提取与脱敏后按约 16KB 分块。宿主轻量模型生成标题、摘要和导航，不改写这些原始正文。分级单元可以由经审核的材料、源码、规范或实验记录提炼而来；它是新增的工程结论，必须保留来源，不能冒充原文或比原始证据更强的结论。已有正文和用户授权保留，开发期格式直接转换，派生索引重新生成。
+脱敏任务记录经确定性正则与 Gitleaks 脱敏后，按约 16KB 切分为数据块，由宿主轻量模型生成标题与目录索引，不篡改原始记录正文。结构化知识条目可由已审核的任务记录、源码提交、硬件文档或实机实验记录提炼生成，必须保留明确的代码或实验来源，且证据强度（`evidence_strength`）不得超出原始依据。
 
-`0.0.3` 按当前格式直接重构，不为旧客户端和开发期快照维护双轨兼容。运行时、内容和插件的实际完成状态分别记录，修改文档不代表实现已经完成。
+## 2. 知识类别（`category`）与工程层级（`tier: L1..L4`）
 
-## 2. 分级描述用途，证据描述可信范围
+知识库中的条目按**工程用途（`category`）**分为四类（Schema 中的 `tier: L1..L4` 字段与四类 `category` 一一对应）：
 
-| 层级 | 类别 | 应表达的内容 |
+| 知识内容类别（`category`） | 对应层级字段（`tier`） | 适用内容 |
 | --- | --- | --- |
-| L1 | `axiom` / `measurement` | 有规范支持的约束，或在声明条件下复现的测量结论 |
-| L2 | `sop` | 在具体前提下执行的诊断、开发或验证步骤 |
-| L3 | `workflow` | 由多个步骤及依赖组成的任务流程 |
-| L4 | `mutator` | 有来源和验证证据的代码变换方法 |
+| **`axiom` / `measurement`**（硬件约束与测量基线） | `tier: L1` | 有硬件手册或框架契约支撑的硬性约束（如内存对齐、静态图捕获要求），或在声明条件下复现的性能测量规范 |
+| **`sop`**（诊断与操作规程） | `tier: L2` | 具体场景下的故障定位步骤、Profiling 采集分析方法、模块适配或精度比对操作规程 |
+| **`workflow`**（排障与调优决策流） | `tier: L3` | 包含多个观测分支、判断条件与收敛步骤的排障/调优决策流程（在 `mode="explore"` 独立探索模式下会自动剥离） |
+| **`mutator`**（代码优化变换） | `tier: L4` | 带有源码定位、适用前提、回退保护（Fallback）与消融验证记录的算子/图/通信代码优化方案 |
 
-层级不是置信度。`evidence_strength` 单独记录 `hardware_spec`、`reproduced_empirical`、`single_observation` 或 `hypothesis`；L1 只接受前两类。编译失败、基础设施失败、测量无效或尚未完成的运行不能成为已复现实测结论。一次成功观测也不能自动升级为通用规律。
+- **证据可靠度独立标记**：`category` / `tier` 仅区分知识条目的用途，不代表结论置信度。证据成熟度由 `evidence_strength` 单独标记为 `hardware_spec`（硬件规范/代码契约）、`reproduced_empirical`（多轮复现实测）、`single_observation`（单次实测观察）或 `hypothesis`（基于源码推导的优化假设）；其中 `L1` 基础约束仅接受 `hardware_spec` 或 `reproduced_empirical`。
+- **轻量身份与溯源引用**：每个知识条目使用稳定的 `id` 与递增整数 `revision` 标识；源码来源直接绑定仓库名、Git commit 与文件路径，实验来源绑定运行 ID。
 
-单元用稳定的 `id` 和 `revision` 标识，包含标题、领域路径、类别、适用条件、触发词、继承关系与来源。源码来源复用仓库、Git revision 和文件路径；实验来源引用已有运行 ID 和结果。调用方不需要为这些标识再计算摘要，也不需要维护正文、条件、继承闭包、清单与整棵内容树的多套 SHA256。仅确有内容寻址或下载完整性用途的内部摘要保留。
+## 3. 底层约束自动挂载与前置规则继承（`_common` & `inherits_from`）
 
-## 3. L1/L2 Foundation：`_common` 基线与 `inherits_from`
+### 3.1 路由索引构建与继承图校验
 
-### 3.1 索引构建与继承闭包
+`RoutingIndex.from_root(root)` 扫描领域仓库下的 Markdown 知识条目并构建检索索引，同时计算每个条目的 `inherits_from` 依赖闭包：
+- 父条目必须存在，缺失依赖或出现循环继承时立即报错；
+- 继承关系以稳定拓扑顺序保存，检索时每个父条目**独立核对自身的适用条件**后，将完整正文注入结果的 `inherited_rules` 字段，绝不返回被截断的半条规则。
 
-`RoutingIndex.from_root(root)` 扫描领域根目录下的 `mindie-graded-unit/1` Markdown 单元，跳过 `index`、`docs`、`tasks`、`feedback` 等派生或非单元目录。构建索引时同时计算每个单元的 `inherits_from` 闭包：
+### 3.2 适用条件匹配与基础约束自动挂载（`foundation_baseline`）
 
-- 父单元必须存在，缺失依赖直接报错；
-- 继承图出现循环直接报错；
-- 闭包按稳定顺序保存，供检索与 `reviewed_change` 校验共用。
+调用 `query(query, conditions=..., domain_path=..., token_budget=..., limit=...)` 时，检索引擎对每个候选条目执行条件匹配（`match_conditions`）：
+- 条目声明的所有硬性条件必须同时满足；需要绑定完整输入组合时使用 `exact_set`，防止把不同 Workload 的 Shape 与数据类型交叉错配；
+- 当查询尚未观察到某项环境事实时，相关条目保留为条件未知，默认不注入上下文（仅在显式传入 `include_unknown=True` 时列出供参考）。
 
-因此“继承”不是运行时把所有父正文拼进子单元，而是**每个父单元独立通过自己的适用条件**后才作为完整规则注入。父规则不得截断前提后返回。
+当查询传入了当前硬件与仓库条件（`conditions`），即使搜索关键词十分生僻，只要 `_common` 目录下的 `L1` 基础约束条目满足当前硬件/仓库条件，检索引擎就会以 `route == 'foundation_baseline'`（固定基线分 `0.05`）自动挂载它们：
+- 例如在 `vllm-ascend` 下传入 `conditions={'repository': 'vllm-ascend', 'npu_model': 'Ascend910B4'}`，冷查询也会自动挂载底层运行时与精度门禁基线：
+  - `unit-vllm-ascend-npu-runtime-and-graph-invariants`
+  - `unit-vllm-ascend-verification-and-state-parity-gates`
+- 在算子领域查询时，冷查询会自动挂载昇腾片上内存对齐与算子性能测量基线：
+  - `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms`
+  - `unit-ascend-operator-roofline-and-four-view-measurement`
 
-### 3.2 条件匹配与 `foundation_baseline`
+### 3.3 Token 预算分配与 `inherited_rules`
 
-`query(query, conditions=..., domain_path=..., token_budget=..., limit=...)` 先对每个候选单元独立执行 `match_conditions`：
+每条检索命中返回 `id`、`revision`、`tier`、`category`、`evidence_strength`、`conditions`、`provenance`、`applicability`、`route`、`score` 与 `inherited_rules`。Token 预算优先保障匹配的 `L1` 前置约束完整返回，再分配给上层工作流正文；超出预算的条目记录在 `excluded_budget` / `budget_excluded` 中，确保长工作流不会挤掉关键的硬件对齐或数值精度前提。
 
-- 所有声明的条件必须同时满足；
-- 普通列表表达允许的候选值；
-- 需要绑定完整 case 集合时使用 `exact_set`，避免把一个 workload 的形状与另一个 workload 的 dtype 错配；
-- 缺少环境事实、版本无法解释或值为 `unknown` 时保留原因，默认不作为匹配知识注入；`include_unknown=True` 只用于显式查看未知适用性条目，不会把未知条件变成已匹配。
+### 3.4 精确版本精读与有用性反馈
 
-当查询带有 `conditions`、某个 L1 单元没有被查询词命中但条件已匹配时，若它位于 `_common`（或请求的领域路径），索引会以 `route == 'foundation_baseline'` 挂载它。每个 L1 只挂载一次；若已有更高分的匹配单元通过 `inherits_from` 注入同一父单元，则不再重复挂载。基线分数固定为 `0.05`，只表示“基础前提已挂载”，不表示相关性或置信度。
+`GradedRepository.query` 为每条命中生成精确引用（`ref`、`unit_ref`、`feedback_ref`），并通过 `feedback.observe` 记录本次实际返回的 `unit_id` 与 `revision`。调用 `explain` 时按精确版本读取完整内容；执行任务后可通过 `feedback.record_vote` 提交 `helpful` / `not_helpful` 反馈，为后续修订提供依据。
 
-这正是冷查询仍然可用的原因：例如 `conditions={'repository': 'vllm-ascend', 'npu_model': 'Ascend910B4'}` 配合完全陌生的查询词，会返回两个 `_common` L1 单元：
-
-- `unit-vllm-ascend-npu-runtime-and-graph-invariants`
-- `unit-vllm-ascend-verification-and-state-parity-gates`
-
-算子的冷查询则返回：
-
-- `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms`
-- `unit-ascend-operator-roofline-and-four-view-measurement`
-
-### 3.3 检索结果的 `inherited_rules`
-
-每个检索结果包含 `id`、`revision`、`tier`、`category`、`evidence_strength`、`conditions`、`provenance`、`applicability`、`route`、`score` 和 `inherited_rules`。`inherited_rules` 是闭包中**独立匹配**的父单元完整正文；未匹配的父单元进入 `inheritance_excluded` 并带原因；预算不足的父单元标记为 `budget_excluded`，不会返回被截断的规则。`body_token_estimate` 只覆盖正文摘录与继承正文，不包含返回元数据，也不等于宿主请求的实际 token 数。
-
-预算先分配给匹配的 L1 继承前提，再生成工作流摘录。独立返回的 L1 也保留完整正文；放不下时，其 ID 进入 `excluded_budget`。这样长工作流不会挤掉数值或硬件前提，过小预算也不会产生缺少条件的半条公理。
-
-当前内容中的实际关系：
-
-- vLLM-Ascend：`unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow`（L3）和 `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation`（L2）都继承两个 `_common` L1；带完整条件查询 `Qwen3.5 GatedDeltaNet decode` 时，L3、L2 与两个 L1 `inherited_rules` 同时出现。
-- vLLM-Ascend：`unit-vllm-ascend-hybrid-recurrent-dp-state-hermes-workflow`（L3）和 `unit-vllm-ascend-idle-dp-gdn-state`（L2，`reproduced_empirical`）同样继承两个 L1；DP=2、`affected_state` 为 `conv_state`/`ssm_state` 的查询会返回它们。
-- 算子：`unit-rmsnorm-five-stage-ablation-workflow`（L3）、`unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence`（L2）和 `unit-residual-free-rmsnorm-fastpath`（L4）继承两个 `_common` L1。
-
-### 3.4 P3 复用与反馈
-
-`GradedRepository.query` 在 `RoutingIndex.query` 之上为每个命中补充 `ref`、`unit_ref`、`feedback_ref`，并调用 `feedback.observe` 记录本次实际返回的 `unit_id` 与 `revision`。`explain` 按精确引用读取同一修订；修订被撤回或替换时明确报错，不替换字节。`helpful` / `not_helpful` 反馈通过 `feedback.record_vote` 绑定观测到的修订，票数本身不能证明正确性。
-
-## 4. L3 Hermes 自演化循环
+## 4. 经验提炼与跨任务复用闭环
 
 ```mermaid
 flowchart LR
-    Q["任务条件与查询"] --> F["L1 _common foundation_baseline"]
-    Q --> R["L2/L3 检索 + inherits_from"]
-    R --> H["knowledge_distill"]
-    H --> V["mindie-distill-decision/1 校验"]
-    V --> C["mindie-reviewed-change/1"]
-    C --> P3["P3 query/explain + feedback"]
+    Q["任务环境条件与查询"] --> F["L1 _common 基础约束自动挂载"]
+    Q --> R["L2/L3 规程与工作流检索 + 前置规则继承"]
+    R --> H["knowledge_distill 经验提炼"]
+    H --> V["mindie-distill-decision/1 溯源与证据校验"]
+    V --> C["mindie-reviewed-change/1 原子写入与索引重建"]
+    C --> P3["后续同类任务 query/explain 复用 + 反馈"]
 ```
 
-### 4.1 触发与证据选择
+### 4.1 触发时机与输入脱敏
 
-`knowledge_distill(inputs, task_state, domain=...)` 只在任务达到 `verified_milestone` 或 `completed` 时调用；普通 Stop 不等于完成。调用方只提交已经选择、已授权的证据，每项必须声明：
+`knowledge_distill(inputs, task_state, domain=...)` 仅在任务达到已验证里程碑（`verified_milestone`）或全部完成（`completed`）时触发。调用方传入经筛选的实验记录、运行清单、脱敏会话记录或源码引用（每项标明 `kind`、`outcome`、`source_locator` 与复现次数）。`prepare_request` 先执行确定性隐私脱敏与 Gitleaks 扫描，对尚未跑完（`in_flight`）或空输入直接返回 `noop`。
 
-- `kind`：`experiment_ledger`、`run_manifest`、`authorized_transcript`、`ecosystem_repo`、`hardware_spec` 或 `ablation_receipt`；
-- `outcome`：`observed`、`verified`、`compile_failed`、`infra_failed`、`measurement_invalid` 或 `in_flight`；
-- `source_locator`、正文、`evidence_refs` 与重复次数。
+### 4.2 证据强度校验与本地准入
 
-`prepare_request` 用 Gitleaks 与确定性隐私规则对所选证据做一次脱敏，生成带 `request_digest` 的 `mindie-distill-request/1`。`value_gate` 对 `in_flight` 或空输入返回 `noop`，不产生单元。
+模型基于脱敏材料生成提炼提案（`mindie-distill-decision/1`）后，`validate_decision` 在本地执行严格校验：
+- 条目的来源引用（`provenance.source_locator`、`source_digest`、`evidence_refs`）必须真实存在于本次提交的输入材料中，禁止凭空编造来源；
+- `evidence_strength` 不得夸大：`L1` 仅允许 `hardware_spec` 或经多轮验证的 `reproduced_empirical`；`L4` 代码优化若标为实测复现，必须附带基线绑定且组合验证通过的消融实验记录（Ablation Receipt）。
 
-### 4.2 决策校验与本地准入
+审核通过的变更通过 `mindie-reviewed-change/1` 原子落盘并重建路由索引：新条目从 `revision: 1` 开始，正文实质更新时递增版本号，并在写入前再次校验整张继承图无缺失依赖或循环引用。
 
-`build_prompt` 把脱敏证据和 `mindie-distill-decision/1` 输出模式交给原生模型。模型可以提出新单元、修订或 `noop`。`parse_validate_result` / `validate_decision` 在本地校验：
+## 5. 独立探索模式（`mode="explore"`）与四步消融验证
 
-- 决策绑定同一 `session_digest` 与 `evidence_inputs`；
-- 单元 `provenance.source_locator`、`source_digest` 和 `evidence_refs` 必须能绑定到所选证据，不能凭空引入来源；
-- `evidence_strength` 不能超过证据：L1 仅接受 `hardware_spec` / `reproduced_empirical`；`reproduced_empirical` 需要重复的 `verified` 证据；L4 还需要基线绑定且最终组合已验证的 ablation receipt；
-- `tier` / `category` 必须属于同一用途类别。
+当常规排障/调优工作流（`L3`）连续多次未能达成性能目标，而实测耗时距离硬件 Roofline 理论下界仍有明显优化空间时，系统支持切换至**独立探索模式**：
+- 去偏置上下文构建集中在 [`mindie_knowledge.graded.explore`](https://github.com/mindie-agent/knowledge)（通过 `knowledge_query(..., mode="explore")` 暴露给各端插件）；
+- 候选方案调度、多输入泛化校验与留一法消融验证位于 [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench) 与 [`mindie_bench.runner.rsi_campaign`](https://github.com/mindie-agent/mindie-bench)。
 
-`apply_decision` 只做本地准入，不创建 PR、不写远端、不触发发布。
+### 5.1 常规调优停滞检测
 
-### 4.3 `reviewed_change` 审核应用
+`assess_stagnation` 与 `should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` 根据实验结果判断是否需要切换至独立探索模式：只有连续多次有效实验未能通过精度、消融或目标加速比时才累计停滞计数；编译报错或测量异常会先引导修复当前实现，不计入策略停滞。
 
-审核后的变更使用 `mindie-reviewed-change/1` 计划：
+### 5.2 屏蔽常规工作流定势（`build_exploration_context`）
 
-- `base_generation` 必须等于审核时的语料 generation，语料在审核后变化则拒绝；
-- 每个变更给出稳定 `id`、`expected_revision`、完整单元字节和 `review_reference`；
-- 新单元从修订 1 开始；正文语义变化增加修订；仅位置移动保留修订；
-- `prepare_change` 在内存中投影完整继承图，拒绝缺失依赖、循环、路径冲突和过期修订；
-- `apply_change` 先校验再原子写入，并重建路由索引；不自动 commit、push 或发布。
+调用 `knowledge_query(..., mode="explore")`（内部对应 `build_exploration_context`）时：
+- **彻底剥离 `L3` 常规工作流正文**（仅在 `stripped_l3_ids` 中记录被屏蔽的 ID），防止 Agent 沿着已经卡住的常规套路原地打转；
+- **保留核心事实与变换空间**：自动挂载匹配的 `L1` 硬件约束基线、`L2` 实测瓶颈证据（含被剥离 `L3` 条目所继承的底层 `L1/L2` 前提）以及 `L4` 候选代码优化变换（`mutator`）；
+- **按条件挂载避坑记录（`conditional_avoid`）**：仅提取与当前硬件、输入 Shape 和软件前提完全一致的已失败方案及其原因，供 Agent 避开无效尝试（当硬件或输入 Shape 改变时，允许重新尝试）；
+- **生成独立子会话简报（`subagent_fact_pack`）**：输出结构化事实包与精简 Markdown 提示词（`prompt_brief`），方便宿主客户端开启不受历史对话干扰的独立子会话（Fresh Sub-Context）。
 
-### 4.4 已验证的闭环
+### 5.3 CPU 并行编译与 NPU 串行计时调度
 
-本轮确定性端到端验证在 `knowledge-vllm-ascend` 的沙箱副本上执行了两条 Hermes 路径：
+为避免多个候选方案同时抢占 NPU 导致计时失真，`plan_rsi_compile_and_timing` 将验证分为两个阶段：
 
-1. **Qwen3.5-0.8B 0day bring-up**：把 L2 `unit-vllm-ascend-qwen35-gated-deltanet-decode-adaptation` 从修订 2 提炼到修订 3；`apply_change` 返回 `applied`，P3 查询命中修订 3，`feedback.observe` + `record_vote` 记录该修订。
-2. **k3-gdn-idle-dp-state 诊断**：新增 L2 里程碑单元 `unit-vllm-ascend-idle-dp-gdn-state-milestone`（修订 1），继承两个 L1；P3 查询命中新单元并记录反馈。
-
-两条路径都经过真实的 `prepare_request` 脱敏、`build_prompt`、`parse_validate_result` 校验和 `reviewed_change` 写盘。模型调用由确定性的审核决策替代，未调用付费模型。
-
-## 5. L4 RSI 去偏探索引擎
-
-实现位于 [`mindie_bench.runner.rsi_explorer`](https://github.com/mindie-agent/mindie-bench)，契约版本 `mindie-bench-rsi/1`。当前提供上下文组装、调度计划、结果判断和进度记录；真实执行由 `TaskClient` / `coordinator` 接入。
-
-### 5.1 L3 停滞检测
-
-`should_escalate_to_rsi(l3_attempts, max_stalled_attempts=2)` 消费四门评估结果。连续有效实验未通过正确性、消融或目标收益时才累计停滞。编译失败、测量无效和消融未完成先进入修复／继续验证；它们会清零连续停滞计数。成功实验同样清零。重复查询或恢复同一 `run_id` 只算一次实验，使用该运行的最新记录。
-
-### 5.2 去偏上下文
-
-`build_debiased_rsi_context(goal=..., retrieved_units=..., bottleneck_summary=..., ledger_entries=..., conditions=...)`：
-
-- **L3 单元正文绝不进入 L4 上下文**；只把其 ID 放进 `stripped_l3_ids`，`stripped_tiers` 为 `["L3"]`；
-- 挂载 L1 Foundation（保留 `foundation_baseline` 字段，冷查询时可为具体基线）、L2 瓶颈观测、L4 mutator；
-- 从所有嵌套 `inherited_rules` 中移除 L3 正文，同时保留并去重其中的 L1 前提；即使检索只返回了 L3 子单元，其 L1 父单元也进入底座；
-- 只从 `refuted` 条目提取与当前观测条件逐项一致的 `conditional_avoid`，保留原 `conditions`、候选、原因和 `run_id`。硬件、输入形状或软件前提变化时，允许重新尝试；缺失条件不作为命中；
-- 输出 `mounted_tiers == ["L1", "L2", "L4"]`，并保留 `foundation_axioms`、`measurement_rules`、`inherited_rules` 等扁平字段供消费者使用。
-
-算子 `fused-rmsnorm-gate` 的验证中，真实查询返回的 L3 `unit-rmsnorm-five-stage-ablation-workflow` 被剥离；L1 `unit-ascend-910b-a3-memory-alignment-and-tiling-axioms`、`unit-ascend-operator-roofline-and-four-view-measurement`，L2 `unit-gated-rmsnorm-ascend-fastpath-load-stage-evidence`，L4 `unit-residual-free-rmsnorm-fastpath` 以及 refuted 候选的 `conditional_avoid` 被挂载。
-
-### 5.3 编译与计时调度
-
-`plan_rsi_compile_and_timing(candidates, state_dir=..., npu_device=0, max_compile_slots=3)` 产生两个阶段：
-
-| 阶段 | 并行 | 资源 | 规则 |
+| 阶段 | 是否并行 | 申请资源 | 调度规则 |
 | --- | --- | --- | --- |
-| `compile` | 是 | `npu_count: 0` | 最多 `max_compile_slots` 个 CPU-only 编译；按 wave 切分；`CoordinatorService` 是唯一进度所有者 |
-| `timing` | 否 | `devices: [0]` | 只在编译证明成功的候选上串行、独占 NPU 计时 |
+| **编译阶段（`compile`）** | 并行 | `npu_count: 0` | 最多并发运行 `max_compile_slots` 个纯 CPU 编译任务，快速筛除语法与编译错误 |
+| **计时阶段（`timing`）** | 串行 | `devices: [0]` | 仅对编译通过的候选方案逐一独占 NPU 卡执行精度比对与性能计时 |
 
-编译结果缺失或失败的候选进入 `skipped_candidates`。`state_dir` 直接使用调用方已有的 coordinator 状态目录；实际运行沿用执行器返回的 `run_id`。规划器不通过内容摘要创建另一套运行身份或调度目录。
+### 5.4 四步验证标准与实验进度持久化
 
-### 5.4 四门漏斗与持久化
+每个候选优化方案依次通过四步验证（`evaluate_rsi_candidate_gates` / `run_rsi_gate_campaign`）：
+1. **编译与多输入泛化校验（Gate 1）**：不仅检查目标 Case 的编译与数值精度，还会用一组未在调优提示中暴露的泛化输入 Shape 与数值分布进行测试（`evaluate_hidden_input_generalization`）。任何泛化输入出现精度回退（`opt_regression`）或运行错误即判定不通过，防止针对单一 Shape 硬编码过拟合。
+2. **测量有效性守卫（Gate 2）**：检查流同步、Warmup 预热、有效计时样本数以及额外 Workspace 显存开销是否在合理范围内。
+3. **留一法消融实验（Gate 3，Leave-One-Out Ablation）**：当候选方案组合了多项代码改动时，通过 `verify_sequential_ablation` 逐项验证每个改动因子的独立贡献；若剔除某项改动后未经独立组合复验确认，默认保留原组合（`RETAIN`），避免误删相互配合的优化项。
+4. **目标加速比与条件化归档（Gate 4）**：检查实测加速比是否达到目标阈值（默认 `1.05x`）；对于真实有效但未达目标阈值的小幅收益（例如 `1.03x`），作为带前提条件的有效观察归档保留，不误判为错误方向。
 
-`evaluate_rsi_candidate_gates` 按顺序检查：
+每次实验结束后，`append_ledger_and_render_progress` 会将结果追加写入 `experiment-ledger.jsonl`，并更新 `PROGRESS.md`（清晰列出当前最优方案 `Best Supported Candidate`、待验证假设 `Active Hypotheses`、已排除方向 `Refuted Directions` 与待完成实验 `Experiments To Complete`），方便长程任务随时断点续跑。
 
-1. **Gate 1**：编译与 oracle / correctness freezer；
-2. **Gate 2**：测量守卫（同步、warmup、有效测量）；
-3. **Gate 3**：leave-one-out ablation 归因是否保留；
-4. **Gate 4**：speedup 是否达到目标（默认 `1.05`）。
+## 6. 领域隔离、隐私红线与社区贡献
 
-全部通过为 `supported`，`distill_ready == true`。正确性失败、有效消融淘汰或有效测量未达到目标为 `refuted`，生成带条件的负向经验。编译失败、无有效测量或尚未完成消融为 `inconclusive`，保留原因供下一步修复。未执行的后续门保持 `passed: null`；消融未传入时保持待完成。
+- **显式领域路由**：各知识领域绑定独立的本地存储与配置；注册新领域不会自动开启会话采集或跨领域复制授权。
+- **双层隐私脱敏**：所有任务记录切片、经验提炼输入与公开知识条目在落盘或外发前，均经过确定性隐私规则与 Gitleaks 扫描，确保内网 IP、本机路径、容器凭据与敏感命令参数零泄漏。
+- **可控社区投递**：知识库正文以 Git 仓库中的 Markdown 文件为唯一权威来源，本地检索索引可随时从 Markdown 重建。仅当用户显式开启社区贡献开关时，发布器才会通过 `gh` 向目标知识库提交 PR。
 
-`append_ledger_and_render_progress` 以追加方式写 `experiment-ledger.jsonl`，再原子替换确定性的 `PROGRESS.md`：
+## 7. 典型场景闭环示例
 
-- “Best Supported Candidate”按 speedup 降序选最佳；
-- “Active Hypotheses”列出 supported 候选；
-- “Refuted Directions”列出负向经验及其观测条件；
-- “Experiments To Complete”列出尚无结论的实验与已有运行 ID。
-
-## 6. 原生领域路由与授权边界
-
-各领域通过显式 `domain_configs` 绑定自己的存储、Feed 和配置。注册一个领域只是使其可被选择，不会自动开启采集、贡献或把所有领域全文加载进会话；路由也不复制另一个领域的授权。跨领域复用通过声明的配置与引用进行，保留来源和条件。
-
-会话采集只处理已核实归属且在授权项目范围内的当前任务。公开投影保留用户输入、助手公开进展和最终回答，剔除隐藏推理、系统提示、原始工具载荷和重复宿主包装。写入知识材料、送入提炼流程或准备公开内容前，执行确定性隐私规则与 Gitleaks 扫描；未决敏感内容阻止该次操作。
-
-原始材料、本地草稿、审核后的公开单元和反馈有各自用途。公开发布只携带经过准入的正文和来源标识；本机路径、私有运行目录及凭据不能作为公共证据链接。
-
-## 7. Feed 发布与客户端消费
-
-分级 Feed 使用当前内容格式。同步获取一个 Git revision，解析知识单元并检查实际引用关系，生成本地索引后切换已安装内容。格式或正文读取失败直接报错；不把契约文件的固定 SHA256 当作兼容性开关，不对 Git 已标识的同一内容再建立多层摘要准入。
-
-两个领域统一使用 `main`，客户端 Feed 和贡献目标指向同一主分支，不保留开发期旧格式的长期读取、双写或回退路径。插件和共享组件通过现有后台更新机制切换到当前实现；需要的数据转换一次完成，保留用户正文、游标与授权设置。验收覆盖当前格式的新安装和既有安装自动更新，不扩展为历史版本组合矩阵。
-
-Markdown 是内容权威；路由与检索索引可以从它重建。SQLite 保存游标、队列、授权和回执。派生索引过期或损坏时直接重建；正文或持久状态读写失败明确报错，不制造空数据或永久锁死状态。
-
-用户开启社区贡献后，运行时发布器才使用其已配置的 GitHub 通道创建或更新目标知识库的 PR；现有发布器使用 `gh`。安装本身不要求 Star 或 Fork，个人 Fork 只在需要向目标知识库贡献时准备。远端写入超时且结果未知时，先只读对账，不能盲目重放。
-
-## 8. 闭环验证边界
-
-当前本地闭环验证使用知识运行时、两域内容和 RSI 规划／结果模块，覆盖下列路径。真实宿主提炼和 NPU 执行接线继续按具体任务验证。
-
-| 场景 | 验证闭环 |
+| 典型研发场景 | 知识检索、探索与沉淀闭环 |
 | --- | --- |
-| `Qwen/Qwen3.5-0.8B` 0day 适配 | 冷查询 `foundation_baseline` 自动挂载 `_common` L1 底座；定向查询挂载 L3 + L2 + L1 `inherited_rules`；Hermes 提炼生成新 `revision`；P3 下游复用与 `knowledge_feedback` |
-| `k3-gdn-idle-dp-state` 问题诊断 | DP=2 / `Ascend910_93` 条件查询命中 L3 Hermes 工作流 + `reproduced_empirical` L2 + L1 底座；里程碑提炼与 P3 反馈闭环 |
-| `fused-rmsnorm-gate` 算子优化 | 连续 L3 停滞触发 L4 RSI 升级；去偏置上下文剥离 L3（记录 `stripped_l3_ids`）并挂载 L1/L2/L4 + `conditional_avoid`；并行 `npu_count: 0` CPU 编译 + 串行 `devices: [0]` NPU 计时；四门禁漏斗；`experiment-ledger.jsonl` 与 `PROGRESS.md` 落盘；supported 结果经 Hermes 提炼回流 |
+| **`Qwen/Qwen3.5-0.8B` 新模型 0-day 适配** | 冷查询自动挂载 `_common` 底层 `L1` 运行时与精度门禁基线；定向查询返回混合线性注意力适配工作流（`workflow`）与 `GatedDeltaNet` 适配规程（`sop`）；实机跑通后经 `knowledge_distill` 生成新修订号并供后续任务复用 |
+| **`GatedDeltaNet` 双卡 DP 空闲 Rank 挂死诊断** | 按 `DP=2`、`Ascend910_93` 与 `conv_state`/`ssm_state` 条件检索，直接命中多卡状态同步排障工作流与实机复现规程；修复验证后沉淀里程碑经验并记录投票反馈 |
+| **`fused-rmsnorm-gate` 算子深度性能调优** | 常规调优连续受阻后切换至 `mode="explore"` 独立探索模式，自动剥离常规五阶段工作流，挂载 `L1` 内存对齐/Roofline 基线、`L2` 访存瓶颈证据、`L4` 向量化/零残差快速路径变换与已排除方向；经 CPU 并行编译、NPU 串行计时与四步消融验证后写入 `PROGRESS.md` 并回流知识库 |
 
-一次完整交付应分别记录：单元审核通过、公共仓库合并、指定 Feed 修订被客户端安装，以及真实宿主任务完成 `query`、`explain`、反馈和领域路由。组件单测、检索耗时或成功安装各自只能支持对应结论；版本级研发收益需在相同模型和任务条件下另外比较。
+## 8. 业界实践参考
 
-## 9. 后续接线与设计参考
-
-Hermes 的下一步是在原生宿主已确认的里程碑提供一次轻量提炼提示，复用 `knowledge_distill` 的 `task_state=verified_milestone` 和已选择的输入；同主题经验优先修订已有单元。RSI 的下一步由同一个 TaskClient 执行编译队列和计时队列，将实际运行结果交给现有评估函数。知识检索、模型构思、资源协调各自沿用已有组件。
-
-这两条接线采用以下已有实践：
-
-- [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载操作经验，从成功路径、错误修复和用户纠偏中更新已有技能。
-- [Anthropic 长程任务 Harness](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：用 Git 和简短进度文件接续，每次完成可验证的增量。
-- [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)：通过执行和评分选择下一轮候选，将候选构思与实验评估分开。
-
-本地调试记录补充了两条实际约束：编译错误应先落到具体实现修复；一次输入形状或环境下的负向结果只约束相同前提。运行记录保留已有 ID、条件、结果与下一步即可。
+本系统的知识组织与长程探索机制吸纳了以下成熟的社区工程实践：
+- [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载领域操作规程，并在成功排障或纠偏后原地演进已有技能文档。
+- [Anthropic Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：通过 Git 版本控制与结构化进度文件（`PROGRESS.md` + 实验台账）在多个独立上下文窗口之间接力推进长程研发任务。
+- [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)：将候选方案生成与确定性实验评估解耦，依靠编译、精度与实机计时结果筛选下一轮演进方向。

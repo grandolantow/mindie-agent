@@ -86,7 +86,7 @@ GEAK 最值得吸收的是上述路径中的具体机制：局部与端到端收
 | --- | --- | --- |
 | 原生插件 | 四宿主有工具参数、领域路由和生命周期适配 | 新契约与锁定运行时一致；真实安装后消费新能力 |
 | 远端执行与协调 | TaskClient 受管提交、原执行 ID 查询、资源声明；Run Manifest 执行事实与证据引用 | 将探索候选实际接入同一运行与租约路径；核查搜索结束后的资源交接 |
-| 分级知识 | L1–L4、条件匹配、继承闭包、`id@revision`、状态和引用 | 全响应有界、导航与正文真正分离、依赖生命周期一致、语料覆盖 |
+| 知识飞轮（`knowledge`） | 结构化知识类别（`axiom/measurement`、`sop`、`workflow`、`mutator`，兼容 `tier` 字段）、条件匹配、继承闭包、`id@revision`、状态和引用 | 全响应有界、导航与正文真正分离、依赖生命周期一致、语料覆盖 |
 | 经验演化 | 显式提炼、前台 proposal、已有写入事务、修订与发布计划 | 默认旧知识对照、进行中里程碑、实际采用与验证关联、更新后真实可见 |
 | 开放探索 | 停滞判断、上下文数据组装、候选评估、编译/计时计划 | 原生新上下文、实际派发执行、共享结果语义、多目标任务适配 |
 | Profiler | 已提交的 DB/CSV 分析、显式窗口、部分跨 Run 对比与采集辅助 | 新设计中的渐进查询、关联和计量修正逐项验收；与运行证据接通 |
@@ -164,9 +164,9 @@ GEAK 最值得吸收的是上述路径中的具体机制：局部与端到端收
 
 ### 3.7 知识覆盖与 Profiler 状态
 
-当前有效分级单元计数：
+当前有效知识单元按语义类别（兼容 `tier` 字段）计数：
 
-| 领域 | L1 | L2 | L3 | L4 | 合计 |
+| 领域 | `axiom/measurement` (服务 `L1`) | `sop` (服务 `L2`) | `workflow` (服务 `L3`) | `mutator` (服务 `L4`) | 合计 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | operators | 3 | 2 | 2 | 1 | 8 |
 | vllm-ascend | 3 | 3 | 2 | 0 | 8 |
@@ -191,6 +191,10 @@ Profiler 的已提交版本具备分析与比较基础，但新文档列出的 `
 | 经验方向与冷启动方向并存 | 降低历史成功路径的锚定 | 只在有价值的探索阶段保留独立假设，不规定每任务固定分叉数 |
 | milestone 后重新 profile | 优化后瓶颈可能转移 | Agent 在显著改变执行路径后选择重新采集 |
 | final reserve 与设备交接 | 避免搜索耗尽预算，最终没有有效交付 | 现有执行预算、任务取消和租约释放路径 |
+| **知识方向配额（`KB_DIR_CAP`）与强制冷启动控制方向（`KB_COLD_DIRECTION`）**（GEAK `kernel_lane.js:196-214, 1714-1735`） | 防止历史卡片挤占基于现场剖析的冷启动假设（GEAK 16-kernel 基准中无上限挂载卡片曾导致几何平均加速从 `4.45x` 跌至 `3.44x`） | `mindie_knowledge.graded.explore.enforce_direction_budget`（默认 `kb_dir_cap=1, require_cold_direction=True`，并过滤 `roofline_status != "calibrated"` 时的峰值百分比幻觉） |
+| **无幸存者偏差的引用反馈与在位最优（Incumbent）边际判定**（GEAK `kernel_lane.js:1737-1758, 1845-1875`） | 避免仅在正收益时记录反馈（100% 虚高胜率）或把低于当前在位最优（如 `2.5x` 之后跑出 `1.5x`）的退化轮次误记为正贡献；验证超时编码为 `None` 而非 `0` | `mindie_knowledge.graded.explore.build_citation_feedback_record` 与 `mindie_bench.runner.rsi_campaign`（`incumbent_comparison` + `reprofile_required`） |
+| **测量锚定补丁收割（Measurement-Anchored Harvesting）**（GEAK `kernel_lane.js:1560-1585`） | 防止工程师子 Agent 已将胜出补丁落盘但返回汇总超时时丢失高收益补丁 | `mindie_bench.runner.rsi_campaign.harvest_candidate_patch`（`disk_patch_rescued`） |
+| **候选补丁形态门禁、主从 JIT 缓存隔离与投机采信率守恒**（[`apple-aiml-research/ml-rsi-inference-bench`](https://github.com/apple-aiml-research/ml-rsi-inference-bench) `_verifier_lib/`） | 防止靠修改启动脚本参数（`pure_flag_flip`）或配置字面量（`config_default_flip`）刷分、防止主从共享 `TRITON_CACHE_DIR`/`ASCEND_CACHE_PATH`/`.so` 导致配对加速比抵消为 `~1.0x`、防止投机解码靠关停草稿（`no_drafts`）或降低 `mean_acceptance_length` 伪造低时延 | `mindie_bench.runner.rsi_campaign` 的 `classify_candidate_patch_shape`、`build_isolated_jit_cache_env` 与 `evaluate_speculative_acceptance`（详见 [`knowledge-context-and-exploration.md` 第 12.5 节](knowledge-context-and-exploration.md#125-从-amd-agigeak-与-apple-aiml-researchml-rsi-inference-bench-吸收的八项-rsi-防踩坑机制)） |
 
 GEAK `kernel_lane.js:203` 附近已经实现知识方向额度与 cold direction 控制。其源码注释报告了自由读取索引后部分实验退化，这是检查锚定风险的线索，不是 MindIE 的收益预测，也不是应照搬固定额度的证据。
 
@@ -221,7 +225,7 @@ GEAK 的卡片也会随实测纠正，采用和结果计数已经交由 `kb.py d
 
 后续工程准则继续生效：保留用户正文与授权；内部开发期重复逻辑直接替换；未知外部写先对账；超时覆盖内层与收尾；SQLite 使用既有 WAL/合理锁等待；不新增跨仓 fallback、影子状态机和巨型内嵌脚本。
 
-L1–L4 是知识用途，导航/正文/证据是阅读深度，复用/诊断/探索是工作模式。这三者独立。Hermes 指经验增量演化，RSI 在本文中指有证据反馈的迭代探索；它们不应成为必须按 L1→L2→L3→L4 升级的流程或独立产品运行时。
+`L1–L4` 表示系统四层认知与执行架构（`L1` 硬件约束基座、`L2` 性能剖析与仿真定界、`L3` Hermes 经验收敛模式、`L4` RSI 去偏探索模式）；`axiom/measurement`、`sop`、`workflow`、`mutator` 表示 `knowledge` 飞轮的知识内容类别（`category`）；导航/正文/证据表示阅读深度。这三者正交独立：Agent 在具体子问题上按需进入 `L3` 经验收敛或切换至 `L4` 去偏探索，不建设脱离宿主原生 Harness 的独立编排运行时。
 
 ## 6. 目标架构与最小职责
 
@@ -264,16 +268,22 @@ flowchart TB
 目标调用保持四个已有入口：
 
 ```text
-knowledge_query(query, domain, conditions?, token_budget?, limit?, continuation?, navigation_only?)
+knowledge_query(query, domain, conditions?, token_budget?, limit?, continuation?, navigation_only?,
+                mode="reuse"|"diagnose"|"explore", ledger_entries?, bottleneck_summary?, native_subcontext?, goal?)
     -> cards: 导航卡片（含 title, purpose, applicability, missing_conditions, body_token_estimate, closure_token_estimate, ref）
        foundation_cards: 本次依赖的去重 L1 基础卡片
        results: 兼容结果（当 navigation_only=true 时不内联正文）
+       mode: 当前模式
+       exploration_context?: 当 mode="explore" 时返回去偏上下文与 subagent_fact_pack（mindie-rsi-subagent-pack/1）
        usage: 最终 Store/MCP 交付响应的完整估算
 
-knowledge_explain(ref? 或 refs?, conditions?, known_refs?, token_budget?)
+knowledge_explain(ref? 或 refs?, conditions?, known_refs?, token_budget?,
+                  mode="reuse"|"diagnose"|"explore", ledger_entries?, bottleneck_summary?, native_subcontext?, goal?)
     -> requires: 完整共享前提（拓扑序去重）
-       units: 完整目标单元（绝不截断步骤）
+       units: 完整目标单元（绝不截断步骤；mode="explore" 时剥离 L3 并保留其 L1/L2 前提）
        unresolved: 未加载原因（condition_unknown / condition_mismatch / budget_excluded / removed_or_superseded / not_found）与必要成本
+       mode: 当前模式
+       exploration_context?: 当 mode="explore" 时返回去偏上下文与 subagent_fact_pack
        usage
 
 knowledge_feedback(ref, rating?, event_type?, run_id?, step_id?, outcome?, evidence_source?, reason?)
@@ -283,7 +293,7 @@ knowledge_distill(inputs, task_state, related_refs?, proposal?)
     -> noop / 已应用局部修改 / 待语义审阅
 ```
 
-`query` 的导航卡片（`cards` 与 `foundation_cards`）仅包含引用、标题、简短用途、适用状态、缺失事实和完整读取成本（`body_token_estimate` 与 `closure_token_estimate`），不含可误认为完整步骤的正文截断；支持 `navigation_only=True` 纯导航模式。在兼容 `results` 视图中，一旦非 L1 正文发生截断（`excerpt_truncated=True`）、存在缺失前提（`omitted` 非空）或依赖闭包中存在非活跃（`superseded` / `archived`）父单元，`ready_to_apply` 必须为 `False`。
+`query` 的导航卡片（`cards` 与 `foundation_cards`）仅包含引用、标题、简短用途、适用状态、缺失事实和完整读取成本（`body_token_estimate` 与 `closure_token_estimate`），不含可误认为完整步骤的正文截断；支持 `navigation_only=True` 纯导航模式。在 `navigation_only=True` 与兼容 `results` 视图中，一旦非 L1 正文发生截断（`excerpt_truncated=True`）、存在缺失前提（`omitted` 非空）、任何继承祖先条件不匹配（`applicability[parent].status != "matched"`）或依赖闭包中存在非活跃（`superseded` / `archived`）父单元，`ready_to_apply` 必须为 `False`。
 
 ### 7.2 闭包完整性
 
@@ -568,8 +578,8 @@ P0 的插件接通与核心修复可以独立推进，但不能先发布一个�
 | 仓库 | 具体工作 |
 | --- | --- |
 | knowledge | 改 `graded/index.py`、`retrieval.py`、`repository.py`，统一最终装配；修 `worker.py/distill.py/publication.py` 默认路径与**后台静默防膨胀机制**（同主题负向分支折叠、等义重写收紧、单单元字节软硬门禁，对业务 Agent 零负担）；明确 `feedback.py` 事件来源；扩充共享探索纯逻辑 |
-| diagnostics / mindie_sim & mindie_profiler | 独立抽离 `mindie_sim`（`mindie-sim`，见 [`simulation-system.md`](simulation-system.md)）提供四层仿真能力（硬件/热态规格、Karp 最大环均值微阶段流水求解、Phase 0 子图跨界融合与 $\max(P+C, Q+G)$ 关键路径核算、`msmodeling` 整网桥接），严格划清可编码 vs 不可硬编码边界；`mindie_profiler` 专注实测采集、解析与对比，通过公开接口调用 `mindie_sim` |
-| mindie-bench | 替换 `knowledge_replay_index.py` 的重复实现；删除 RSI 重复分类；预置对业务 Agent 零负担的算子/模块 `G0–G3` 准入验证脚手架（Gate Runner）；落地 M1-01 ~ M6-01 决策回放；100% `import` 生产组件公开接口，严禁重复造轮子 |
+| sim / profiler | 已分别独立建仓；`sim` 的 `mindie_sim` 提供四层仿真，`profiler` 的 `mindie_profiler` 专注实测并委托 sim 建模。下一步核对依赖交付、通用输入与案例参数边界、真实校准，见第 13.3 节 |
+| mindie-bench | 生产检索委托与探索语义已合入；G0–G3 Gate Runner、M1–M6 决策回放已有本地提交。下一步接实际宿主，直接复用工具和测量结果；局部判分问题按题意修正，不增加内部事实绑定和重复核验 |
 | 四插件 | 核对工具参数到运行时的全路径，使用真实锁定依赖验收；按需参考补充 **Phase 0 子图跨界融合先行分析**（先定子图融合边界与 I/O 契约，再抠单算子流水）；按宿主能力提供可见性和独立上下文 |
 | coordinator / remote-dev | 复用现有任务接口绑定候选与预置 Gate 脚手架执行；补实际资源交接与恢复路径的必要缺口 |
 | 两个知识仓 | 按真实失败和迁移需求补充条件与分支；整理重复，不按条数填充 |
@@ -598,13 +608,13 @@ P0 的插件接通与核心修复可以独立推进，但不能先发布一个�
 
 本批优先处理决策机制，A5/K3 具体知识延后。完整的 M1–M6 组件归属、已有基础、缺口及来源 T1–T5 见[详细设计第 15 节](knowledge-context-and-exploration.md#15-从真实-transcript-吸收机制)，逐个判分场景见[分级测试方案第 4.6 节](knowledge-tiered-testing-plan.md#mechanism-replay)。
 
-本批从本地 `knowledge@02ccb63`、Codex `0a42ac5`、CC `3f01c5e`、Kimi `3e82f64`、DSH `16cffb8` 推进；以下记录本地改动，不沿用第 13.1 节的合入状态。
+本批从本地 `knowledge@02ccb63`、Codex `0a42ac5`、CC `3f01c5e`、Kimi `3e82f64`、DSH `16cffb8` 推进。下表和 51 项测试保留为首批交付记录；后续提交、远端合入和新增缺口以第 13.3 节为准，不沿用第 13.1 节的合入状态。
 
 | 顺序 | 组件与改动 | 验收与剩余边界 |
 | --- | --- | --- |
 | 1. 对齐决策入口与 Phase 0 融合先行 | 四插件 `skills/mindie-agent/SKILL.md` 与现有参考：取消次数驱动的强制升级、固定 NPU 0 和诊断必经性能消融；按需加载 `references/diagnostic-reasoning.md`，覆盖 **Phase 0 子图跨界融合先行分析**（先定子图融合边界与 I/O 契约，再抠单算子流水）与六种机制 | 核对宿主特有入口、frontmatter 与引用完整性。真实上下文隔离、实验选择质量和资源调度仍需按宿主分别验收 |
 | 2. 保留反证、阻止不完整改写与后台静默防膨胀 | `knowledge/graded/distill.py` 明确决策片段、观察扰动、历史状态、人工纠正、作废计划与同源证据边界；`worker.py` 将旧单元固定 1,200 字符摘录改为共享 16 KiB 旧正文预算，完整返回或显式省略；`body_complete` 为 false 时禁止直接 merge。**在 `knowledge` 后台 C6 链路（`worker.py`/`distill.py`/`publication.py`）内落地静默防膨胀机制**：自动将同算子/同子图多次负向尝试折叠进紧凑排除表，强制等义重写收紧与单单元字节软硬门禁，对前台业务 Agent 完全透明、零额外负担 | 检查尾部反证进入实际对照、超限/旧摘录无法覆盖原单元、连续里程碑修订下活跃单元数与单单元正文字节净增长自动收敛。16 KiB 是 UTF-8 正文预算，不是实测模型 tokens |
-| 3. 独立抽离 `mindie-sim` 四层仿真组件 | `diagnostics/mindie_sim`（独立包与 `mindie-sim` CLI，见 [`simulation-system.md`](simulation-system.md)）：将原 `theoretical_model.py` / `modeling_inputs.py` / `tensor_cast_provider.py` 收敛升级为四层仿真组件（硬件规格/片上容量/热态频率、Karp 最大环均值微阶段流水求解、Phase 0 子图跨界融合流量与 $\max(P+C, Q+G)$ 关键路径核算、`msmodeling` 整网桥接），严格划清可编码 vs 不可硬编码边界；`mindie_profiler` 仅通过公开接口调用 `mindie_sim` | 通过 K3/A5 Golden 图定义（36 节点 FlashMLA `pv1`/`pv2`/`score2`、MLAPO `dcp1`/`dcp8` 子图）完成 Tier 0/1 确定性求解与未校准阶段 `null/unknown` 保护验证 |
+| 3. 四层仿真与实测分工 | 当前归属已更新为独立仓库 `sim/mindie_sim` 与 `profiler/mindie_profiler`，见 [`simulation-system.md`](simulation-system.md)。周期求解、子图关键路径及整网桥接已有实现 | 首批 Golden 图用于确定性求解测试；通用接口不能以 K3/A5 历史数值补齐未校准输入。最新状态及反例见第 13.3 节 |
 | 4. 零负担准入脚手架与决策回放验收 | `mindie-bench` 预置对业务 Agent 零负担的 `G0–G3` 算子/模块准入脚手架（Gate Runner，自动封装 `MAKEFLAGS=-jN`、`native-gate-opp` 增量包、`.o`/AICPU JSON/`ldd -r` 符号检查与热态 ABBA 配对计时），100% `import` 生产组件公开接口；先按 M1–M6 做 exposed-dev 决策回放，再由 **DSH（`standard` 模式 + `reasoningEffort=max`）** 执行真实新会话和独立迁移验收 | 预写 proposal 回放仅证明接口串联。A2/A3 必要探针、无插桩复验、U@1→U@2 跨会话真实使用、后台静默防膨胀曲线和全成本对照均须单独给结果 |
 | 延后 | 两个领域知识仓的 A5 参数、K3 专用布局/修复与大规模历史导入 | 本批不改知识语料，不将已作废的历史方案作为正确答案入库 |
 
@@ -614,7 +624,20 @@ P0 的插件接通与核心修复可以独立推进，但不能先发布一个�
 - 四插件 YAML 可解析、原生 frontmatter 与改动前一致、本地参考链接可解析；Codex 的通用 `quick_validate.py` 通过。通用校验器拒绝 CC/Kimi/DSH 原有的 `disable-model-invocation`、`disableModelInvocation`、`whenToUse` 字段，故不将另外三端写成该校验器通过，也不为迎合它而改变宿主激活语义。
 - 已核对 T1 的 thread ID 与 10 个被引用文件，以及 T2–T5 的公开消息行号；`git diff --check` 通过。没有运行历史 NPU 任务、真实宿主决策回放或独立迁移实验。
 
-以上是当前工作区的首批机制改动，未提交 PR、发布或更新安装中的插件。`task_state="verified_milestone"` 仍是当前进行中任务提炼子结论的显式入口，`in_flight` 自动识别里程碑尚未实现。不因规则增加或组件通过就宣布独立任务收益成立。
+首批完成时尚未提交 PR、发布或更新安装中的插件；这是历史交付边界，不代表晚间的最新提交状态。`task_state="verified_milestone"` 仍是进行中任务提炼子结论的显式入口，`in_flight` 自动识别里程碑尚未实现。不因规则增加或组件通过就宣布独立任务收益成立。
+
+### 13.3 2026-10-20 晚间最新状态与推进顺序
+
+重新读取 GitHub `main` 和当前 checkout 后，已有工作不能继续全部标为“待实现”：文档 `main@67d17d0`、`sim@d3d0456`、`profiler@1891821` 已在远端；knowledge 的远端为 `a931b20`，bench 为 `4a8b9a9`。本地 `knowledge@433d70c`、`bench@ff540ab` 及四插件还有未进入远端 `main` 的提交。完整 revision 对照及来源见[详细设计第 15.1 节](knowledge-context-and-exploration.md#151-本轮范围与已有基础)，T1–T5 的来源表继续保留。
+
+| 次序 | 最新判断与实际工作 | 退出条件 |
+| --- | --- | --- |
+| 1 | 接通真实任务。补齐 profiler/sim 依赖和插件入口，复用已有 Gate Runner、回放与知识读取 | 宿主能直接使用已有能力；运行结果提供一次，由判分、提炼和报告复用 |
+| 2 | 闭合实际经验整理。16 KiB 完整对照、8 KiB 门禁和增长统计已实现；继续完成实际模型提炼和跨会话使用 | 实际 organizer 生成 U@2，新会话召回新分支且旧条件保留；观察总成本与复用效果 |
+| 随对应任务处理 | 局部修正回放判分和 sim 输入语义。已有人工反例用于定位问题，历史 A5 数值改为显式案例输入 | 在负责组件内修正即可；不新建事实绑定、重复核验或防伪流程，不把人工构造反例升级为全系统前置工程 |
+| 3 | 验证任务与迁移收益，继续延后 A5/K3 专用知识 | 同模型同环境匹配任务；必要的 A2/A3 实验及无插桩复验；未暴露任务族迁移、全成本与负迁移报告 |
+
+本次只复核并更新设计，没有修改运行时、推送或更新安装。定向测试为 **170 passed、18 skipped**：knowledge 53，bench 27，sim 57，profiler 33；profiler 另有 18 项依赖外部 provider/source/采集输入的跳过。测试使用当前多仓源码路径，不证明独立安装；真实宿主、NPU 和迁移未在本次运行。具体文件、反例与证据边界见[详细设计第 15.6 节](knowledge-context-and-exploration.md#156-2026-10-20-晚间源码复核与验收缺口)。
 
 ## 14. 核心完成的判定
 
