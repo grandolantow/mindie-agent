@@ -65,7 +65,9 @@ Updates and withdrawals revalidate the reference graph and preserve traceability
 
 ## 6. Feed publication and consumption
 
-Feed `publication-contract/2` describes the graded content tree and its derived routing index. Synchronization validates the complete candidate tree, unit count and digests, inheritance closure and index consistency before switching the installed collection. Read errors and missing blobs are synchronization errors, not evidence that a remote unit was deleted.
+Graded Feed `publication-contract/2` describes the content tree and its derived routing index. Synchronization validates the complete candidate tree, unit count and digests, inheritance closure and index consistency before switching the installed collection. Read errors and missing blobs are synchronization errors, not evidence that a remote unit was deleted.
+
+The `0.0.3` publication contract uses a separate `graded-v2` branch in each domain, with the client Feed and contribution target bound to the same branch. The legacy `main` branch retains its `publication-contract/1` contract for older clients; upgrading some clients does not justify replacing that contract in place. Content can keep evolving under a compatible contract. Changes to the contract format or pinned digest require a coordinated consumer compatibility change. Successful installation in four isolated native profiles establishes acceptance for those profiles, not an upgrade of every existing user.
 
 Markdown is authoritative; routing and retrieval indexes are rebuildable. SQLite stores cursors, queues, consent and receipts. Database or index corruption is reported while source content remains intact.
 
