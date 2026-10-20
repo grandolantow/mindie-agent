@@ -40,7 +40,7 @@ flowchart LR
     P -->|"紧凑 JSON 事实 + 源表定位符"| A
     A -->|"按需触发最小补充采集"| C["collect.py + remote-dev / coordinator"]
     C --> D
-    A -->|"检索/沉淀排障决策树与变换"| K["knowledge (L1–L4)"]
+    A -->|"检索/沉淀排障决策树与变换"| K["knowledge 经验飞轮<br/>(axiom / sop / workflow / mutator)"]
 ```
 
 | 组件 | 核心职责 | 明确不做的事（边界） |
@@ -50,7 +50,7 @@ flowchart LR
 | **宿主 Agent + Skill** | 理解用户性能目标（TTFT/TPOT/吞吐/算子时延）、按需调用 `mindie-profiler` 子命令、结合上下文提出假设并设计最小验证实验 | 不把死板的排查步骤写进工具源码，不在本地全量拉取 GB 级原始 Trace |
 | **`remote-dev` + `coordinator`** | 在数据所在远端主机/容器内原地运行 `mindie-profiler` 及受管离线导出作业（`torch_npu.profiler.analyse`），管理设备与端口租约 | 不新建独立的性能任务队列或第二套运行身份（统一复用 `run_id`） |
 | **`npu-top`** | 提供同时间窗口的设备温度、功耗、AICore 频率与显存采样序列 | 不脱离硬件降频信号位仅凭单一温度阈值（如 `>= 85°C`）直接宣判降频 |
-| **`knowledge`（及领域知识仓）** | 存储经过验证的测量公理（L1）、采集与关联 SOP（L2）、瓶颈定界决策树（L3）与算子/图优化变换（L4） | 不收纳每次运行的原始 Trace 或无复用意义的单次 Top-K 报表 |
+| **`knowledge`（及领域知识仓）** | 存储经过验证的测量与约束基线（`axiom` / `measurement`）、采集与关联规程（`sop`）、瓶颈定界决策经验（`workflow`）与算子/图优化变换（`mutator`），支撑系统 `L1–L4` 架构闭环 | 不收纳每次运行的原始 Trace 或无复用意义的单次 Top-K 报表 |
 | **`mindie-bench`** | 在固定输入、精度裁判与同构环境下验证端到端性能收益 | 不作为日常线上 Profiling 工具的唯一调用入口 |
 
 ---

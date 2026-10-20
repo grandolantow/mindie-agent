@@ -16,7 +16,7 @@
 
 | 决策 | 具体含义 |
 | --- | --- |
-| 知识层级、上下文深度、工作模式彼此独立 | L1–L4 表达知识用途；导航、正文、证据表达阅读深度；复用、诊断、探索表达当前子问题的工作方式 |
+| 系统架构层级、知识内容类别与上下文深度彼此独立 | `L1–L4` 表达系统认知与执行架构层级（`L1` 硬件约束基座、`L2` 剖析与仿真定界、`L3` Hermes 经验收敛模式、`L4` RSI 去偏探索模式）；`axiom/measurement`、`sop`、`workflow`、`mutator` 表达知识飞轮的内容语义类别（`category`）；导航、正文、证据表达阅读深度 |
 | 完整规则按需加载 | 条件、约束、原因作为一个语义单元；不通过截断操作步骤来凑预算 |
 | 知识可以增长，上下文必须有界 | 全库规模、检索候选规模、单次响应预算、当前可见知识工作集分别管理 |
 | 增量更新已有知识 | 相同问题优先修订原单元；只有新增机制、条件或决策分支才值得新增内容 |
@@ -33,9 +33,9 @@
 
 | 已有基础 | 当前缺口 | 本设计的改动 |
 | --- | --- | --- |
-| 分级单元、条件匹配、`id@revision`、继承闭包 | 分类与运行模式容易混为一谈 | 拆开三个维度，Hermes 可更新任意层级 |
-| 查询正文预算、L1 整条保留 | 元数据未计入；非 L1 正文可能截断；共享父单元重复出现 | 全响应计费，导航与精读分离，按引用去重 |
-| `_common` 基线 | 大型 L1 在默认预算下可能全部被排除 | L1 原子化，按当前子问题选择基础规则 |
+| 结构化知识单元、条件匹配、`id@revision`、继承闭包 | 早期 Schema 将系统架构层级 `L1–L4` 与知识内容类别 `category` 混用为 `tier` 字段 | 正交拆分系统架构 `L1–L4` 与知识内容类别（`axiom/measurement`、`sop`、`workflow`、`mutator`），经验提炼可更新任意类别 |
+| 查询正文预算、基础约束（`axiom`/`measurement`）整条保留 | 元数据未计入；非基础约束正文可能截断；共享父单元重复出现 | 全响应计费，导航与精读分离，按引用去重 |
+| `_common` 基线 | 大型基础约束单元在默认预算下可能全部被排除 | 基础约束原子化，按当前子问题选择基础规则 |
 | `knowledge_distill` 与 `reviewed_change` | 提炼前缺少已有知识对照，难以稳定形成增量更新 | 同主题检索、差量提炼、版本校验、合并优先 |
 | 查询观察与反馈 | 观察不能证明采用，采用不能证明有效 | 将使用声明与真实验证结果关联 |
 | RSI 停滞判断及候选评估 | 去掉对象中的 L3 不等于移除会话历史；未达收益目标可能被判成反证 | 使用宿主独立上下文；分开证据有效性、目标达成和可复用性 |
@@ -50,20 +50,23 @@
 
 由此优先修正知识装配和计量，再讨论自动调预算；在错误计量之上做自适应只会放大偏差。
 
-## 3. 三个独立维度
+## 3. 三个正交维度：系统执行架构（`L1–L4`）、知识内容类别（`category`）与上下文深度
 
-### 3.1 知识层级：保存什么
+### 3.1 知识内容类别（`category`）：在 `knowledge` 飞轮中保存什么
 
-| 层级 | 内容 | 典型问题 |
-| --- | --- | --- |
-| L1：约束与测量事实 | 硬件约束、软件契约、条件明确的测量结论 | 当前路径必须满足什么前提？ |
-| L2：操作方法 | 可重复执行的诊断、开发、测量步骤 | 怎样得到这个观察或完成这个动作？ |
-| L3：决策经验 | 观察如何区分分支，何时换方法，何时结束 | 下一步为什么应该这么做？ |
-| L4：代码变换 | 有适用条件的优化或适配变换 | 可以怎样改变实现？ |
+> [!IMPORTANT]
+> **避免把知识库称为“L1–L4 知识库”**：`L1–L4` 是系统认知与执行架构的四层分级（详见[系统架构 §4](architecture.md#4-l1l4-四层认知与执行架构及知识飞轮)）。`knowledge` 飞轮中的结构化知识单元按**内容语义类别（`category`）**划分，分别服务于 `L1–L4` 架构各层（现有 Schema 中的 `tier: L1..L4` 仅为对应下表四类 `category` 的历史兼容字段）：
 
-L4 可以在常规任务中直接使用；开放探索也可能只产出一条 L2 诊断方法。Hermes 指从任务中学习并修订知识的过程，不专属于 L3。
+| 知识内容类别（`category`） | 服务的系统架构层级（兼容字段 `tier`） | 保存内容 | 回答的核心问题 |
+| --- | --- | --- | --- |
+| **`axiom` / `measurement`**：约束与测量事实 | 服务 **`L1` 硬件约束基座 / `L2` 判据**（`tier: L1`） | 硬件约束、软件契约、条件明确的复现测量结论 | 当前路径必须满足什么底层前提？ |
+| **`sop`**：诊断与操作规程 | 服务 **`L2` 剖析与仿真定界 / `L3` 执行**（`tier: L2`） | 可重复执行的诊断、采集、开发、测量步骤 | 怎样得到这个观察或完成这个动作？ |
+| **`workflow`**：排障与适配决策经验 | 服务 **`L3` Hermes 经验收敛模式**（`tier: L3`，在 `L4` 去偏探索时剥离） | 观察如何区分分支，何时换方法，何时结束 | 下一步为什么应该这么走？ |
+| **`mutator`**：受控代码变换 | 服务 **`L3` 复用 / `L4` RSI 变换空间**（`tier: L4`） | 有适用条件与验证证据的优化或适配变换 | 可以怎样改变实现？ |
 
-证据类型独立于层级。目标元数据区分 `hardware_spec`、`software_contract`、`reproduced_empirical`、`single_observation`、`hypothesis`。软件接口约定不能因为放在 L1 就标成硬件规范；L1 允许 `hardware_spec`、`software_contract` 与 `reproduced_empirical`。这里新增的 `software_contract` 是待实现的格式调整。
+受控代码变换（`mutator`）可以在 `L3` 常规任务中直接复用；`L4` 开放探索也可能产出一项新的 `sop` 诊断规程或 `measurement` 事实。经验提炼（`knowledge_distill`）可修订或新增任意类别的知识单元。
+
+证据类型独立于知识类别。目标元数据区分 `hardware_spec`、`software_contract`、`reproduced_empirical`、`single_observation`、`hypothesis`。软件接口约定不能因为属于基础约束（`axiom`）就标成硬件规范；`axiom` / `measurement` 允许 `hardware_spec`、`software_contract` 与 `reproduced_empirical`。这里新增的 `software_contract` 是待实现的格式调整。
 
 ### 3.2 上下文深度：读到哪一步
 
@@ -218,9 +221,9 @@ needed = closure(S) - visible_complete_refs
 
 这种装配不需要通用图调度器。小规模候选集、已存在的闭包和稳定的贪心选择足够；是否需要更复杂算法由回放证明。
 
-### 6.3 L1 原子化
+### 6.3 基础约束单元（`axiom` / `measurement`，服务 `L1` 基座）原子化
 
-每条 L1 只表达一项完整约束：
+每条基础约束单元只表达一项完整约束：
 
 ```text
 条件：在某硬件、软件版本和执行路径下
@@ -252,11 +255,11 @@ needed = closure(S) - visible_complete_refs
 
 调用旧版本引用时，只有能取得该版本正文才返回其内容；否则返回版本已变化及当前引用。合并后的旧 ID 返回替代指向。不能用当前正文冒充旧版本，也不为此新增全文历史快照服务；已有 Git revision 与来源记录负责必要的历史追溯。
 
-## 7. L3 经验：保存决策能力
+## 7. 决策经验单元（`workflow`，服务 `L3` Hermes 收敛）：保存决策能力
 
-### 7.1 一条 L3 应回答的问题
+### 7.1 一条决策经验单元应回答的问题
 
-L3 的主体围绕以下内容组织，字段可融入自然语言，无需每条机械填空：
+决策经验单元（`workflow`）的主体围绕以下内容组织，字段可融入自然语言，无需每条机械填空：
 
 | 内容 | 作用 |
 | --- | --- |
@@ -427,13 +430,17 @@ G_read    = 相同任务集上的加载 tokens 变化
 
 连续两次无进展可作为轻量提醒，不能成为自动启用大规模探索的门槛。Agent 简短说明尚未解释的现象与下一项区分性实验，即可进入针对性探索。
 
-### 11.2 控制旧经验的锚定
+### 11.2 控制旧经验的锚定与 `subagent_fact_pack` 子上下文交接
 
 探索上下文保留目标、硬约束、当前实现、观测结果、已排除条件、待验证问题和已有运行引用。暂时不加载旧 L3 的推荐步骤与论证，先独立形成假设，再将历史经验作为对照。
 
-若宿主支持独立子上下文，传入上述最小事实包。继承完整历史的 fork 不能称为去偏；仅从 Python 字典删除 `tier=L3` 同样不能移除模型已经读过的内容。
+当通过 `knowledge_query(..., mode="explore")` 或 `knowledge_explain(..., mode="explore")` 进入去偏探索时，`knowledge.graded.explore.build_exploration_context` 会自动：
 
-宿主不支持新上下文时，保留在当前会话执行并明确这是调整策略，不宣称已经隔离旧历史。后续仍可按需检索 L2、L3 或 L4，探索并不要求人为失忆。
+1. **剥离 `L3`（`workflow`）并向上提取 `L1/L2` 继承前提**：在剥离匹配到的 `L3` 经验单元（记录于 `stripped_l3_ids`）前，先递归提取其依赖闭包中的 `L1`（`axiom`/`measurement`）和 `L2`（`sop`）前提并去重保留，绝不因剥离 `L3` 而丢失底层硬件约束或测量守卫。
+2. **注入条件化避坑清单（`conditional_avoid`）**：将近期未进展尝试转化为带明确条件边界（`unit_id`、`hypothesis`、`failure_reason`、`observed_bottleneck`、`conditions`、`scope_note`）的记录，防止重复踩坑而不构成跨条件永久禁令。
+3. **生成原生子上下文事实包（`subagent_fact_pack`，`mindie-rsi-subagent-pack/1`）**：输出可直接投递给四大宿主（Codex / Claude Code / Kimi / DSH）全新原生子 Agent 的结构化 JSON 与紧凑 Markdown 简报（`prompt_brief`）。继承完整历史的 fork 不能称为去偏；仅从 Python 字典删除 `tier=L3` 同样不能移除当前主会话模型已经读过的内容，必须由宿主创建不继承旧 `L3` 会话轨迹的全新子上下文并仅注入 `subagent_fact_pack`。
+
+宿主不支持新上下文时，设置 `native_subcontext=False`（`isolation_mode="in_session_warning"`），保留在当前会话执行并明确这是策略切换而非历史隔离。后续仍可按需检索 L2、L3 或 L4，探索并不要求人为失忆。
 
 ### 11.3 先验证最便宜、最有区分力的问题
 
@@ -505,6 +512,21 @@ GEAK v4 将通用 Agent 运行时交给 Harness，将优化判断、实验与验
 
 [Anthropic 的上下文工程实践](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) 提供了按需获取、压缩和结构化笔记的参考。MindIE 采用的是工作集管理原则：保留当前任务所需事实和可追溯指针，重复细节在需要时重读。具体预算和质量收益由自己的任务分布决定。
 
+### 12.5 从 `AMD-AGI/GEAK` 与 `apple-aiml-research/ml-rsi-inference-bench` 吸收的八项 RSI 防踩坑机制
+
+对 [`AMD-AGI/GEAK`](https://github.com/AMD-AGI/GEAK)（`kernel_workflow/kernel_lane.js`）与 [`apple-aiml-research/ml-rsi-inference-bench`](https://github.com/apple-aiml-research/ml-rsi-inference-bench)（`tasks/*/tests/_verifier_lib/`）的源码走查表明，工业界在落地 RSI 时已踩过八类典型陷阱。MindIE 将其对应防护直接内化入 `mindie_knowledge.graded.explore` 与 `mindie_bench.runner.rsi_campaign`：
+
+| 编号与来源 | 外部已踩过的坑（源码证据） | MindIE 落地的防踩坑机制与代码入口 |
+| --- | --- | --- |
+| **坑 1：知识卡片过度引导挤占冷启动方向**（GEAK `kernel_lane.js:196-214, 1714-1735`） | GEAK 在 16-kernel 基准中允许 Planner 自由引用知识卡片指导全部方向，导致几何平均加速比退化 **22.7%（`4.45x → 3.44x`）**，单算子从 `25.77x` 跌至 `2.15x`（*"The KB must be an accelerant, not a cage"*） | `explore.enforce_direction_budget` 实施 `kb_dir_cap=1` 与 `require_cold_direction=True`：每轮最多 `kb_dir_cap` 个方向允许挂载历史卡片引用，且**至少保留 1 个仅从 `L1/L2` 硬件与剖析事实推导的冷启动控制方向（`learned_refs=[]`）** |
+| **坑 2：反馈账本幸存者偏差与基线漂移误记功**（GEAK `kernel_lane.js:1737-1758, 1845-1875`） | ① 仅在 `finalPrimary > 1.0` 分支内写反馈导致负向实验被过滤（100% 虚高胜率）；② 前序轮次已达 `2.5x` 后，当前轮跑出 `1.5x`（相对本轮基线退化）仍因 `> 1.0` 被记为卡片正收益；③ 验证超时写成 `0` 误伤被引用卡片 | `explore.build_citation_feedback_record` 与 `rsi_campaign`：① 反馈账本独立于新卡提炼门禁（正负实验全量记录）；② 胜出判定锚定当前在位最优（`speedup >= incumbent_speedup * (1 + min_improve_delta)`）；③ 验证器超时或环境故障编码为 `cited_then_verified = None` |
+| **坑 3：按子 Agent 返回值收割导致超时丢失落盘高收益补丁**（GEAK `kernel_lane.js:1560-1585`） | 工程师子 Agent 已将 `1.56x` Triton 补丁写入磁盘（`best_patch.diff`），但汇总返回超时；按返回值门禁直接丢弃了该胜出补丁 | `rsi_campaign.harvest_candidate_patch` 采用**测量锚定收割（Measurement-Anchored Harvesting）**：仅当子 Agent 正常返回有效且低于基线的测量结果时跳过验证；只要子 Agent 超时而磁盘存在候选补丁，仍移交独立验证器（`disk_patch_rescued`） |
+| **坑 4：胜出合入后沿用陈旧剖析画像与未校准 Roofline 幻觉**（GEAK `kernel_lane.js:1456-1467, 1676-1683`） | 候选补丁胜出后硬件瓶颈已转移（如从访存合并转为计算受限），继续基于第 0 轮画像规划后续轮次；或 `roofline_status="unknown"` 时编造“冲刺 90% 峰值”方向 | `run_rsi_gate_campaign` 在 `became_winner=True` 时显式置位 `reprofile_required=True`；`enforce_direction_budget` 在 `roofline_status != "calibrated"` 时自动过滤依赖峰值 Roofline 百分比的假设 |
+| **坑 5：仅改启动脚本参数或配置字面量刷榜**（Apple `ml-rsi-inference-bench` `category_gate.py:50-152, 234-237`） | Agent 通过修改 `launch_server.sh` CLI 参数（`pure_flag_flip`）、调整 `config.py` 默认常量（`config_default_flip`）或残留编译产物（`artifact_only`）骗取算子/引擎优化分数 | `rsi_campaign.classify_candidate_patch_shape` 将候选补丁分类为 `empty` / `artifact_only` / `pure_flag_flip` / `config_default_flip` / `source_edit` / `mixed`；开启 `reject_narrow_flips=True` 时对非实质源码修改在 G3 直接拒收 |
+| **坑 6：新增未跟踪辅助源码遗漏与主从 JIT/编译缓存串扰**（Apple `candidate_capture.py`, `jit_cache_prune.py`, `_paired_helper.py:122-187`） | ① 新增 `.py`/`.cu`/`.asc` 文件未被 `git diff` 捕获，或误把 `.ssh`/`.env`/`__pycache__`/`.so` 打入补丁；② `pristine` 与 `candidate` 共享 `.so` 或 `TRITON_CACHE_DIR` / `ASCEND_CACHE_PATH`，导致基线加载候选已编译算子，AB/BA 比值抵消为 `~1.0x` | `classify_candidate_patch_shape` 显式剥离构建产物与敏感目录；`build_isolated_jit_cache_env(state_dir, side)` 为 `pristine` 与 `candidate` 生成严格隔离的 `TRITON_CACHE_DIR`、`TORCHINDUCTOR_CACHE_DIR`、`ASCEND_CACHE_PATH` 与 `MINDIE_JIT_CACHE_DIR` |
+| **坑 7：投机解码（MTP/DSpark）靠关停草稿或降低采信率伪造低时延**（Apple `acceptance.py:135-205`, `equivalence.py:36-113`） | 在 DSpark/MTP 优化任务中，候选补丁使 `num_drafts <= 0` 或大幅拉低 `mean_acceptance_length`，表面单步时延下降但投机解码实质退化 | `rsi_campaign.evaluate_speculative_acceptance` 强制校验 `num_drafts > 0` 且 `cand_acceptance_length >= pristine_acceptance_length * (1 - rtol)`（默认 `rtol=0.05`），违反时标记 `no_drafts` 或 `acceptance_degraded` 并拦截 |
+| **坑 8：均值之比扭曲与基础设施故障误判为负向结论**（Apple `regression_scoring.py:30-71`, `preflight.py:40-71, 227-249`） | 先分别求均值再相除易受离群值扭曲；`/dev/shm` 不足、驱动卡死或基线缺失若计为 `0` 分会污染实验账本 | 统一采用**同轮 AB/BA 配对比值 → 单负载中位数 → 跨负载几何平均**（且每个 guard 负载独立满足 `min_ratio`）；环境预检失败归入 `infra_failed` / `repair_execution_conditions`，绝不记为假设被反驳 |
+
 ## 13. 接口设计与数据闭环验收
 
 ### 13.1 在现有入口上调整
@@ -514,12 +536,17 @@ GEAK v4 将通用 Agent 运行时交给 Harness，将优化判断、实验与验
 ```text
 knowledge_query(query, conditions, domain, domain_path,
                 token_budget=1024, limit=8, continuation=None,
-                include_unknown=True, include_archived=False)
-  → cards, foundation_cards, results, continuation, usage
+                include_unknown=True, include_archived=False,
+                navigation_only=False, mode="reuse",
+                ledger_entries=None, bottleneck_summary=None,
+                native_subcontext=False, goal="")
+  → cards, foundation_cards, results, continuation, usage, mode, exploration_context?
 
 knowledge_explain(ref=None, refs=None, conditions=None,
-                  known_refs=None, token_budget=4096)
-  → units, requires, unresolved, usage (单 ref 调用同时保留顶层兼容字段)
+                  known_refs=None, token_budget=4096, mode="reuse",
+                  ledger_entries=None, bottleneck_summary=None,
+                  native_subcontext=False, goal="")
+  → units, requires, unresolved, usage, mode, exploration_context? (单 ref 调用同时保留顶层兼容字段)
 
 knowledge_distill(inputs, task_state, domain, related_refs=None, proposal=None)
   → noop 或 reviewed_change 的实际应用结果
@@ -529,7 +556,7 @@ knowledge_feedback(ref, rating=None, reason="", event_type=None,
   → vote / usage_event 记录回执
 ```
 
-- `query` 默认返回有界导航卡片（`cards` 与兼容字段 `results`）以及去重后的基础前提卡片（`foundation_cards`）；全响应序列化字节/token 计入 `usage`。未知条件默认以 `match_status="condition_unknown"` 与 `ready_to_apply=False` 呈现（不直接展开正文），保留 `include_unknown` 过滤参数兼容既有调用。已归档或被替代单元（`status in {"archived", "superseded"}`）默认不进入常规检索，仅在 `include_archived=True` 或按引用查询时返回。
+- `query` 默认返回有界导航卡片（`cards` 与兼容字段 `results`）以及去重后的基础前提卡片（`foundation_cards`）；全响应序列化字节/token 计入 `usage`。在 `navigation_only=True` 与常规模式下，`ready_to_apply` 均强制要求单元自身及其 `closure` 中所有继承祖先满足 `matched` 且处于 `active` 状态。当 `mode="explore"` 时，自动剥离 `L3`（`workflow`）单元（保留其匹配的 `L1`/`L2` 依赖前提），并返回包含停滞判定（`stagnation`）、`stripped_l3_ids`、`conditional_avoid` 与 `subagent_fact_pack`（`mindie-rsi-subagent-pack/1`）的 `exploration_context`。未知条件默认以 `match_status="condition_unknown"` 与 `ready_to_apply=False` 呈现（不直接展开正文），保留 `include_unknown` 过滤参数兼容既有调用。已归档或被替代单元（`status in {"archived", "superseded"}`）默认不进入常规检索，仅在 `include_archived=True` 或按引用查询时返回。
 - `explain` 既支持单个 `ref`（兼容现有调用及原始任务材料读取），也支持批量 `refs` 统一计算依赖闭包 `needed = closure(S) - visible_complete_refs`：共享父前提在 `requires` 中按拓扑顺序只展开一次，主单元在 `units` 中返回完整正文（绝不截断步骤）。`known_refs` 仅指当前上下文中完整可见的精确版本（`id@revision` 或完整 URI）；`unresolved` 明确区分 `condition_unknown`、`condition_mismatch`、`budget_excluded`、`removed_or_superseded`（附带 `superseded_by`）和 `not_found`。
 - `distill` 在 `task_state="in_flight"` 但 `inputs` 含已验证里程碑（`outcome="verified"`）时允许提炼；调用整理模型前自动从当前 `RoutingIndex` 检索同主题相关旧单元（`related_units`）作为差量对照；当前台 Agent 已形成符合 `mindie-distill-decision/1` 的 `proposal` 时，直接走确定性校验与 `apply_decision`（`model_calls=0`）。
 - `feedback` 在保持既有 `rating="up"|"down"` 投票兼容的同时，支持显式记录 `applied` 与 `evaluated`（绑定 `run_id` 与 `outcome="supported"|"refuted"|"inconclusive"`），并在服务端区分 `query` 返回的 `discovered`（`delivered`）与 `explain` 完整读取的 `loaded`，按 `(root_opaque, unit_id, revision, event_type, run_id)` 幂等去重。
@@ -623,31 +650,57 @@ P0/P1 可以先服务日常任务。P2/P3 在相同接口上迭代，不以新�
 
 本轮优先吸收“遇到问题如何判断、如何选实验、如何推翻旧结论”，延后 A5/K3 的参数、特定布局、算子修复和大规模知识导入。历史任务用于说明机制从何而来，不把其中的配置或一次成功推广成默认答案，也不将已有 transcript 当作未暴露的迁移测试。
 
-2026-10-20 复核的本地基线为：`knowledge@02ccb63`、`mindie-bench@c606777`、Codex 插件 `0a42ac5`、CC 插件 `3f01c5e`、Kimi 插件 `3e82f64`、DSH 插件 `16cffb8`、vLLM-Ascend 知识内容 `835baf2`。此处描述源码，安装中的版本和真实宿主行为另行验证。
+2026-10-20 晚间重新读取 GitHub `main` 与当前 checkout 后，基线更新如下。远端提交以 GitHub API 返回为准；本地 `origin/main` 可能滞后，不能仅凭 `ahead` 数量判断是否合入。下表不代表发布或安装状态。
+
+| 组件 | 远端 `main` | 本地 HEAD | 本轮判断 |
+| --- | --- | --- | --- |
+| 架构文档 | `67d17d0`（#251） | `67d17d0`，另有工作区修改 | 机制设计已进入文档；本节补最新实施与验收边界 |
+| `knowledge` | `a931b20`（#86；核心机制来自 #83–#85） | `433d70c` | 本地包含 `02ccb63`、`ac8d07a`、`433d70c` 的机制、预算及来源绑定补充；这些不能算作远端合入。远端 #86 为 live probe 环境配置补充 |
+| `mindie-bench` | `4a8b9a9`（#13） | `ff540ab` | M1–M6 回放、Gate Runner、分级评测与多域运行等已在本地提交，尚未进入远端 `main` |
+| 四插件（Codex / CC / Kimi / DSH） | `0a42ac5` / `3f01c5e` / `3e82f64` / `16cffb8`（#49 / #33 / #35 / #7） | `957d1d2` / `ee94204` / `34b586c` / `70f0414` | 远端已有新参数透传和依赖对齐；诊断机制参考与 Phase 0 指引在本地提交中 |
+| `sim` | `d3d0456` | `d3d0456` | 已有独立仓库、包与 CLI，四层求解代码已实现；不能继续写成待抽离 |
+| `profiler` | `1891821` | `1891821` | 已有独立仓库；建模模块委托 `mindie_sim`，安装依赖与实测校准仍需核对 |
+| 执行基础 | `coordinator@14c3680`、`remote-dev@f441d52` | 本轮以远端职责及现有调用接口为准 | 复用运行、资源和回执机制；未提交的拓扑扩展不计作合入 |
 
 已吸收的基础包括：
 
 - `knowledge/graded/explore.py` 已按运行 ID 去重，用新观察和首个分歧判断进展，并分开证据有效性、目标达成与可复用性；它是纯判断逻辑，不执行实验或创建上下文。
 - `knowledge/graded/worker.py` 已在提炼前查找相关旧单元；`distill.py` 已检查选中来源、证据强度和 L4 消融回执，支持前台提案的确定性应用。
-- `mindie-bench/evaluation/knowledge_tiered.py` 已复用生产知识接口，具备运行回执到反馈的桥接和顺序 episode 的组件回放。当前顺序回放接收预先提供的提案，不能据此声称模型学会了新方法。
+- 本地 `mindie-bench/evaluation/knowledge_tiered.py` 已复用生产知识接口，具备运行回执到反馈的桥接和顺序 episode 的组件回放；`mechanism_replay.py` / `mechanism_replay_cases.py` 已提供六种机制的题面与结构化判分，`runner/qualification_gate.py` 已提供 G0–G3 验证入口。预写提案和结构化答案测试仍不证明模型学会了新方法。
+- 独立 `sim` 已有硬件/容量与传输分析、周期流水求解、子图融合分析和整网建模接口；独立 `profiler` 已有 inventory、correlate、SQL 和实测分析能力。机制实现与数据校准分开：仍须防止案例数值成为未声明的默认输入。
 - 领域中已有 hybrid bring-up、idle-DP 状态和验证一致性的 L2/L3 分支经验；Run Manifest、实验判断、恢复进度的职责也已有设计。缺口是稳定保留决策依据、在四端一致执行，以及在新任务中证明确实改变了决策。
 
 吸收程度以三层证据报告：**规则/组件实现、真实宿主任务、独立任务迁移**。不能用前一层替代后一层。
 
 ### 15.2 机制、组件、缺口与验收
 
-下列 M1–M6 仅是设计追踪编号，不新增运行时枚举或要求用户填写的表单。它们可以组合使用，不是固定六阶段流程。来源 T1–T5 的身份和具体位置见第 15.5 节。
+下列 M1–M6 与工程流程 W1–W6 仅是设计追踪编号，不新增运行时枚举或要求用户填写的表单。它们可以组合使用，不是固定阶段流程。来源 T1–T6 的身份和具体位置见第 15.5 节。
+
+这些机制遵循[工程原则第 10 条](design-principles.md#10-按真实缺口自研以核心业务逻辑为唯一基准直接重构清理)：默认信任 Agent 和内部组件，直接复用已有运行结果。经验提炼、检索和报告不逐层重验事实，也不要求 Agent 为每项判断另交证明。评测器按题意做一次任务评价；真实任务出现矛盾时再做针对性定位。
 
 | 机制 | 主责与配合组件 | 复核基线与缺口（本批状态见 15.4） | 实现工作 | 验收要求 | 来源 |
 | --- | --- | --- | --- | --- | --- |
-| M1 选择有区分力的实验与跨界融合先行 | 四个原生插件负责当前决策；`mindie_sim` 提供子图/流水边界仿真；`knowledge` 保存/检索 L3；bench 衡量决策成本 | 已有信息停滞与三轴判断；插件仍有“两次失败强制升级”和固定四门路径。尚未将“Phase 0 子图跨界融合先行分析”置于单算子微调之前，也未验证模型在昂贵 bisect、局部对照和重复全量运行间的选择 | 顶层 Skill 只保留选择原则；按需参考要求说明竞争解释、可区分观察和最小动作。性能优化先走 **Phase 0 子图可融合性扫描**（识别可消除的 GM 往返、独立 `pack`/quant helper 及不可融合的通信屏障/容量硬边界），锁定融合后 I/O 契约再进入单算子排流水；预置零负担准入阶梯（`G0–G3`）降低验证负担 | 在逐步揭示材料的 Dev 回放中，优先完成子图融合边界判定与有信息下一步选择，理由绑定当时可见事实；真实任务统计到根因/有效融合方案的时间、实验数、无信息重复和人工纠正 | T1 周边预算/关键路径/负结果；T3:53、20178、20203；T4:24224 |
-| M2 定位首个分歧、跨模块契约与四层仿真 | 领域知识仓保存 L2/L3；插件选择探针；`remote-dev` 执行；`mindie_profiler` 提供实测证据；`mindie_sim`（`mindie-sim`）提供从硬件/微阶段流水到子图/整网的四层仿真求解 | 已有状态一致性和非加和计时规则；原理论模型仅含粗粒度单算子 Roofline，缺少独立 `mindie-sim` 组件承接微阶段周期依赖图求解、热态持续频率折算与子图关键路径核算 | 按逻辑 token/状态/阶段/rank 对齐检查 shape、dtype、stride、布局、所有权和生命周期。独立抽离 [`mindie_sim`](simulation-system.md)，编码固化硬件容量/对齐算术、Karp 最大环均值周期求解器与 $\max(P+C, Q+G)$ 关键路径核算；严禁硬编码具体算子源码特化、未校准阶段耗时或模拟器标称容量 | 定位第一个等价边界的分歧，避免把不同物理 block ID 误判成错误；`mindie-sim` 精确复现 36 节点周期下界与热态频率敏感性，缺失服务时长保持 `null/unknown`，下界不写成可达延迟，局部耗时不直接相加成系统收益 | T1 pipeline/quantized oracle/MLAPO 模型；T2:639、737、790、872；T3:20203 |
-| M3 识别观察扰动并做因果对照 | 插件负责实验设计；`coordinator`/`remote-dev` 负责资源与执行事实；bench/Profiler 负责比较和判分 | 已有基线、测量有效性、消融和租约；缺少“采集动作可能治好故障”的决策分支。固定门禁不能证明因果 | 遇到 dump、clone、isfinite、同步后症状消失，按竞争假设选无插桩基线、最小干预、仅观察对照与重复基线；记录实际执行路径。无需每个普通任务都执行整套矩阵 | 插桩后正常只算受干预观察；候选分支未执行时不得归因于该修复；对照仍无法分开解释时保留 inconclusive。最终修复须在诊断插桩关闭时验证 | T1 公共基线/ABBA；T3:3028、22797、22844；T3 因果 DFX 草案 |
-| M4 复现历史依赖的故障 | bench 复用 TaskSpec、初始状态和执行入口；领域仓保存复现方法；插件/remote-dev 保留状态与顺序证据 | 已有一般 task/replay 和恢复能力；单请求复现不足以覆盖状态污染，尚未形成真实顺序案例 | 最小复现包含输入、初始状态、请求/调度顺序及 reset 语义。对照新进程和经历历史的进程，缩短首次正常到异常的序列；若并发是必要条件则保留并发关系 | 单请求正确而序列失败的案例必须保留；证明缩短后仍触发原症状，重置效果可重复；不能从串行正确推断并发通过。组件回放与真实设备复现分列 | T1 EPLB 共享内存最小复现；T3:1649、23706、23744、41851；T4:4793 |
-| M5 独立 oracle、实际执行路径与零负担准入阶梯 | bench 的 private judge 与预置 Gate Runner 主责；插件选择和解释 oracle；执行组件保留实际路径证据 | 已有 OracleFreezer、正确性判分及状态边界；缺少对业务 Agent 零负担的预置增量门禁脚手架（`G0–G3`） | 在算子/模型开发环境中预置 `G0–G3` 标准验证脚手架（自动处理 `MAKEFLAGS=-jN`、`native-gate-opp` 增量打包、`.o`/AICPU JSON/`ldd -r` 符号检查及热态 ABBA 配对计时），Agent 仅需触发单条声明式验证。验证独立参考与实际执行分支计数 | target/draft 同错时不能因接受率 100% 判正确；health、exit 0、无报错均不足以替代语义 oracle；修复分支计数为零不得证明修复有效；准入阶梯不向业务 Agent 增加手工编写胶水脚本的负担 | T1 `FLASHMLA_C8_PLAN.md`、`experiment-journal.md`；T2:911、1067；T3:3028、20178；T5 修复记录 |
-| M6 保存条件化反证、纠正与后台静默防膨胀 | `knowledge` 的提炼、静默防膨胀压缩、修订和检索主责；四插件选择证据并恢复任务；bench 做反证/迁移回放 | 已有 related_units、版本、supersedes、反馈去重和运行引用；实时里程碑入库若无后台静默收敛易导致单元数量与正文字节膨胀 | 提炼决策片段，保留排除范围、未确认结果、纠正前后主张和来源；同主题优先修订。**防膨胀全部做成 `knowledge` 后台静默机制**（自动折叠同算子/同子图多次负向尝试为紧凑排除表、强制等义重写收紧与单单元字节预算控制），不对前台业务 Agent 增加任何字数核算或手动压缩负担 | 新会话不在相同条件下无理由重试已排除项，不复活已作废布局；反证更新为 U@2 后正常检索使用新分支，旧适用条件保留；连续里程碑提炼下活跃单元数与单单元正文字节净增长自动收敛 | T1 `ACTIVE_STATE.md`；T3:41851；T4:11236、16041、17326、19868、24062、24224 |
+| M1 选择有区分力的实验与跨界融合先行 | 四个原生插件负责当前决策；`mindie_sim` 提供子图/流水边界仿真；`knowledge` 保存/检索决策经验；bench 衡量决策成本 | 本地四插件已取消次数驱动的强制升级并加入 Phase 0；M1 回放已有，重点是接通真实宿主并观察实验选择是否改善 | 复用现有指引与回放入口；按当前问题评价动作的区分力，接受有理由的新假设和等价策略，不增加假设 ID 白名单或事实证明协议。性能优化按任务检查上下游可融合边界 | 真实任务统计到根因/有效方案的时间、实验数、无信息重复和人工纠正；少做无效实验、遇到新信息能调整方向 | T1 周边预算/关键路径/负结果；T3:53、20178、20203；T4:24224；T6:29126、44044、134703 |
+| M2 定位首个分歧、跨模块契约与四层仿真 | 领域仓保存方法/决策经验；插件选择探针；`remote-dev` 执行；独立 `profiler` 提供实测；独立 `sim` 提供四层求解 | `sim`/`profiler` 已拆仓并有代码；周期流水与子图边界已有本地测试。缺口转为独立安装依赖、案例参数与通用机制分离、真实输入校准 | 按逻辑 token/状态/阶段/rank 对齐 shape、dtype、stride、布局、所有权和生命周期；保留已有周期/关键路径求解。移除未声明的 A5 工作负载、频率与周期默认值，缺失校准输入时返回未建模及原因 | 首个等价边界定位正确；缺失输入不生成历史案例的数值预测；不同 SKU 不静默套用同一峰值；理论下界、模型预测、设备实测分列。详见 15.6 | T1 pipeline/quantized oracle/MLAPO 模型；T2:639、737、790、872；T3:20203；T6:66782、80008、145966 |
+| M3 识别观察扰动并做因果对照 | 插件负责实验设计；`coordinator`/`remote-dev` 负责执行；bench/Profiler 消费已有结果 | 本地 Skill、提炼提示和 M3 回放已有；判分器有局部语义问题，真实任务中的对照选择仍待验证 | 默认使用已有题面和工具结果，不要求 Agent 复制计数再由多个组件复核。遇到观察动作改变症状时，由 Agent 按尚存解释选择必要对照 | 能区分插桩影响和修复作用，按结果保留未确认结论；修复验收复用必要的无插桩测试结果，不为普通任务增加固定对照矩阵 | T1 公共基线/ABBA；T3:3028、22797、22844；T3 因果 DFX 草案；T6:77114 |
+| M4 复现历史依赖的故障 | bench 复用 TaskSpec、初始状态和执行入口；领域仓保存复现方法；插件/remote-dev 保留状态与顺序证据 | 本地已加入序列、reset、并发边界的结构化回放；仍缺由实际宿主执行的序列缩减与真实症状复验 | 复用现有案例接执行轨迹；最小复现包含输入、初始状态、请求/调度顺序及 reset 语义。保留必要并发，不以答案中的 `replayed=true` 替代执行结果 | 单请求正确而序列失败的案例必须保留；缩短后仍触发原症状，重置效果可重复；串行正确不推断并发通过。组件回放与设备复现分列 | T1 EPLB 共享内存最小复现；T3:1649、23706、23744、41851；T4:4793；T6:135347、141935 |
+| M5 独立 oracle、实际执行路径与零负担准入阶梯 | bench 的 private judge 与 Gate Runner 主责；插件解释 oracle；执行组件保留实际路径证据 | 本地 `QualificationGateRunner` 已实现 G0/G1 执行及 G2/G3 输入评估；尚未接入实际宿主任务。G2/G3 评估已提供的观测，不自行完成热态配对采集 | 接通已有声明式入口、独立参考、实际分支计数和同一 run 的计时数据。区分 Gate Runner、产品对照组及拓扑分级，避免同名编号混用；无需重写一套 runner | 共同错误不能因 acceptance 高判正确；health/exit 0 不替代语义 oracle；分支零执行不得证明有效；证明业务 Agent 能直接使用入口，而非由测试预填成功结果 | T1 `FLASHMLA_C8_PLAN.md`、`experiment-journal.md`；T2:911、1067；T3:3028、20178；T5 修复记录；T6:90433、117389、120748 |
+| M6 保存条件化反证、纠正与后台静默防膨胀 | `knowledge` 提炼、修订、检索主责；四插件恢复；bench 做反证/迁移回放 | 本地已有 16 KiB 完整对照、8 KiB 提案拒绝门禁和增长统计；负向折叠/等义压缩仍主要是提示要求，现有测试预写压缩后正文 | 在现有 C6 预算内完成整理，直接消费已有任务结果；正文预算由写入入口统一处理，下游不再核算或重复审核。不要求前台计算字数 | 实际 organizer 从多轮材料生成 U@2，新会话正常检索新分支，旧条件保留；重复任务观察增长。新增有效机制允许合理增长，不要求每次修订都缩小 | T1 `ACTIVE_STATE.md`；T3:41851；T4:11236、16041、17326、19868、24062、24224；T6:61084、96444、104814 |
 
-不为上述机制新建全局工作流引擎、原因分类器或长驻学习 Agent。诊断与 Phase 0 融合先行指导进入各宿主的按需参考；可复用机制进入现有 L2/L3；四层仿真求解归入独立包 [`mindie_sim`](simulation-system.md)；确定性证据、预置 Gate 脚手架和预算检查仍使用当前组件并严守单一职责。
+#### 15.2.1 从 T6（`01a00f42`）提取的六条全栈工程与交付流程（`W1–W6`）
+
+除局部排障推理机制（`M1–M6`）外，超长周期全栈迁移与特性交付会话 `T6`（`01a00f42-c273-7532-acf4-75e77f0a9267`）暴露了六个高频流程断点。以下六条工程与验证规程（`W1–W6`）直接沉淀入四端插件的 [`references/diagnostic-reasoning.md`](https://github.com/mindie-agent/mindie-agent-codex/blob/main/plugins/mindie-agent/skills/mindie-agent/references/diagnostic-reasoning.md) 及 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 的现有 `L2/L3` 单元修订版中：
+
+| 流程编号与名称 | 核心流程纪律与分支准则 | 宿主与知识库落点 | T6 证据行号 |
+| --- | --- | --- | --- |
+| **W1 多尺度分级验证阶梯与裁剪/全量权重边界** | 按 **`单算子 → 单机裁剪权重/双机最小拓扑 → 4 机全量权重 → 验毕立即释放集群`** 递进：<br/>1. **单机裁剪权重（如 16 专家）必验边界**：不看长文语义好坏，但必须在单机验完 ① 算子/权重加载无报错、② KV Cache 分组与 `build()` 次数符合预期、③ 最小 2 个边界档位 `ACLGraph` 捕获通过（调试期严禁一次编全档位空等半小时）、④ 旋转量化/投机分支**实际执行且采信率非零**、⑤ **峰值激活显存（Peak Activation）与旧基线水平一致**。<br/>2. **排障优先序**：`先单机/双机修卡死与崩溃 → 再单机对齐显存激活峰值 → 最后上 4 机跑全量精度与性能`。<br/>3. **4 机全量闭环与降维复现**：4 机依次完成 `历史已知错题集全量回归 → GPQA 等基准集 → 投机采信率 → 性能阶梯压测` 后立即释放机器；4 机长序列发现的问题优先排查能否降维至单机/双机复现后再插桩。 | 四插件 `diagnostic-reasoning.md` + `unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow@3` | `T6:4154, 5027, 43539, 55094, 70941, 85437, 85533, 91462, 115450, 117389, 120748–120769, 134703` |
+| **W2 跨版本/Rebase 回归的同拓扑基线 A/B 对照与三维守恒** | 1. **先锁基线锚点与冻结已验证层**：必先锁定最近一次指标正常的基线（旧分支如 `0.26.0rc` 或合入前 PR 评论快照 commit）；若算子源码与已验证分支一致，直接排除算子嫌疑，只对比框架胶水层（Runner / Metadata Builder / KV Spec / Loader）。<br/>2. **同拓扑/同分块受控对照**：优先双机或**单机 16 卡对半切分（前 8 卡跑旧基线、后 8 卡跑新分支，保持相同 `TP` 与 `block_size`）**加载同一份权重，在关键模块边界一次性全量插桩对比（不在调试 dump 开关上做无意义精细化控制）。<br/>3. **三维守恒验收**：同时对齐 **① 精度/历史错题集**、**② 显存激活峰值（如排查 `flashcomm` 切上游 `SP` 漏开导致多占 4 GiB）**、**③ 投机采信率**。 | 四插件 `diagnostic-reasoning.md` + `unit-vllm-ascend-0day-hybrid-model-bringup-hermes-workflow@3` | `T6:29126, 44044, 44705, 45032, 66782, 80008–82122, 107162, 130595, 134812` |
+| **W3 上游/仓内标杆先行与评审前全景逐行清洗** | 1. **编码前“三看”**：一看配套上游 `vllm` 是否已原生支持并直接复用官方接口（如 `process_weights_after_loading`、`SituAndMul`），清理过时旧 patch；二看 `vllm-ascend` 仓内成熟同族标杆（如写 QuaRot 看已有旋转量化模型，写 GQA DSpark 对照 GLM，写 `FIA V2 Sink` 对照 `DSA V1` 的 Metadata Builder 落位）；三看继承基类（只继承 `common`，若继承 NV/AMD 专属类需反向打 patch 则直接独立实现）。<br/>2. **评审前“全景逐行自查”**：提审或大型 Rebase 后，按文件逐行梳理“改前逻辑 → 改后逻辑 → 修改原因”，剔除调试残留、死代码、`NotImplementedError` 假想敌防御与源码字符串匹配凑数 UT，并核查公共文件（如 `kv_cache_interface.py`）对 DeepSeek/Qwen 等存量模型的爆炸半径。 | 四插件 `diagnostic-reasoning.md` + `design-principles.md` | `T6:9, 58273, 58344, 61084, 62626, 66172, 93149, 96444, 97132, 101715, 115450, 124923, 128451, 145966` |
+| **W4 投机解码（DSpark/MTP）入图、D2H 消除与长序列 SLA 阶梯评测** | 1. **入图与图外 Metadata 前置**：`K` 步投机解码的 `ACLGraph` 档位按 `K+1` 倍数（或与 `TP` 适配分档）对齐，首次选图按 padded `num_input_tokens`；固定 buffer 预分配与 Tiling/Sink Metadata 构造统一置于图外 `AttentionMetadataBuilder` / `ModelRunner` 阶段，顺带梳理并消除整条消费链路的 Host D2H 同步（如 `seq_lens`、Mamba `num_accepted_tokens`）；采样按 `greedy → probabilistic` 递进。<br/>2. **标准 SLA 阶梯压测**：95% 公共前缀数据集、固定输出 `1K`、输入按 `2K → 256K` 2 次幂递增、每 DP 并发 `1, 2, 4...` 倍增探测 `TPOT <= 30ms` 最大并发；**同表报告 `TPOT`、`ITL (p50/p90)` 与 `mean_acceptance_length`**（评估纯系统优化如 D2H 消除时，额外剥离对齐采信率下的纯 `ITL` 收益）。 | `unit-vllm-ascend-aclgraph-capture-invalidation-triage-sop@2` + `unit-vllm-ascend-prefill-decode-bottleneck-convergence-workflow@2` | `T6:89307, 89402, 90433, 113009, 141606, 141935, 145966, 149448, 153588` |
+| **W5 巨型特性的“1 父集成 PR + N 原子子 PR 栈”与 CI 快烟测交付** | 1. **父子双轨结构**：维护 **1 个父 PR**（含全量代码 + 部署文档，供多机端到端验证），按正交特性（算子、KV Cache、Mamba、KDA、SiTU、Modeling、DSpark、PD 分离）拆分为有序 **原子子 PR 栈**；子 PR 合入后父 PR 自然收敛为部署文档修改。<br/>2. **PR 描述与评论净化**：描述只写当前 PR 职责与改动点，不堆砌历史过程；评论区按非旋转/旋转量化分条贴**干净表格 + 脱敏启动/压测命令**（禁贴内部哈希、路径或误报说明）。<br/>3. **超大模型 5 分钟 CI 快烟测**：在单文件中构造**减层 + 减专家 / Dummy 权重**用例覆盖核心特性组合拉起并推理 2 token，剔除重复 TP 组合与超大 config 管道序列化开销，总耗时 `< 5 min`。<br/>4. **真人检视意见闭环**：过滤 AI 机器人误报，汇总真人检视意见逐项实质修复、回归历史错题集、同步父子 PR 并逐条回复。 | 四插件 `diagnostic-reasoning.md` | `T6:51109–60014, 91899, 92466, 97419–102090, 126824–128451` |
+| **W6 极简编译与拉起防呆清单（反重型门禁仪式）** | 严禁编写重型哈希/manifest 校验仪式，仅在编译与拉起前固定核对 4 项轻量不变量：① C++ 算子编译必带并行度（`-j` / `MAX_JOBS`）与 `.so` / `ASCEND_CUSTOM_OPP_PATH` 校验；② 显式核对 `VLLM_VERSION`（防止回落动态 commit）；③ 核对多机 `GLOO/HCCL_SOCKET_IFNAME`；④ 压测请求一律在远端容器内本地发起（禁从本机跨 VPN 狂发请求）。对外复现包仅含“启动脚本 + 压测脚本 + 构造数据集 + 精确 commit”（不含 `.so`）。 | 四插件 `diagnostic-reasoning.md` | `T6:15507, 65900, 103987–104814, 106880, 123985–124228, 144076` |
+
+不为上述机制与流程新建全局工作流引擎、原因分类器或长驻学习 Agent。诊断、Phase 0 与工程交付流程指导进入各宿主的按需参考；可复用机制进入现有方法/决策经验单元；四层仿真求解归入独立仓库 `sim` 的 [`mindie_sim`](simulation-system.md)，实测归入独立仓库 `profiler`；确定性证据、Gate 脚手架和预算检查继续使用现有组件。
 
 ### 15.3 经验的最小单元、反证处理与后台静默防膨胀
 
@@ -658,6 +711,8 @@ P0/P1 可以先服务日常任务。P2/P3 在相同接口上迭代，不以新�
 旧知识对照也必须保留语义完整性。本批将 `worker.py` 固定截取前 1,200 字符改为在共享 16 KiB 旧正文预算内整条提供，`body_complete=true` 表示正文完整；超限保留导航信息并明确正文未提供。对照为不完整摘录（包括旧请求未声明完整）时，`distill.py` 不允许直接 `merge_into_existing`，可返回原有语义评审提案或 noop。这个检查保护可见性边界，不能证明模型一定保留了所有反证，语义质量仍需 M6-01 回放。
 
 **后台静默防膨胀机制（Silent Background Anti-Bloat，对前台业务 Agent 零负担）**：
+以下三项是目标行为。`knowledge@433d70c` 已有整理提示、8 KiB 准入拒绝和增长统计；尚不能据此认定自动重写、再次提案以及语义保留都已闭合，见第 15.6 节。
+
 当支持长任务通过 `task_state="verified_milestone"` 实时沉淀中间结论（如某组子图融合边界判定、某次微阶段双缓冲反证）时，必须防止知识库随实验次数线性膨胀。防膨胀逻辑**完全内置于 `knowledge` 后台 C6 提炼与发布链路（`worker.py` / `distill.py` / `publication.py`）中静默执行**，前台业务 Agent 无需关心单元字数、合并策略或压缩指令：
 
 1. **同主题负向分支静默折叠（Negative-Branch Folding）**：针对同一算子或同一子图的多次负向尝试（如先后排除 `PV2`、`Score2`、`S256`、`vmula`），后台 C6 整理器严禁逐次 `create` 新单元，而是通过 `merge_into_existing` 将其折叠进所属 `L3` 单元下的紧凑《已验证排除分支表（条件 + 1 行物理原因 + 配对数据摘要）》。
@@ -674,19 +729,19 @@ P0/P1 可以先服务日常任务。P2/P3 在相同接口上迭代，不以新�
 
 恢复时继续使用当前任务记录和 Run Manifest。简单任务无需创建全套账本；长任务至少保留当前目标、有效约束、已作废方案、已排除条件、未决问题、下一项区分实验和已有运行引用。
 
-### 15.4 优先级、工作包与退出条件（由 DSH `standard` + `reasoningEffort=max` 推进实现）
+### 15.4 最新优先级、工作包与退出条件
 
-这里的优先级是第 14 节现有阶段内的工作安排，不另建产品 P 组。
+这里的优先级是第 14 节现有阶段内的工作安排，不另建产品 P 组。以真实任务接通和经验复用为主线；局部判分修正随对应任务完成，不另设全系统事实绑定或防伪建设阶段。
 
 | 优先级 | 工作包与唯一权威组件 | 交付物与退出条件 | 状态 |
 | --- | --- | --- | --- |
-| 最高：先纠正行为入口与后台静默防膨胀 | 四插件 Skill/按需参考；`knowledge/graded/worker.py`、`distill.py`、`publication.py` | 对齐 M1–M6（含 **Phase 0 子图跨界融合先行分析**与零负担准入引导）；取消次数驱动的强制升级、固定设备和诊断必经性能消融；`knowledge` 后台静默完成 16 KiB 完整对照、负向分支折叠与单单元防膨胀字节门禁 | 首批本地改动与 51 项知识组件测试已完成；静默防膨胀字节门禁与 Phase 0 融合先行指引补齐后交由 DSH `max` 闭合 |
-| 并行高优：独立抽离 `mindie-sim` 四层仿真组件 | `diagnostics/mindie_sim`（独立包与 `mindie-sim` CLI）；`mindie_profiler` 委托调用 | 落地 [`simulation-system.md`](simulation-system.md)：（1）硬件规格、片上 Buffer 容量/对齐与热态频率敏感性核算；（2）Karp 最大环均值微阶段周期求解器；（3）Phase 0 子图跨界融合 GM 往返流量与 $\max(P+C, Q+G)$ 关键路径求解；（4）`msmodeling`（`tensor_cast`）整网并行桥接。严守“可编码 vs 不可硬编码”红线 | 设计已完成；交由 DSH `max` 抽离实现并通过 K3/A5 Golden 图定义（Tier 0/1）验证 |
-| 其次：零负担准入脚手架与可判分决策回放 | `mindie-bench`（预置 `G0–G3` Gate Runner、现有 task/轨迹与 private judge）；`coordinator`/`remote-dev` 执行；`knowledge` 真实提炼 | 在算子/模块评测与开发环境中预置一键式 `G0–G3` 准入脚手架（自动处理 `MAKEFLAGS=-jN`、`native-gate-opp` 增量包、符号校验与热态 ABBA 计时）；落地 M1-01 ~ M6-01 决策回放（含“Phase 0 先判子图融合 vs 盲调单算子”回放），接入真实宿主检验提炼前后差异 | 待 DSH `max` 落地；`mindie-bench` 100% `import` 生产组件公开接口，严禁重复造轮子 |
-| 再次：做真实任务和迁移验收 | bench + 真实宿主（DSH `standard` + `reasoningEffort=max`）；A2/A3 上由 remote-dev/coordinator 执行 | M2/M3/M4/M5 实际执行及无插桩复验；M6 跨新会话 U@1→U@2 及其静默防膨胀曲线验证；冻结知识后用未暴露任务验证迁移，记录全成本和负迁移 | 待验收；无结果时写未测，不由规则检查推断收益 |
+| 最高：接通真实任务与已有能力 | 四插件、`knowledge`、bench、独立 `profiler`/`sim` | 补齐实际依赖和入口；现有 Gate Runner、回放及知识读取用于真实宿主任务，直接复用执行结果 | 不重复建设已有库；优先消除阻断使用的缺口。发布、安装另列验收 |
+| 随后：闭合实际整理与跨会话修订 | `knowledge` C6 + bench 顺序 episode + 一个真实宿主 | 实际模型完成负向折叠、压缩及语义保留；超限结果有明确处理；新会话消费 U@2 并回测旧条件，计入提炼成本 | 16 KiB 对照、8 KiB 门禁与统计已有；真实 organizer 与增长曲线待验收 |
+| 随对应任务修正：判分和计算语义 | bench 的现有 evaluator；`sim` 的热态模型与 CLI | 判分直接使用已有题面/结果，评价动作是否有效；仿真按实际输入计算，未给数据不套用历史案例。只做负责组件内的必要修正 | 局部问题保留在待办，不扩展为重复检查、证明链或新的前置工程 |
+| 再次：执行与独立迁移 | bench + 真实宿主；必要 A2/A3 实验由 remote-dev/coordinator 执行 | M2/M3/M4/M5 实际执行和无插桩复验；同模型同环境对照；知识固定后用未暴露任务验证，记录全部成本、人工纠正和负迁移 | 本轮没有新增这层证据；历史 T1–T5 与预写答案不可替代 |
 | 延后：领域细节扩充 | `knowledge-operators`、`knowledge-vllm-ascend` | 按后续真实需求补 A5 参数、K3 具体状态布局/修复、专用 kernel 和性能数值；各自保留版本与设备边界 | 本轮不导入，也不作为机制工作完成的前置条件 |
 
-具体判分场景见[分级测试方案第 4.6 节](knowledge-tiered-testing-plan.md#mechanism-replay)，本地改动与验证记录见[核心实施设计第 13.2 节](core-implementation-and-geak-evolution-design.md#132-2026-10-20-transcript-机制吸收工作包)。先证明过程能保留证据、改变错误决策，再评价总成本；不把多写了几条 Skill 或知识单元作为收益指标。
+具体判分场景见[分级测试方案第 4.6 节](knowledge-tiered-testing-plan.md#mechanism-replay)，首批记录见[核心实施设计第 13.2 节](core-implementation-and-geak-evolution-design.md#132-2026-10-20-transcript-机制吸收工作包)，最新反例与验证见本篇第 15.6 节。先证明过程能保留证据、改变错误决策，再评价总成本；不把多写了几条 Skill 或知识单元作为收益指标。
 
 ### 15.5 Transcript 来源与证据边界
 
@@ -699,7 +754,26 @@ P0/P1 可以先服务日常任务。P2/P3 在相同接口上迭代，不以新�
 | T3 | **定位0.26.0rc精度问题引入点**；`019fcc53-1aa8-7641-aab7-fed74a4c808a`；`~/.codex/sessions/2026/08/04/rollout-2026-08-04T05-30-26-019fcc53-1aa8-7641-aab7-fed74a4c808a.jsonl.zst` | `53`（2026-08-04 10:32:46.274Z）人工要求用局部 forward 对照替代昂贵跨版本 bisect；`1649` 请求边界差异；`3028` 修复分支未执行；`20178/20203`（2026-08-05）竞争假设、共同错误 oracle、逻辑状态对齐；`22797/22844` dump 扰动和事件保护范围；`23706/23744` 历史污染与最短序列；`41851`（2026-08-06 11:43:42.992Z）旧候选仍未解决完整问题 |
 | T4 | **系统解决 DSpark Prefix Cache 精度问题**；`019fd7e6-2407-7191-933b-e6fa78dc310a`；`~/.codex/sessions/2026/08/06/rollout-2026-08-06T11-26-51-019fd7e6-2407-7191-933b-e6fa78dc310a.jsonl.zst` | `9`（2026-08-06 16:28:24.546Z）要求系统化定位；`4793` 串行通过而并发死锁；`11236/24224` 已排除 zeroer 后仍重复怀疑；`16041` 对无依据改调度契约的纠正；`17326/19868`（2026-08-07）作废 4:1、parent/subslot 等中间方案；`24062` 对“旧基线”含义的纠正 |
 | T5 | **整理PR13277精度修复记录**；`019fe991-9dbb-7ca3-9012-5702d6f83610`；`~/.codex/sessions/2026/08/09/rollout-2026-08-09T21-47-42-019fe991-9dbb-7ca3-9012-5702d6f83610.jsonl.zst` | `86/290` 的算子边界与精度/挂起/性能/CI 分项复盘；产物 `/Users/maoxx241/code/kimi k3/.codex_tmp/pr13277-commit-comments-20260809/01-637d49d0-gdn-replay.md:8–46`、`08-9998aa44-kda-operator.md:8–19,93–99`。它们是同一历史工作的复盘，不是新的独立实验 |
+| T6 | **K3 0.26→0.27 全栈迁移、DSpark 入图、FIA Tiling 下沉与多子 PR 交付**；`01a00f42-c273-7532-acf4-75e77f0a9267`；`~/.codex/sessions/2026/08/17/rollout-2026-08-17T05-27-08-01a00f42-c273-7532-acf4-75e77f0a9267.jsonl` | `4154/5027/85533/91462` 单机裁剪→双机→4 机全量→验毕释放的多尺度分级验证阶梯；`29126/44044/66782/80008` 锁定已知基线、算子未变只查框架层、同机前 8 卡 vs 后 8 卡同 `TP` 对照及显存激活峰值对齐；`43539/89402/141606/145966/149448` 调试期最小图档位、DSpark `K+1` 档位步长、图外 `AttentionMetadataBuilder` 放置 `FusedInferAttentionScoreV2SinkMetadata` 与消除 `seq_lens`/`num_accepted_tokens` D2H 同步；`51109–60014/96444/97132/101715/126824–128451` 上游与仓内同族标杆先行、评审前全景逐行自查与跨模型爆炸半径核查、1 父 PR + N 原子子 PR 栈交付、超大模型 5 分钟减层/Dummy CI 快烟测；`89307/90433/153588` 95% 公共前缀 `2K→256K` 阶梯压测同时报告 `TPOT`/`ITL`/`mean_acceptance_length`；`15507/65900/103987–104814` 反重型哈希门禁的极简并行编译与环境变量防呆 |
 
 T3 的补充实验设计在 `/Users/maoxx241/code/kimi k3/remote-dev/pr13277-prefix-causal-dfx-r20-topology20-r2-draft/README.md:12–59` 和 `FIX_ACCEPTANCE_PLAN.md:3–44`：包含 reset/warm/hit、无 snapshot 基线、最小同步、仅观察对照和无 DFX 验收。该目录仍是草案（`R20_FROZEN=0`）；本设计吸收其对照思想，不声称矩阵已执行，也不继承其冻结/多份审计产物流程。
 
 T4 提到的 Cursor 会话 `e1a48dc1-b970-4d07-b486-cd17400b19f4` 未直接读取，只作为后续可查线索。T1–T5 的历史设备结果本轮均未复跑；已被后续纠正的方案只用于检验修订机制，不能作为待灌入的正确知识。
+
+### 15.6 2026-10-20 晚间源码复核与验收缺口
+
+本次在 GitHub `main` 与第 15.1 节本地提交上分别核对；没有把本地提交、文档中的待办或测试名字当作远端交付。以下反例均在本地执行，未修改运行时代码，也未调用模型或 NPU：
+
+| 缺口 | 源码与实际观察 | 修正与验收 |
+| --- | --- | --- |
+| 决策判分的局部语义问题 | `bench@ff540ab` 的 `evaluation/mechanism_replay.py:204` 只检查被区分假设数量；手工填入不存在的 ID 仍通过。`:287` 对手工改写、与题面矛盾的修复答案也判通过。这些观察只定位判分逻辑，不能推导出内部组件不可信 | evaluator 直接复用题面和已有结果，按题意评价决策；不要求 Agent 重复填报事实，不增加事实绑定协议、ID 白名单或逐层核验。按真实案例就地修正，不作为全系统最高优先级 |
+| 题面已有后续解释，且未接真实宿主 | `mechanism_replay_cases.py:156–164` 把“dump 改变 stream timing”及观察对照的解释放入 M3 可见事实；字段/marker 检查不能证明时间隔离。`src` 中回放 evaluator 与 Gate Runner 尚无模块外的调用路径 | 按原 transcript 的决策点重新投影；解释在相应观察之后揭示。复用现有 task/runner 接入一个真实宿主，采集实际答案、工具轨迹和成本；不再以测试手填的答案充当 Agent 决策 |
+| 案例参数进入通用仿真默认值 | `sim@d3d0456` 的 `thermal.py:109` 在无输入调用 `thermal_bounds()` 时返回 `modeled`、1250–1300 MHz 和 350 us 目标；`hardware.py:751` 对部分 workload 补入固定 FLOPs/周期，热态计算使用 A5 峰值 | 将这些值移入显式历史案例 fixture/profile；通用入口要求相应工作负载、设备规格与观测来源，缺失就未建模。跨 SKU、缺失输入和不同频率测试必须证明不会借用旧案例数值 |
+| 独立组件依赖尚未闭合 | `profiler@1891821` 已导入 `mindie_sim`，但 `pyproject.toml` 的 `dependencies=[]`；仅暴露 profiler 源码的 `python -I -S` 导入报 `ModuleNotFoundError: mindie_sim`。四插件的 knowledge pin 仍是 `b900f11` | profiler 显式声明 sim 依赖；插件配套版本覆盖本批机制。按声明依赖可独立启动并调用新入口，再分别验证安装消费；多仓源码 `PYTHONPATH` 下通过不代表安装通过 |
+| 防膨胀尚未证明实际整理 | `knowledge@433d70c` 的 `distill.py:209` 是折叠/重写提示，`:396` 是超 8 KiB 拒绝；`publication.py:307` 记录增长，不执行压缩。`test_negative_branch_folding_keeps_one_compacted_l3_unit` 预写了压缩结果 | 在既有 C6 预算内处理整理结果并复验，保留失败与未知语义；由实际 organizer 生成修订，检查稀有条件、反证、新分支和旧条件召回。字节变短和条目变少都不能单独证明语义保留 |
+
+`tests/test_live_npu_gate_and_replay.py:387` 的 M6 用例虽然先读取远端 `npu-smi`，其正文、提案和决策仍由测试预先提供；它可以验证设备可达及本地生产接口串联，不能证明实际模型从精度定位中学会了机制。测试是否含 `live`、是否访问设备，与它究竟验证哪项行为应分别说明。
+
+本次定向复验：knowledge 三个相关文件 **53 passed**；bench 的 `test_mechanism_replay.py`、`test_qualification_gate.py` **27 passed**；sim 的 `test_mindie_sim.py`、`test_modeling_inputs.py` **57 passed**；profiler 的 inventory/correlate、modeling、provider 相关文件 **33 passed、18 skipped**。合计 **170 passed、18 skipped**。provider 跳过项需要未配置的 pinned msmodeling/source、torch 或外部采集输入；没有补跑真实 provider、原生宿主、NPU 或独立迁移。
+
+测试使用现有 Python 环境并显式指向当前组件源码，证明的是这一组 checkout 的局部契约。人工反例用于定位评测器问题，不成为增加系统核验开销的理由。当前推进原则为：**默认信任内部结果，优先接通真实任务和经验复用，在负责组件内修正影响业务的局部问题**；A5/K3 专用知识继续延后。

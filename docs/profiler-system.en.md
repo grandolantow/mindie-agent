@@ -40,7 +40,7 @@ flowchart LR
     P -->|"Compact JSON facts + source locators"| A
     A -->|"Trigger minimal targeted capture on demand"| C["collect.py + remote-dev / coordinator"]
     C --> D
-    A -->|"Retrieve / distill diagnostic decision trees & transforms"| K["knowledge (L1–L4)"]
+    A -->|"Retrieve / distill diagnostic decision trees & transforms"| K["knowledge flywheel<br/>(axiom / sop / workflow / mutator)"]
 ```
 
 | Component | Core Responsibility | Explicit Non-Goals (Boundaries) |
@@ -49,7 +49,7 @@ flowchart LR
 | **Host Agent + Skill** | Understand user targets (TTFT/TPOT/throughput/operator latency), invoke `mindie-profiler` subcommands progressively, formulate hypotheses, and run minimal verification experiments | Never hardcodes rigid troubleshooting pipelines into tool code; never pulls multi-GB raw traces to the local machine |
 | **`remote-dev` + `coordinator`** | Execute `mindie-profiler` and managed offline export jobs (`torch_npu.profiler.analyse`) in place on the remote container; manage NPU and port leases | Never creates a separate performance job scheduler or duplicate run identity (reuses `run_id`) |
 | **`npu-top`** | Provide time-aligned device temperature, power, AICore frequency, and HBM sampling series | Never declares thermal throttling from a temperature threshold alone (e.g., `>= 85°C`) without explicit hardware throttling signal bits |
-| **`knowledge` (and domain repos)** | Store verified measurement axioms (L1), capture/correlation SOPs (L2), bottleneck decision trees (L3), and operator/graph code transforms (L4) | Never stores raw traces or one-off Top-K reports lacking cross-task reuse value |
+| **`knowledge` (and domain repos)** | Store verified measurement & constraint baselines (`axiom` / `measurement`), capture/correlation procedures (`sop`), bottleneck decision workflows (`workflow`), and operator/graph code transforms (`mutator`) supporting the `L1–L4` execution architecture | Never stores raw traces or one-off Top-K reports lacking cross-task reuse value |
 | **`mindie-bench`** | Verify end-to-end numerical correctness and performance gains under matched inputs and hardware conditions | Never acts as the sole entry point for routine interactive profiling |
 
 ---
