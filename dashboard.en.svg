@@ -20,7 +20,7 @@
   <rect x="1" y="1" width="958" height="56" rx="12" fill="#F8FAFC"/>
   <line x1="1" y1="57" x2="959" y2="57" stroke="#E2E8F0" stroke-width="1"/>
   <text x="24" y="35" class="font title">MindIE Agent Repository &amp; Download Statistics</text>
-  <text x="936" y="35" text-anchor="end" class="font sync">Updated every 12h · 2026-10-20 01:53 (UTC+8)</text>
+  <text x="936" y="35" text-anchor="end" class="font sync">Updated every 12h · 2026-10-20 10:28 (UTC+8)</text>
   <rect x="24" y="72" width="216" height="86" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <rect x="24" y="72" width="4" height="86" rx="2" fill="#7045F5"/>
   <text x="38" y="95" class="font kpi-label">Stars / Forks</text>
@@ -39,8 +39,8 @@
   <rect x="720" y="72" width="216" height="86" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <rect x="720" y="72" width="4" height="86" rx="2" fill="#0F766E"/>
   <text x="734" y="95" class="font kpi-label">Release Downloads</text>
-  <text x="734" y="124" class="font kpi-val">1,357</text>
-  <text x="734" y="144" class="font kpi-sub">1,491 total asset downloads</text>
+  <text x="734" y="124" class="font kpi-val">1,368</text>
+  <text x="734" y="144" class="font kpi-sub">1,525 total asset downloads</text>
   <rect x="24" y="174" width="912" height="124" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <text x="40" y="198" class="font sec-title">Client Plugin Distribution</text>
   <rect x="40" y="210" width="880" height="12" rx="6" fill="#E2E8F0"/>
@@ -129,7 +129,7 @@
   <text x="540" y="538" text-anchor="end" class="mono td-num">0 / 0</text>
   <text x="665" y="538" text-anchor="end" class="mono td-bold">236</text>
   <text x="815" y="538" text-anchor="end" class="mono td-num">236 (102)</text>
-  <text x="920" y="538" text-anchor="end" class="mono td-num">6</text>
+  <text x="920" y="538" text-anchor="end" class="mono td-num">7</text>
   <line x1="24" y1="550" x2="936" y2="550" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="567" r="3.5" fill="#475569"/>
   <text x="54" y="571" class="mono td-repo">knowledge</text>
@@ -153,40 +153,40 @@
   <circle cx="44" cy="633" r="3.5" fill="#475569"/>
   <text x="54" y="637" class="mono td-repo">remote-dev</text>
   <text x="240" y="637" class="font td-cat">Core Runtime</text>
-  <text x="355" y="637" class="mono td-sub">v0.10.1</text>
+  <text x="355" y="637" class="mono td-sub">v0.10.3</text>
   <text x="540" y="637" text-anchor="end" class="mono td-num">0 / 2</text>
   <text x="665" y="637" text-anchor="end" class="mono td-bold">1,441</text>
   <text x="815" y="637" text-anchor="end" class="mono td-num">1,326 (492)</text>
-  <text x="920" y="637" text-anchor="end" class="mono td-num">16</text>
+  <text x="920" y="637" text-anchor="end" class="mono td-num">20</text>
   <rect x="25" y="649" width="910" height="33" fill="#F8FAFC"/>
   <line x1="24" y1="649" x2="936" y2="649" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="666" r="3.5" fill="#475569"/>
   <text x="54" y="670" class="mono td-repo">coordinator</text>
   <text x="240" y="670" class="font td-cat">Core Runtime</text>
-  <text x="355" y="670" class="mono td-sub">v0.5.3</text>
+  <text x="355" y="670" class="mono td-sub">v0.6.0</text>
   <text x="540" y="670" text-anchor="end" class="mono td-num">0 / 1</text>
   <text x="665" y="670" text-anchor="end" class="mono td-bold">217</text>
   <text x="815" y="670" text-anchor="end" class="mono td-num">167 (62)</text>
-  <text x="920" y="670" text-anchor="end" class="mono td-num">10</text>
+  <text x="920" y="670" text-anchor="end" class="mono td-num">12</text>
   <line x1="24" y1="682" x2="936" y2="682" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="699" r="3.5" fill="#D97706"/>
   <text x="54" y="703" class="mono td-repo">npu-top</text>
   <text x="240" y="703" class="font td-cat">Observability</text>
-  <text x="355" y="703" class="mono td-sub">v0.1.9</text>
+  <text x="355" y="703" class="mono td-sub">v0.2.0</text>
   <text x="540" y="703" text-anchor="end" class="mono td-num">2 / 3</text>
   <text x="665" y="703" text-anchor="end" class="mono td-bold">202</text>
   <text x="815" y="703" text-anchor="end" class="mono td-num">161 (57)</text>
-  <text x="920" y="703" text-anchor="end" class="mono td-num">603</text>
+  <text x="920" y="703" text-anchor="end" class="mono td-num">605</text>
   <rect x="25" y="715" width="910" height="33" fill="#F8FAFC"/>
   <line x1="24" y1="715" x2="936" y2="715" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="732" r="3.5" fill="#475569"/>
   <text x="54" y="736" class="mono td-repo">diagnostics</text>
   <text x="240" y="736" class="font td-cat">Core Runtime</text>
-  <text x="355" y="736" class="mono td-sub">v0.4.3</text>
+  <text x="355" y="736" class="mono td-sub">v0.5.0</text>
   <text x="540" y="736" text-anchor="end" class="mono td-num">0 / 1</text>
   <text x="665" y="736" text-anchor="end" class="mono td-bold">2,840</text>
   <text x="815" y="736" text-anchor="end" class="mono td-num">2,361 (720)</text>
-  <text x="920" y="736" text-anchor="end" class="mono td-num">27</text>
+  <text x="920" y="736" text-anchor="end" class="mono td-num">29</text>
   <line x1="24" y1="748" x2="936" y2="748" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="765" r="3.5" fill="#64748B"/>
   <text x="54" y="769" class="mono td-repo">mindie-bench</text>
