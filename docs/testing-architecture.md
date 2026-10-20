@@ -8,7 +8,7 @@
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
 
-知识与系统能力的具体测试见 [L1–L4 分级测试方案](knowledge-tiered-testing-plan.md)。L1–L4 表示知识类型，Tier 0–3 表示工程验证范围；完整任务收益、跨任务学习和长期探索实验单列预算，不以短 Canary 代替。
+知识飞轮与 `L1–L4` 系统架构能力的具体测试见 [L1–L4 架构闭环与知识飞轮测试方案](knowledge-tiered-testing-plan.md)。`L1–L4` 表示系统认知与执行架构层级（由 `knowledge` 的 `axiom/measurement`、`sop`、`workflow`、`mutator` 四类知识单元支撑），`Tier 0–3` 表示工程验证范围；完整任务收益、跨任务学习和长期探索实验单列预算，不以短 Canary 代替。
 
 ---
 

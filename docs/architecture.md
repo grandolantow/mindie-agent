@@ -2,101 +2,85 @@
 
 [English](architecture.en.md) · [返回文档中心](README.md)
 
-MindIE Agent 为已有的 AI 编程客户端提供昇腾领域知识、远端执行、资源协调与诊断能力。`0.0.3` 优先交付 **vLLM-Ascend 与算子两个领域**，围绕模型 0day 开发、固定 case 的模型或算子性能优化、问题定位三个场景完成闭环。更广的推理基础设施建设保留为后续扩展，不能计入本版已经完成的覆盖范围。
+MindIE Agent 为主流 AI 编程客户端（Claude Code、OpenAI Codex、Kimi Code、DeepSeek Harness）提供昇腾领域知识检索、远端容器开发、多卡资源协调与性能剖析能力。当前版本围绕 **vLLM-Ascend 框架开发与昇腾算子开发**两个核心领域，重点服务于**新模型适配（0-day Bring-up）、模型与算子性能调优、运行时故障排查**三类日常研发场景。
 
-本文说明组件职责与实现边界。正式版本、精确源码与实测结论以[版本发布记录](README.md)为准；知识结构见[知识与经验系统](knowledge-system.md)，宿主身份见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)，工程约束见[设计原则](design-principles.md)。
+本文介绍各组件的职责边界与协同方式。正式发布版本与实测数据见[版本发布记录](README.md)，知识组织与检索机制见[知识与经验系统](knowledge-system.md)，宿主会话与授权管理见[宿主边界与任务生命周期](harness-boundary-and-lifecycle.md)，工程准则见[设计原则](design-principles.md)。
 
-## 1. 原生宿主与共享组件
+## 1. 原生宿主插件与共享运行时组件
 
 ```mermaid
 flowchart TB
-    H["Codex / Claude Code / Kimi Code / DSH"] --> P["各自的原生插件"]
-    P --> K["knowledge：领域路由、检索与经验沉淀"]
-    P --> R["remote-dev：文件、命令与受管作业"]
-    P --> D["diagnostics：本地诊断与可选上报"]
-    P --> PR["profiler：实测性能采集、解析与对比"]
-    P --> S["sim：四层硬件/流水/子图/整网仿真"]
-    K <--> F["vLLM-Ascend / operators 领域仓库"]
-    T["按需安装的 TaskClient / coordinator"] --> Q["机器、容器、设备与端口租约"]
+    H["Codex / Claude Code / Kimi Code / DSH"] --> P["各自的轻量原生插件"]
+    P --> K["knowledge：领域路由、条件检索与经验沉淀"]
+    P --> R["remote-dev：远端文件编辑、命令与后台作业"]
+    P --> D["diagnostics：本地故障日志与可选 Issue 上报"]
+    P --> PR["profiler：昇腾 Profiling 采集、解析与跨轮次对比"]
+    P --> S["sim：硬件 Roofline、算子流水与分布式并行性能建模"]
+    K <--> F["vLLM-Ascend / operators 等领域知识库"]
+    T["按需安装的 TaskClient / coordinator"] --> Q["机器台账、容器绑定、NPU 与端口租约"]
     Q --> R
-    R --> N["远端主机与 NPU 容器"]
+    R --> N["远端昇腾主机与 Docker 容器"]
     M["按需安装的 npu-top"] -.-> N
-    B["mindie-bench"] --> T
+    B["mindie-bench 端到端评测"] --> T
     B --> H
 ```
 
-四个插件保留各宿主的会话、工具、模型调用和生命周期机制。`/mindie-agent` 是按需使用领域能力的入口；在 Codex 中也可使用 `$mindie-agent`。`remote-dev` 作为已注册工具可随任务直接使用。配置允许的当前任务采集由生命周期事件驱动，不要求每次手动激活；是否采集和是否公开贡献由实际配置与项目授权决定。
+四个插件直接复用各宿主的原生会话、工具调用和生命周期机制：
+- **领域知识按需激活**：输入 `/mindie-agent`（在 Codex 中也可使用 `$mindie-agent`）即可按当前任务加载昇腾领域知识与工作流引导。
+- **远端执行开箱即用**：`remote-dev` 作为常驻 MCP 工具注册在宿主中，日常对话提到远端服务器、容器或编译测试命令时即可直接调用。
+- **经验沉淀按授权运行**：会话记录脱敏与经验提炼由宿主生命周期事件驱动，是否记录本地材料、是否向公共知识库提交 PR 完全由用户的本地配置决定。
 
-默认插件依赖为 `knowledge`、`remote-dev`、`diagnostics`。`coordinator` 与 `npu-top` 按需独立安装。协议兼容由各宿主适配器负责。
+默认插件依赖 `knowledge`、`remote-dev` 和 `diagnostics`；`coordinator`、`profiler`、`sim` 与 `npu-top` 可按团队环境独立安装或组合使用。
 
-## 2. 仓库职责
+## 2. 仓库职责划分
 
 | 仓库 | 负责内容 |
 | --- | --- |
-| [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) | 产品架构、领域边界、入口文档、跨仓契约与统一发布记录；本仓不放运行时引导、MCP 服务或依赖锁 |
-| [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | 原生会话识别、Hook 桥接、公开对话投影、宿主轻量模型接入、安装与组件锁定 |
-| [`knowledge`](https://github.com/mindie-agent/knowledge) | 授权与采集状态、脱敏、任务材料切片、结构化经验单元（约束/测量、SOP、决策工作流、代码变换）、条件检索、领域路由、精确引用、反馈与发布队列 |
-| [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) | 领域经验正文、来源与适用条件，以及可校验的 Feed 和派生路由索引；内容仓独立于运行时代码版本 |
-| [`remote-dev`](https://github.com/mindie-agent/remote-dev) | SSH 远端文件读写、精确编辑、搜索、补丁、命令执行、受管长任务、取消与产物同步 |
-| [`coordinator`](https://github.com/mindie-agent/coordinator) | 机器与容器台账、设备探测、NPU 与端口租约、共享队列、受管任务身份和资源回收；向执行工具提供端点 |
-| [`npu-top`](https://github.com/mindie-agent/npu-top) | 面向人的集群观测界面和有界历史数据；读取机器台账，不承担任务调度 |
-| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | 有界结构化日志、可定位的错误编号、支持包导出与经授权的白名单故障上报（`mindie_diagnostics`） |
-| [`profiler`](https://github.com/mindie-agent/profiler) | 昇腾实测 Profiling 采集控制、`inventory / analyze / correlate / compare / sql` 原地解析、显存分析与跨 Run 事实对比 CLI（`mindie_profiler`） |
-| [`sim`](https://github.com/mindie-agent/sim) | 昇腾四层仿真与边界求解组件（`mindie_sim` / `mindie-sim`）：多型号 SKU `DeviceCapabilityProfile`、7 类全路径传输（`D2D`/`H2D`/`D2H`/`RH2D`/`RD2H`）、算子微阶段周期依赖图求解、子图跨算子融合先行分析与整网并行推演 |
-| [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | 固定任务与 oracle、预置零负担准入脚手架（Gate Runner）、隔离宿主运行、真实结果与成本记录、组件基准、跨任务复用及发行报告校验（100% 复用生产组件公开接口，不重复造轮子） |
-| [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills)、[`vllm-ascend-workspace`](https://github.com/mindie-agent/vllm-ascend-workspace) | 面向昇腾 NPU AI Infra 的开源 Agent Skills 目录与支持独立 Git Worktree 隔离的 `vLLM` + `vLLM-Ascend` 本地开发工作区 |
+| [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) | 产品架构、领域边界、入口文档、跨仓规范与发布记录；不包含运行时代码或 MCP 服务 |
+| [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | 各宿主客户端的原生插件：会话识别、生命周期 Hook、脱敏会话记录提取、MCP 桥接与组件版本锁定 |
+| [`knowledge`](https://github.com/mindie-agent/knowledge) | 知识检索引擎：适用条件匹配、继承规则展开、脱敏任务切片、经验提炼校验与社区 PR 投递 |
+| [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) 等领域知识库 | 面向 `vLLM-Ascend`、昇腾算子、推理核心架构、分布式通信、可观测性与算子兼容性的结构化知识条目与路由索引 |
+| [`remote-dev`](https://github.com/mindie-agent/remote-dev) | SSH 远端文件读写、增量编辑、代码搜索、补丁同步、容器内命令执行与后台长任务管理 |
+| [`coordinator`](https://github.com/mindie-agent/coordinator) | 远端昇腾环境与多卡租约管家：机器与容器台账、NPU 拓扑探测（含 A3 双 Die 映射）、NPU 卡与端口防冲突租约、受管任务清理 |
+| [`npu-top`](https://github.com/mindie-agent/npu-top) | 面向开发者的 NPU 集群监控看板：实时 Web 界面与 90 天利用率历史（直接读取 `coordinator` 的 `machines.json`） |
+| [`diagnostics`](https://github.com/mindie-agent/diagnostics) | 本地结构化故障日志、日志自动轮转、离线脱敏诊断包导出与可选的 GitHub Issue 上报（`mindie_diagnostics`） |
+| [`profiler`](https://github.com/mindie-agent/profiler) | 昇腾 Profiling 采集与原地解析工具：支持 `inventory / analyze / correlate / compare / sql`，提供 Host-Device 关联、显存拆解与跨轮次耗时对比（`mindie_profiler`） |
+| [`sim`](https://github.com/mindie-agent/sim) | 昇腾性能建模与 Roofline 仿真工具（`mindie_sim`）：支持 A2/A3/A5 硬件规格查询、`H2D`/`D2H`/`D2D` 传输耗时估算、Cube/Vector/MTE 算子流水线建模、子图融合收益预估与分布式并行拆解 |
+| [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | 昇腾真机端到端评测套件：覆盖真实研发任务、精度与性能验证、跨任务经验复用评测及版本基准报告 |
+| [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills)、[`vllm-ascend-workspace`](https://github.com/mindie-agent/vllm-ascend-workspace) | 昇腾 AI Infra 开源 Skills 目录，以及支持 Git Worktree 多任务隔离的 `vLLM` + `vLLM-Ascend` 本地开发工作区 |
 
-主仓发布记录汇总代码仓（宿主插件、共享运行时组件与 `mindie-bench`）的版本、源码 SHA 和基准产物。领域内容另行绑定其仓库修订，不能把一个新代码标签当成知识内容已经发布或客户端已经消费的证明。配套规则见[组件与插件配套发布](release-compatibility-and-update.md#组件与插件配套发布)。
+## 3. 远端 NPU 任务的执行与资源回收
 
-`mindie_profiler`（实测采集与解析）、`mindie_sim`（四层仿真与边界求解）与故障日志职责正交分开，复用现有远端执行与资源协调。面向 Agent 的渐进查询、推理调用关联与按需补采集见 [Profiler 系统设计](profiler-system.md)；硬件规格核查、算子微阶段周期依赖图求解、Phase 0 子图跨界融合先行分析与整网并行仿真见 [NPU 仿真与边界求解系统设计](simulation-system.md)。其中目标接口与后续验收不等于当前插件已完整接通。
+在远端昇腾服务器上跑编译、测试或压测时，各组件按以下流程协同：
+1. **环境探测与租约申请**：通过 `coordinator` 检查目标主机与容器状态，按实际物理拓扑申请空闲 NPU 卡与端口租约（例如在昇腾 A3 910C 上显式区分单卡双 Die 的 `Phy-ID` 映射，避免两个任务误绑同一物理卡的相邻 Die）。
+2. **远端执行与后台托管**：通过 `remote-dev` 在目标容器中修改代码并拉起测试或压测作业；耗时较长的编译和基准测试自动转为受管后台任务，支持随时增量拉取日志。
+3. **断线重连与状态保护**：网络抖动或客户端重连时，先查询原任务 ID 并恢复跟踪，避免重复拉起仍在运行的远端进程。任务结束或取消时，依次确认子进程树退出、NPU 租约释放与端口回收。外部操作严格区分已完成（`completed`）、已失败（`failed`）与结果未知（`unknown`），本地记账超时不会覆盖已成功的远端执行结果。
 
-## 3. 一次远端任务如何执行与结束
+## 4. 四类知识协同与双模式工作流（经验复用 + 独立探索）
 
-宿主原生会话与受管任务通过明确的 client、会话身份和 TaskClient 关联。任务按需要准备环境、选择资源并取得租约，再由 `remote-dev` 在声明的主机和容器中执行。多 Agent 使用共享队列和同一资源台账；A3 的物理设备与双 Die 映射必须按实际探测结果处理，不能把任意逻辑设备号当成整卡。
+在解决复杂的昇腾推理适配与性能优化问题时，MindIE Agent 将领域知识按工程用途分为四个层级（对应知识库 Schema 中的 `category` 与兼容字段 `tier: L1..L4`），并支持**常规经验复用**与**跳出既有思路的独立探索（`mode="explore"`）**两种工作方式：
 
-Run Manifest 记录执行事实：代码与配置身份、环境、输入、资源、步骤、状态、时间和产物引用。研究假设、收益归因及知识结论是基于这些事实的独立判断。命令成功只支持该命令的结果；还需分别确认子进程退出、租约释放、端口及工作目录回收。
-
-连接中断后先查询原任务 ID。取消及恢复沿用原身份，避免重复发起仍可能运行的远端操作。执行、准备、回收各阶段有明确预算，外层等待覆盖内层预算及清理时间。`completed`、`failed` 与外部写入结果 `unknown` 分别保留；本地回执保存失败不能抹掉已经成功的远端执行结果。
-
-## 4. L1–L4 四层认知与执行架构及知识飞轮
-
-在复杂昇腾工程任务中，MindIE Agent 采用 **`L1–L4` 四层认知与执行架构（Hermes 启发式收敛 + RSI 去偏置探索双模协同）**，并由 `knowledge` **经验飞轮**提供跨任务知识支撑。
-
-> [!IMPORTANT]
-> **核心术语正交约定（消除 `L1–L4` 多义性）**：
-> - **`L1–L4` 专指系统认知与执行架构层级**：`L1` 硬件约束与语法基座、`L2` 性能剖析与仿真定界、`L3` Hermes 启发式收敛模式、`L4` RSI 去偏置发散探索模式。
-> - **`knowledge` 是经验与领域知识飞轮，不是“L1–L4 分级知识库”**：`knowledge` 存储脱敏任务切片（`tasks/<hash>/blocks/`）与结构化工程结论；知识条目按**内容语义类别（`category`）**区分——约束与测量基线（`axiom` / `measurement`）、诊断与操作规程（`sop`）、排障与适配决策经验（`workflow` / `decision`）、受控代码变换（`mutator` / `transform`），分别按需服务于 `L1–L4` 架构各层（当前 `knowledge` 内部 Schema 遗留的 `tier` 字段仅为对应这四类 `category` 的历史兼容别名）。
-> - **其他维度严禁混用 `L1–L4`**：`mindie-sim` 的四级仿真粒度统一称为**硬件边界层（`hardware`）/ 算子微阶段流水层（`pipeline`）/ 子图融合层（`subgraph`）/ 整网并行层（`net`）**；昇腾片上缓存统一写全称 **`L1 Buffer` / `L0A` / `L0B` / `L0C` / `UB` / `L2 Cache`**；工程测试分级统一使用 **`Tier 0 – Tier 3`**。
-
-| 架构层级 | 架构定位与运行时职责 | 与 `knowledge` / `profiler` / `sim` 的协同关系 |
+| 知识层级与类别 | 工程用途 | 运行时协同方式 |
 | --- | --- | --- |
-| **`L1` · 硬件约束与语法基座**<br/>（Foundation，常驻保留） | 守住昇腾 910B / A3 / 950 物理拓扑与内存对齐红线、`ACLGraph` 静态图捕获不变量、软件接口契约与最小可编译算子模板，从源头拦截低级语法与硬件违规 | 按当前任务硬件/仓库条件自动挂载 `_common` 底层约束基线（`axiom` / `measurement`）与父级前提 |
-| **`L2` · 性能剖析与仿真定界**<br/>（Probe，动手改代码前置步骤） | 遵循“先定界瓶颈，再修改代码”，通过确定性工具获取实测耗时分解、Host-Device 调用链关联与理论下界对比，禁止凭猜测盲改 | 调用 `mindie-profiler`（实测解析）、`mindie-sim`（理论下界与流水/融合仿真）、`diagnostics`（故障日志）并参考 `sop` 诊断规程 |
-| **`L3` · 启发式收敛模式（Hermes 模式）**<br/>（默认工作模式） | 面向 80% 常规模型 0day 适配、故障定位与常规性能调优：按需检索历史排障决策树与已知变换，快速复现并收敛问题；在达成已验证里程碑后将增量经验回流沉淀 | 检索 `knowledge` 中的决策经验（`workflow`）与已知变换（`mutator`），验证通过后经 `knowledge_distill` 更新知识飞轮 |
-| **`L4` · 去偏置发散探索模式（RSI 模式）**<br/>（受控切换模式） | 当 `L3` 连续停滞且距 `L2` 硬件理论下界仍有显著可解释空间时触发：**剥离 `L3` 常规经验先验**，仅保留 `L1` 硬约束 + `L2` 实测/仿真裁判 + `L4` 正交变换空间，在独立子上下文与隔离工作区中执行“CPU 并行编译预筛 → NPU 租约串行计时 → 四道门禁（编译、数值、性能、消融）” | 屏蔽 `workflow` 常规经验防思维定势，探索并验证新的 `mutator` 变换或 `measurement` 发现，通过消融门禁后回流至 `knowledge` 供后续 `L3` 复用 |
+| **`L1` · 硬件约束与测量基线**<br/>（`axiom` / `measurement`） | 提供昇腾 910B / A3 / A5 硬件规格、内存对齐要求、`ACLGraph` 静态图捕获约束以及标准计时/精度验证准则，避免低级硬件违规和伪性能收益 | 按当前任务的芯片型号与仓库条件自动挂载（`foundation_baseline`），或作为上层规程的前置依赖（`inherits_from`）完整注入 |
+| **`L2` · 诊断与操作规程**<br/>（`sop`） | 提供具体场景下的定位步骤、Profiling 采集分析方法与模块适配操作指南，先用确定性工具定界瓶颈再改代码 | 配合 `mindie-profiler`（实测 trace 分析）、`mindie-sim`（Roofline 与流水线建模）和 `diagnostics` 定位具体根因 |
+| **`L3` · 排障与调优工作流**<br/>（`workflow`） | 面向 80% 常见的新模型适配、精度排障与常规性能调优：提供带有观测分支和判断条件的排障决策流，帮助 Agent 快速收敛问题 | 默认检索模式（`mode="standard"`）直接返回匹配的工作流；任务验证通过后，可将新发现的排查分支经 `knowledge_distill` 沉淀回知识库 |
+| **`L4` · 代码优化变换与独立探索**<br/>（`mutator`） | 记录经过验证的算子向量化、流水排布、通信融合与图捕获优化方案；当常规排障/调优连续受阻且距离硬件 Roofline 仍有明显空间时，可切换至**独立探索模式（`mode="explore"`）** | 调用 `knowledge_query(..., mode="explore")` 时，系统自动**屏蔽 `L3` 常规工作流**以打破思维定势，仅挂载 `L1` 硬件约束、`L2` 实测瓶颈、`L4` 可选代码变换及已证实无效的避坑条件（`conditional_avoid`），供独立子会话在隔离环境中并行编译、串行上卡实测，并通过“编译 → 精度 → 性能 → 留一法消融”四步验证 |
 
-### 知识如何进入与回流任务
+> [!NOTE]
+> **术语约定说明**：
+> - 知识库中的 `tier: L1..L4` 与 `category`（`axiom`/`measurement`、`sop`、`workflow`、`mutator`）一一对应，仅用于区分知识条目的工程角色，不代表结论的置信度；证据可靠程度由 `evidence_strength`（`hardware_spec`、`reproduced_empirical`、`single_observation`、`hypothesis`）独立标记。
+> - `mindie-sim` 的四类建模粒度统一称为**硬件规格（`hardware`）/ 算子流水（`pipeline`）/ 子图融合（`subgraph`）/ 整网并行（`net`）**；昇腾片上存储统一写全称 **`L1 Buffer` / `L0A` / `L0B` / `L0C` / `UB` / `L2 Cache`**；工程测试分级统一使用 **`Tier 0 – Tier 3`**。
 
-结构化知识单元表达约束、操作规程、决策工作流或代码变换；原始任务材料（`tasks/<task_hash>/blocks/<block_hash>.md`）保留脱敏后的上下文来源。运行时通过显式领域配置选择内容，逐项核对适用条件，并在正文预算内返回匹配单元和完整继承规则。缺失事实保留为未知，不因关键词相似而自动视作适用。
+## 5. 三类核心研发场景的验证标准
 
-本轮重构将知识引用精简为单元 ID 和修订号，源码来源复用 Git revision，实验引用复用运行 ID。参考补丁、裁判及测量摘要不能成为检索条件。内容写入时检查实际引用关系；查询使用派生索引，索引可以从权威 Markdown 正文重建。现有多层摘要校验随运行时和消费端一起删除，完成情况以实际验收为准。
-
-经授权的任务公开投影先脱敏，再落盘和生成导航；提炼出的新知识需保留来源并经过审核。用户允许公开贡献时才进入发布链路。领域注册、成功检索、任务采集和公开贡献是不同状态，路由不能复制授权或自动打开外发。
-
-## 5. 三个场景的验收边界
-
-| 场景 | 需要固定并检查的对象 |
+| 研发场景 | 验收要求 |
 | --- | --- |
-| 模型 0day 开发 | 起始源码、模型与权重修订、兼容环境、完整选定推理链路、独立数值参考和预先声明的通过条件；CPU 参考不能代替 NPU 验收 |
-| 固定 case 性能优化 | 预先固定的输入与软硬件条件、正确性检查、可比较的基线与优化结果；单算子或局部计时只支持对应范围的收益 |
-| 问题定位 | 可复现的故障、诊断过程、修复前后行为和资源清理；源码解释与真实运行观察分别记录 |
+| **新模型适配（0-day Bring-up）** | 固定起始代码、模型配置与权重版本，跑通完整推理链路，并与独立数值参考（Golden Reference）完成精度比对；CPU 跑通不能替代 NPU 实机验证 |
+| **模型与算子性能调优** | 固定输入 Shape、数据类型与软硬件环境，同时给出精度对齐证明与基线/优化后实测耗时对比；多处改动组合优化需完成留一法消融（Ablation）确认每一项均贡献正收益 |
+| **运行时故障排查** | 记录可复现的故障现象、根因定位依据、修复前后实机运行结果以及 NPU/端口资源清理情况；源码静态分析与真机复现结果需明确区分 |
 
-组件测试验证接口和局部行为；真实 NPU 运行验证具体环境下的任务；四宿主验收验证正式插件安装及原生工具消费。它们不能互相替代，也不意味着所有宿主、设备和任务的笛卡尔积均已验证。
+## 6. 版本发布、无感更新与隐私保护
 
-版本收益使用相同模型、任务、环境、预算和评测工具版本，分别比较无插件基线、上一正式版本与当前正式组合。记录任务成功、完成时间、模型消耗、人工介入与跨任务知识复用。跨任务复用还需独立保留来源任务、冻结知识、未暴露的下游任务族以及各阶段成本。结果缺失或未知时保留该边界，不能用组件微基准换算整体生产力提升。
-
-## 6. 发布、更新与诊断
-
-插件锁定实际依赖产物；兼容性记录应指明经过验证的宿主及组件对象。正式 Release、候选源码通过测试、隔离安装成功和用户日常配置升级分别报告。用户原有安装不会因为发布完成而自动成为已验收对象。
-
-`0.0.3` 直接重构开发期格式和内部接口，两域内容统一在 `main` 维护，不保留旧格式双轨。插件通过现有后台更新、环境准备及空闲切换采用当前实现，保留用户正文和授权设置；宿主接口及更新机制见[版本兼容与更新](release-compatibility-and-update.md)。知识共享和故障上报受当前安装的贡献配置控制；关闭外发不影响本地诊断和远端执行。故障上报只接受白名单事实，不能包含会话正文、命令参数、机器路径或凭据。详见[诊断日志与故障上报](diagnostics-and-reporting.md)。
+- **版本锁定与后台更新**：各宿主插件锁定经过配套验证的运行时组件版本，并在后台空闲时完成环境准备与原子版本切换，不影响正在运行的研发会话。详见[版本兼容与无感更新](release-compatibility-and-update.md)。
+- **隐私脱敏与可控共享**：会话记录提取、经验沉淀与故障上报均遵循严格的本地脱敏规则（确定性正则 + Gitleaks 扫描），自动剔除内网 IP、机器路径、密钥凭据与命令敏感参数。关闭社区共享开关不影响本地知识检索、故障诊断与远端开发功能。详见[诊断日志与故障上报](diagnostics-and-reporting.md)。

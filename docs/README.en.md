@@ -11,10 +11,10 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | [Engineering Design Principles](design-principles.en.md) | [工程设计原则与演进准则](design-principles.md) | The core product and engineering principles governing tool boundaries, developer experience, mechanism reuse, and error visibility |
 | [Architecture & Module Boundaries](architecture.en.md) | [系统架构与模块分工](architecture.md) | How native Harness plugins, the knowledge engine, remote execution, NPU observability, and diagnostics fit together |
 | [Knowledge & Experience System](knowledge-system.en.md) | [知识与经验闭环设计](knowledge-system.md) | How troubleshooting sessions are redacted, indexed into lightweight Markdown packages, and shared with the community |
-| [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | Proposed token budgets, progressive loading, L3 decisions, knowledge growth control, and exploration feedback, with source comparisons and acceptance criteria |
+| [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | Proposed token budgets, progressive loading, `workflow` decision experience, knowledge growth control, and `L4` exploration feedback, with source comparisons and acceptance criteria |
 | [Profiler System Design](profiler-system.en.md) | [面向 Agent 的 Profiler 系统设计](profiler-system.md) | In-place Ascend profiling analysis, nanosecond interval accounting, Host-to-Device correlation, cross-run comparison, and controlled online capture |
-| [NPU 4-Layer Simulation & Boundary Solver Design](simulation-system.md) | [面向 Agent 的 NPU 仿真与边界求解系统设计](simulation-system.md) | `mindie-sim` 4-layer simulation (hardware/thermal, periodic microstage pipeline solver, subgraph fusion, and whole-network parallel decomposition) |
-| [Core Implementation & GEAK Evolution Design](core-implementation-and-geak-evolution-design.md) | [核心能力落地与 GEAK 演化架构设计](core-implementation-and-geak-evolution-design.md) | L1–L4 context budget, 3-axis experience evolution, and component implementation records |
+| [NPU Performance Modeling & Simulation Design](simulation-system.md) | [面向 Agent 的 NPU 性能建模与仿真设计](simulation-system.md) | `mindie-sim` roofline bounds, operator pipeline modeling, subgraph fusion estimation, and distributed parallelism modeling |
+| [Core Implementation & Knowledge Evolution Design](core-implementation-and-geak-evolution-design.md) | [核心能力落地与知识持续演进设计](core-implementation-and-geak-evolution-design.md) | Context token budget, experience distillation loop, and component implementation records |
 
 ## Runtime Lifecycle & Engineering Specifications
 
@@ -24,6 +24,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | [版本兼容与无感更新](release-compatibility-and-update.md) | Paired component/plugin release workflow, SemVer host compatibility matching, and background silent updates |
 | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | [诊断日志与故障上报](diagnostics-and-reporting.md) | Bounded local structured logs, strict privacy redaction rules, and opt-in GitHub Issue fault reporting |
 | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | [原生能力与系统机制复用](native-runtime-reuse.md) | How MindIE Agent reuses native plugin managers, `uv` locked environments, and OS process-tree primitives |
+| [Enterprise Network Transport](enterprise-network.en.md) | [企业网络下的配置与传输](enterprise-network.md) | Proxy and system trust, installation, updates, background uploads and direct local APIs |
 | [Tiered Testing Architecture](testing-architecture.en.md) | [分级测试体系与用例设计规范](testing-architecture.md) | Test validity redlines and the Tier 0 – Tier 3 pyramid backed by standing live A2/A3 Ascend NPU clusters |
 | [L1–L4 Tiered Knowledge & System Testing Plan](knowledge-tiered-testing-plan.md) | [L1–L4 知识与系统能力分级测试方案](knowledge-tiered-testing-plan.md) | Evaluation protocols, coverage/gap matrix, concrete test suites, metrics, and execution order |
 

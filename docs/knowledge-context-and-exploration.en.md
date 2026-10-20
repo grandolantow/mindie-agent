@@ -16,7 +16,7 @@ Performance artifact access, targeted capture, accounting, and comparison are sp
 
 | Decision | Meaning |
 | --- | --- |
-| Separate knowledge tier, reading depth, and working mode | L1–L4 describe content; navigation, body, and evidence describe reading depth; reuse, diagnosis, and exploration describe work on a subproblem |
+| Separate architecture layers, knowledge categories, and reading depth | `L1–L4` describe the 4-tier cognitive and execution architecture (`L1` Foundation, `L2` Probe, `L3` Hermes Convergence, `L4` RSI Exploration); `axiom/measurement`, `sop`, `workflow`, and `mutator` describe semantic knowledge categories (`category`); navigation, body, and evidence describe reading depth |
 | Load complete rules on demand | Conditions, constraints, and rationale form a semantic unit; do not truncate procedural steps to fit |
 | Let knowledge grow while bounding context | Manage corpus size, candidate count, response budget, and currently visible knowledge separately |
 | Update existing knowledge incrementally | Revise the existing unit for the same issue; add content for a new mechanism, condition, or decision branch |
@@ -33,9 +33,9 @@ This is a snapshot of the inspected implementation. Subsequent acceptance must u
 
 | Existing foundation | Gap | Proposed change |
 | --- | --- | --- |
-| Graded units, conditions, `id@revision`, dependency closure | Content tiers are easily confused with execution modes | Separate the dimensions; Hermes can update any tier |
-| Body budgets and whole L1 rules | Metadata is excluded; other bodies can be truncated; shared parents repeat | Account for the whole response, separate discovery from reading, deduplicate by reference |
-| `_common` foundation rules | Large L1 units can all be excluded by the default budget | Make rules atomic and select them for the subproblem |
+| Structured units, conditions, `id@revision`, dependency closure | Early schemas conflated architecture layers `L1–L4` with knowledge content categories via `tier` | Separate `L1–L4` architecture layers from semantic knowledge categories (`axiom/measurement`, `sop`, `workflow`, `mutator`); distillation can update any category |
+| Body budgets and whole foundational rules (`axiom`/`measurement`) | Metadata is excluded; other bodies can be truncated; shared parents repeat | Account for the whole response, separate discovery from reading, deduplicate by reference |
+| `_common` foundation rules | Large foundational constraint units can all be excluded by the default budget | Make foundational constraints atomic and select them for the subproblem |
 | `knowledge_distill` and `reviewed_change` | Existing knowledge is not consistently supplied for comparison | Retrieve related units, propose a delta, check revisions, prefer updates |
 | Query observations and feedback | Observation does not establish use or benefit | Associate declared use with real evaluation |
 | RSI stall detection and candidate evaluation | Removing L3 from an object does not erase history; a missed target can become a refutation | Use native independent contexts and separate evidence, goal attainment, and reusability |
@@ -50,20 +50,23 @@ Local read-only probes also found:
 
 Fix assembly and accounting before adapting budgets. Adaptation based on incorrect measurements would amplify the error.
 
-## 3. Three independent dimensions
+## 3. Three orthogonal dimensions: execution architecture (`L1–L4`), knowledge categories (`category`), and reading depth
 
-### 3.1 Knowledge tiers
+### 3.1 Knowledge content categories (`category`) in the `knowledge` flywheel
 
-| Tier | Content | Question answered |
-| --- | --- | --- |
-| L1: constraints and measurements | Hardware limits, software contracts, and conditional measurements | What premises must hold? |
-| L2: procedures | Repeatable diagnostic, development, or measurement operations | How do we obtain an observation or perform an action? |
-| L3: decision experience | Observations that select branches, method changes, and stopping conditions | Why is this the next useful step? |
-| L4: transformations | Conditional optimization or adaptation techniques | How might the implementation change? |
+> [!IMPORTANT]
+> **Avoid calling the knowledge base an "L1–L4 knowledge base"**: `L1–L4` denotes the 4-tier cognitive and execution architecture (see [Architecture §4](architecture.en.md#4-l1l4-cognitive--execution-architecture-and-the-knowledge-flywheel)). Structured units inside the `knowledge` flywheel are organized by **semantic `category`** and serve the `L1–L4` architecture layers as needed (the `tier: L1..L4` field in the existing schema is merely a legacy compatibility alias mapping to the four categories below):
 
-Routine work may use L4 directly. Exploration may produce only an L2 diagnostic procedure. Hermes names the learning and revision process, not a process exclusive to L3.
+| Knowledge Content Category (`category`) | Architecture Layer Served (schema alias `tier`) | Content | Question answered |
+| --- | --- | --- | --- |
+| **`axiom` / `measurement`**: constraints and measurements | Serves **`L1` Foundation / `L2` Oracles** (`tier: L1`) | Hardware limits, software contracts, and conditional measurements | What premises must hold? |
+| **`sop`**: diagnostic & operational procedures | Serves **`L2` Probe / `L3` Execution** (`tier: L2`) | Repeatable diagnostic, capture, development, or measurement operations | How do we obtain an observation or perform an action? |
+| **`workflow`**: decision experience | Serves **`L3` Hermes Convergence** (`tier: L3`; stripped in `L4` RSI exploration) | Observations that select branches, method changes, and stopping conditions | Why is this the next useful step? |
+| **`mutator`**: controlled code transformations | Serves **`L3` Reuse / `L4` RSI Transform Space** (`tier: L4`) | Conditional optimization or adaptation techniques with verification evidence | How might the implementation change? |
 
-Evidence is independent of tier. The target metadata distinguishes `hardware_spec`, `software_contract`, `reproduced_empirical`, `single_observation`, and `hypothesis`. An L1 software interface contract is not a hardware specification; L1 permits `hardware_spec`, `software_contract`, and `reproduced_empirical`. `software_contract` is a proposed format addition.
+Routine `L3` work may reuse `mutator` transforms directly. Open `L4` exploration may produce a new `sop` diagnostic procedure or `measurement` finding. Experience distillation (`knowledge_distill`) can revise or add units in any category.
+
+Evidence is independent of category. The target metadata distinguishes `hardware_spec`, `software_contract`, `reproduced_empirical`, `single_observation`, and `hypothesis`. A software interface contract is not a hardware specification; `axiom` / `measurement` permits `hardware_spec`, `software_contract`, and `reproduced_empirical`. `software_contract` is a proposed format addition.
 
 ### 3.2 Reading depth
 
@@ -218,9 +221,9 @@ A unit with missing, mismatched, or unloaded required premises may have a naviga
 
 A small candidate set, existing closures, and stable greedy selection are sufficient initially. More sophisticated optimization needs evidence from replay.
 
-### 6.3 Atomic L1 rules
+### 6.3 Atomic foundational constraint rules (`axiom` / `measurement`, serving `L1` Foundation)
 
-An L1 rule contains one complete constraint:
+Each foundational constraint rule contains one complete constraint:
 
 ```text
 Condition: hardware, software version, and execution path
@@ -252,11 +255,11 @@ Cache content by `id@revision`, but evaluate conditions against current facts. C
 
 Return an old revision's body only when that exact version is available. Otherwise report the changed revision and current reference. Merged IDs resolve to replacements. Do not present current content as an older revision or build a new full-history snapshot service; existing Git revisions and provenance support necessary historical lookup.
 
-## 7. L3 preserves decision skill
+## 7. Decision experience units (`workflow`, serving `L3` Hermes Convergence) preserve decision skill
 
 ### 7.1 Contents
 
-The following questions guide an L3 body; they need not become mandatory form fields:
+The following questions guide a decision experience (`workflow`) body; they need not become mandatory form fields:
 
 | Content | Purpose |
 | --- | --- |
@@ -427,13 +430,17 @@ Assess whether recent attempts produced new facts:
 
 Two attempts without progress can prompt review, not automatically launch a large search. A short statement of the unexplained observation and next discriminating experiment is enough to justify targeted exploration.
 
-### 11.2 Reduce anchoring to prior recipes
+### 11.2 Reduce anchoring to prior recipes and hand off `subagent_fact_pack`
 
 An exploration context retains the goal, hard constraints, current code, observations, excluded conditions, open questions, and run references. Delay the old L3 recipe and its argument until independent hypotheses have been formed, then use it for comparison.
 
-If the host supports an independent context, send this minimal fact package. A full-history fork is not isolation. Deleting `tier=L3` from a Python object does not remove content already read by the model.
+When entering de-biased exploration via `knowledge_query(..., mode="explore")` or `knowledge_explain(..., mode="explore")`, `knowledge.graded.explore.build_exploration_context` automatically:
 
-Without native independent contexts, continue in the current conversation and describe this as a strategy change, not proven historical isolation. Later retrieval of L2, L3, or L4 remains available.
+1. **Strips `L3` (`workflow`) units while promoting inherited `L1/L2` premises**: Before stripping matched `L3` units (recorded in `stripped_l3_ids`), it recursively extracts and deduplicates their `L1` (`axiom`/`measurement`) and `L2` (`sop`) closure premises so hardware constraints and measurement guards are never lost.
+2. **Injects `conditional_avoid` entries**: Converts recent unimproved attempts into scoped negative findings (`unit_id`, `hypothesis`, `failure_reason`, `observed_bottleneck`, `conditions`, `scope_note`) without creating a permanent cross-condition blocklist.
+3. **Emits `subagent_fact_pack` (`mindie-rsi-subagent-pack/1`)**: Produces both structured JSON and a compact Markdown `prompt_brief` ready to seed a fresh Native Harness subagent (Codex / Claude Code / Kimi / DSH). A full-history fork is not isolation, and deleting `tier=L3` from a Python dict does not remove content already read by the current session model; the host spawns a fresh subcontext seeded only with `subagent_fact_pack`.
+
+Without native independent contexts (`native_subcontext=False`, `isolation_mode="in_session_warning"`), continue in the current conversation and describe this as a strategy change, not proven historical isolation. Later retrieval of L2, L3, or L4 remains available.
 
 ### 11.3 Cheap discriminating checks first
 
@@ -505,6 +512,21 @@ The inspected official [`playbook_utils.py`](https://github.com/ace-agent/ace/bl
 
 [Anthropic's context engineering guidance](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) discusses on-demand retrieval, compaction, and structured notes. MindIE adopts working-set management: retain current facts and traceable references, and reread detail when needed. Its own task distribution determines budgets and benefit.
 
+### 12.5 Eight RSI Safeguards Absorbed from `AMD-AGI/GEAK` and `apple-aiml-research/ml-rsi-inference-bench`
+
+Source review of [`AMD-AGI/GEAK`](https://github.com/AMD-AGI/GEAK) (`kernel_workflow/kernel_lane.js`) and [`apple-aiml-research/ml-rsi-inference-bench`](https://github.com/apple-aiml-research/ml-rsi-inference-bench) (`tasks/*/tests/_verifier_lib/`) surfaced eight real-world RSI pitfalls. MindIE embeds their safeguards directly into `mindie_knowledge.graded.explore` and `mindie_bench.runner.rsi_campaign`:
+
+| Pitfall & Source | Observed External Failure Mode | MindIE Safeguard & Entry Point |
+| --- | --- | --- |
+| **1. KB Over-Steering Crowding Out Cold Directions** (GEAK `kernel_lane.js:196-214, 1714-1735`) | Allowing the planner to seed every direction from learned KB cards regressed 16-kernel geomean speedup by **22.7% (`4.45x -> 3.44x`)**, collapsing one kernel from `25.77x` to `2.15x` (*"The KB must be an accelerant, not a cage"*) | `explore.enforce_direction_budget` enforces `kb_dir_cap=1` and `require_cold_direction=True`: at most `kb_dir_cap` directions retain `learned_refs`, and **at least 1 direction per round is a cold profile-only control (`learned_refs=[]`)** |
+| **2. Survivor Bias & Baseline-Drift Credit in Feedback Ledger** (GEAK `kernel_lane.js:1737-1758, 1845-1875`) | Filing feedback only inside `finalPrimary > 1.0` filtered out losing runs (fake 100% win rate); rounds achieving `1.5x` after a `2.5x` incumbent were falsely credited; verifier crashes encoded as `0` penalized cited cards | `explore.build_citation_feedback_record` & `rsi_campaign`: (a) record feedback across both winning and losing runs outside the new-card distillation gate; (b) require `speedup >= incumbent_speedup * (1 + min_improve_delta)`; (c) encode verifier/infra void as `cited_then_verified = None` |
+| **3. Return-Value-Anchored Harvesting Losing Timed-Out Patches** (GEAK `kernel_lane.js:1560-1585`) | An engineer subagent wrote a `1.56x` Triton patch to disk (`best_patch.diff`) and timed out before returning JSON; trusting the missing return discarded the win | `rsi_campaign.harvest_candidate_patch` uses **measurement-anchored harvesting**: only skip verification when the worker returns a valid below-floor measurement (`skip_verified_below_floor`); rescue disk patches on worker timeout (`disk_patch_rescued`) |
+| **4. Stale Profile After Winning Commit & Uncalibrated Roofline Claims** (GEAK `kernel_lane.js:1456-1467, 1676-1683`) | Planning subsequent rounds against Round 0's profile after a winning commit shifted the bottleneck; hallucinating `"reach 90% of peak"` directions when `roofline_status="unknown"` | `run_rsi_gate_campaign` sets `reprofile_required=True` whenever `became_winner=True`; `enforce_direction_budget` filters peak-roofline hypotheses when `roofline_status != "calibrated"` |
+| **5. Trivial Flag/Config Flip Gaming** (Apple `category_gate.py:50-152, 234-237`) | Agents gamed throughput tasks by editing `launch_server.sh` flags (`pure_flag_flip`), literal defaults in `config.py` (`config_default_flip`), or build artifacts (`artifact_only`) | `rsi_campaign.classify_candidate_patch_shape` classifies diffs into `empty` / `artifact_only` / `pure_flag_flip` / `config_default_flip` / `source_edit` / `mixed`, rejecting narrow flips at G3 when `reject_narrow_flips=True` |
+| **6. Untracked Helper Files & JIT/Binary Cache Cross-Contamination** (Apple `candidate_capture.py`, `jit_cache_prune.py`, `_paired_helper.py:122-187`) | Shared `.so` or `TRITON_CACHE_DIR` / `ASCEND_CACHE_PATH` caused `pristine` to load the candidate's compiled kernel, canceling paired AB/BA speedup to `~1.0x` | `build_isolated_jit_cache_env(state_dir, side)` isolates `TRITON_CACHE_DIR`, `TORCHINDUCTOR_CACHE_DIR`, `ASCEND_CACHE_PATH`, and `MINDIE_JIT_CACHE_DIR` per side |
+| **7. Speculative Decoding (MTP/DSpark) Fake Speedup via Disabled Drafting** (Apple `acceptance.py:135-205`, `equivalence.py:36-113`) | Candidates reduced step latency by breaking speculative drafting (`num_drafts <= 0`) or degrading `mean_acceptance_length` | `rsi_campaign.evaluate_speculative_acceptance` enforces `num_drafts > 0` and `cand_acceptance_length >= pristine_acceptance_length * (1 - rtol)` (`rtol=0.05`) |
+| **8. Ratio-of-Means Distortion & Infra Void Misclassification** (Apple `regression_scoring.py:30-71`, `preflight.py:40-71, 227-249`) | Dividing separate means distorts speedup; `/dev/shm` starvation or wedged `smi` scored as `0` pollutes the ledger | Use **per-round paired AB/BA ratios -> workload median -> cross-workload geomean** (with per-guard `min_ratio`), and classify preflight/infra faults as `infra_failed` / `repair_execution_conditions` rather than `refuted` |
+
 ## 13. Interfaces and acceptance
 
 ### 13.1 Evolve existing entry points
@@ -514,12 +536,17 @@ These target signatures preserve backward compatibility with existing single-ref
 ```text
 knowledge_query(query, conditions, domain, domain_path,
                 token_budget=1024, limit=8, continuation=None,
-                include_unknown=True, include_archived=False)
-  → cards, foundation_cards, results, continuation, usage
+                include_unknown=True, include_archived=False,
+                navigation_only=False, mode="reuse",
+                ledger_entries=None, bottleneck_summary=None,
+                native_subcontext=False, goal="")
+  → cards, foundation_cards, results, continuation, usage, mode, exploration_context?
 
 knowledge_explain(ref=None, refs=None, conditions=None,
-                  known_refs=None, token_budget=4096)
-  → units, requires, unresolved, usage (single-ref calls retain top-level compatibility fields)
+                  known_refs=None, token_budget=4096, mode="reuse",
+                  ledger_entries=None, bottleneck_summary=None,
+                  native_subcontext=False, goal="")
+  → units, requires, unresolved, usage, mode, exploration_context? (single-ref calls retain top-level compatibility fields)
 
 knowledge_distill(inputs, task_state, domain, related_refs=None, proposal=None)
   → noop or actual reviewed_change application result
@@ -529,7 +556,7 @@ knowledge_feedback(ref, rating=None, reason="", event_type=None,
   → vote / usage_event receipt
 ```
 
-- `query` returns bounded navigation cards (`cards` and compatibility `results`) plus deduplicated foundation premise cards (`foundation_cards`); whole-response serialized tokens are accounted in `usage`. Unknown conditions surface as `match_status="condition_unknown"` and `ready_to_apply=False` without expanding bodies, while keeping `include_unknown` compatible. Archived or superseded units (`status in {"archived", "superseded"}`) are excluded from default retrieval unless `include_archived=True`.
+- `query` returns bounded navigation cards (`cards` and compatibility `results`) plus deduplicated foundation premise cards (`foundation_cards`); whole-response serialized tokens are accounted in `usage`. Both `navigation_only=True` and normal mode require the unit and all of its closure ancestors to be `matched` and `active` before setting `ready_to_apply=True`. When `mode="explore"`, `L3` (`workflow`) units are stripped while promoting their matched `L1`/`L2` closure premises, and `exploration_context` (with `stagnation`, `stripped_l3_ids`, `conditional_avoid`, and `subagent_fact_pack`) is attached. Unknown conditions surface as `match_status="condition_unknown"` and `ready_to_apply=False` without expanding bodies, while keeping `include_unknown` compatible. Archived or superseded units (`status in {"archived", "superseded"}`) are excluded from default retrieval unless `include_archived=True`.
 - `explain` accepts either a single `ref` (preserving raw material reading and single-unit compatibility fields) or batch `refs` to assemble `needed = closure(S) - visible_complete_refs`: shared premises appear once in topological order in `requires`, and target units return complete, untruncated bodies in `units`. `known_refs` means complete, currently visible revisions (`id@revision` or full URI). `unresolved` distinguishes `condition_unknown`, `condition_mismatch`, `budget_excluded`, `removed_or_superseded` (with `superseded_by`), and `not_found`.
 - `distill` admits `task_state="in_flight"` when `inputs` include at least one `outcome="verified"` milestone item; automatically retrieves related existing units (`related_units`) from `RoutingIndex` as delta comparison context before model invocation; and deterministically validates and applies a foreground-supplied `proposal` (`mindie-distill-decision/1`) with `model_calls=0`.
 - `feedback` preserves `rating="up"|"down"` votes while recording `applied` and `evaluated` events (bound to `run_id` and `outcome="supported"|"refuted"|"inconclusive"`), and separates server-side `query` delivery (`discovered`) from `explain` full-body reads (`loaded`), deduplicated by `(root_opaque, unit_id, revision, event_type, run_id)`.
@@ -614,3 +641,22 @@ Assess growth and quality curves under these inputs, not convergence to one corp
 P0 and P1 can support daily work first. P2 and P3 evolve the same interfaces without a new control plane. Open-source lessons become concrete behavior: complete reading, incremental revision, real feedback, bounded loading, and revisable conclusions.
 
 Report design, implementation, host integration, device validation, and benchmark benefit separately. A merged document, passing component tests, or a faster operator does not independently establish maturity of the entire knowledge system.
+
+## 15. Mechanisms and Engineering Workflows Distilled from Real Transcripts (`T1–T6`)
+
+Section 15 of [`knowledge-context-and-exploration.md`](knowledge-context-and-exploration.md#15-从真实-transcript-吸收机制) tracks both the six diagnostic reasoning mechanisms (`M1–M6`, distilled from `T1–T5`) and the six full-stack migration, verification, and PR delivery workflows (`W1–W6`, distilled from `T6`: `01a00f42-c273-7532-acf4-75e77f0a9267`):
+
+1. **Diagnostic Reasoning Mechanisms (`M1–M6`)**:
+   - **M1**: Choose discriminating experiments and perform Phase 0 upfront subgraph fusion analysis before microstage tuning.
+   - **M2**: Locate the first equivalent boundary that diverges across logical token/state/stage/rank contracts and four-layer simulation (`mindie_sim`).
+   - **M3**: Treat observation (`dump`, `clone`, `non_blocking=False` sync) as a possible intervention and run necessary causal controls.
+   - **M4**: Reproduce history-dependent and sequence/concurrency-sensitive faults with minimal state transitions.
+   - **M5**: Enforce independent semantic oracles, active execution branch proof, and the zero-burden `G0–G3` qualification ladder.
+   - **M6**: Preserve conditional counterevidence, human corrections, and silent background anti-bloat (`Negative-Branch Folding` + `<= 8 KiB` rewrite-to-compact).
+2. **Full-Stack Migration, Verification & Delivery Workflows (`W1–W6`, from `T6`)**:
+   - **W1 (Progressive Verification Ladder & Pruned vs. Full Weight Boundary)**: Progress strictly through `Single-Op → 1-Node Pruned Weights / 2-Node Minimal Topology → 4-Node Full Weights → Immediate Cluster Release`. On 1-node pruned weights (e.g., 16 experts), ignore long-text semantic quality but mandatorily verify: (1) operator/weight loading, (2) KV Cache grouping and `build()` count, (3) minimal 2-bucket `ACLGraph` capture (never compile all graph buckets during debugging), (4) non-zero execution and acceptance rate on quantized/speculative paths, and (5) Peak Activation memory parity against the baseline (`fix hangs on 1–2 nodes → verify memory activation on 1 node → run full accuracy/performance on 4 nodes`). Downscale 4-node or long-context faults to 1–2 nodes whenever reproducible.
+   - **W2 (Controlled Same-Topology Baseline A/B Diff & Three-Axis Parity)**: Lock the last known-good baseline anchor first; if operator sources match the verified branch, freeze operator suspicion and diff framework glue (Runner / Metadata Builder / KV Spec / Loader). Run old vs. new side-by-side on dual nodes or single-node split cards (`0..7` vs. `8..15` with identical `TP` and `block_size`) on the same weights, instrumenting key boundaries in one pass. Verify accuracy, Peak Activation memory, and speculative acceptance rate together.
+   - **W3 (Upstream/Repo-Sibling First & Pre-Review Panorama Self-Audit)**: Before coding, check upstream `vllm` native hooks (`process_weights_after_loading`, native custom ops) and mature sibling implementations in `vllm-ascend` (e.g., `DSA V1` metadata builder placement, GLM DSpark); inherit `common` classes rather than cross-vendor `ROCm`/`CUDA` runners that require reverse monkey-patching. Before review or after a large rebase, audit every modified file line-by-line (`before → after → why`) to remove debug remnants, `NotImplementedError` defensive guards, and string-grep filler UTs, and verify cross-model blast radius on shared files (`kv_cache_interface.py`).
+   - **W4 (Speculative Decoding `ACLGraph` Alignment, Out-of-Graph Tiling Sink & SLA Sweep)**: Align `K`-step speculative `ACLGraph` buckets to multiples of `K+1` and select initial graphs by padded `num_input_tokens`; construct fixed buffers and Tiling/Sink metadata in `AttentionMetadataBuilder` / `ModelRunner` outside the captured graph while eliminating `seq_lens` and Mamba `num_accepted_tokens` Host D2H syncs; validate `greedy` before `probabilistic` sampling; sweep power-of-2 inputs (`2K → 256K`, fixed `1K` output, ~95% prefix cache) × per-DP concurrency under `TPOT <= 30ms`, reporting `TPOT`, `ITL (p50/p90)`, and `mean_acceptance_length` in the same table.
+   - **W5 (Parent Integration PR + Atomic Child PR Stack & `< 5 min` Reduced-Weight CI)**: Maintain 1 parent PR (full stack + deployment doc for multi-node E2E validation) alongside an ordered stack of orthogonal atomic child PRs; keep PR descriptions focused on current responsibilities and post separate clean benchmark tables + desensitized launch commands (no internal hashes or artifact paths); build `< 5 min` single-file layer/expert-reduced or dummy-weight E2E CI smoke tests; triage and reply to all non-AI human review comments after regression testing.
+   - **W6 (Lightweight Pre-Flight & Build Anti-Repeat Checklist)**: Avoid heavy hash/manifest runbook ceremonies; enforce four lightweight pre-flight invariants: (1) parallel C++ builds (`-j` / `MAX_JOBS`) and `ASCEND_CUSTOM_OPP_PATH` `.so` verification, (2) explicit `VLLM_VERSION` pinning instead of dynamic commit drift, (3) `GLOO/HCCL_SOCKET_IFNAME` verification, and (4) running benchmark requests locally inside the remote server container rather than over VPN.
