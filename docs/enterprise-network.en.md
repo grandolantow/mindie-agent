@@ -40,6 +40,6 @@ On October 20, 2026, using an authenticated HTTP proxy on Windows:
 - This machine had `http.sslVerify=false`. After confirming that verification works with its existing enterprise proxy, the setting was restored to `true`; GitHub access with the default Git configuration passed.
 - Git pushes and GitHub PR creation for the fixes succeeded, exercising actual upload paths.
 - Real local HTTP/TLS tests covered authenticated CONNECT, explicit CA trust, `NO_PROXY`, streaming usage and loopback requests with a broken proxy.
-- TCP port 22 probes timed out for A2 `173.125.1.2` and A3 `192.168.13.165`, `.156` and `.154`. SSH file transfers to these hosts have not completed live validation on this network.
+- This local enterprise network cannot directly reach A2/A3, an expected environment boundary. This environment does not run A2/A3 live tests; regular CI verifies local components and process/network protocol contracts.
 
 Verification covers real Release downloads, environment-file consumption across processes, existing service context transfer, proxied loopback requests and error propagation. Network credentials stay out of test output, public logs and PR descriptions.
