@@ -6,6 +6,8 @@ Shared runtime components live in `knowledge`, `remote-dev`, `diagnostics`, `pro
 
 ## 1. Core Operating Rules (Always Active)
 
+- **Desktop resource budget**: Large-model simulation, long decode, calibration sweeps and concurrent predictive runs belong on a remote Linux server via remote-dev. Keep local verification to small targeted cases. If `mindie-sim` returns `host_capacity_requires_remote`, move the original job remote; do not bypass the check or spawn more local processes to retry it. Default prediction traces are bounded; request full detail only for server-side investigations.
+
 - **Repository Boundary**: This repo contains documentation and architecture assets only—no runtime bootstrap, MCP server, client hook, Skill catalogue, or dependency lock. Do not add legacy VAWS aliases or alter the user's unrelated skills, plugins, or MCP configurations.
 - **Inner-Loop Efficiency (Principle 1 — Total Cost First)**:
   - Edit files directly in the active checkout and verify only the affected scope.
