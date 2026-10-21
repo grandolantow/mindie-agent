@@ -64,9 +64,9 @@ flowchart LR
 | 模块分组 | 对应源码文件 | 当前职责与演进定位 |
 | --- | --- | --- |
 | **数据源与范围发现** | `segment.py`, `sources_db.py`, `sources_csv.py`, `sources_trace.py`（新增） | Rank 目录识别、显式时间/Step 窗口解析、只读 SQLite（`mode=ro` + `query_only=ON`）与 `STRING_IDS` 解析、CSV 及流式 JSON Trace 旁路索引 |
-| **区间计量与分类** | `accounting.py`, `classify.py`, `cross_rank.py`, `events.py` | 整数纳秒区间并集/差集运算、语义块与执行引擎分类、按算子变体（Shape/Dtype/Format）聚合、跨 Rank P50 与最慢 Rank 统计 |
+| **区间计量、集群快慢卡与 EP 均衡** | `accounting.py`, `classify.py`, `cross_rank.py`, `events.py` | 整数纳秒区间并集/差集运算、语义块与执行引擎分类、按算子变体（Shape/Dtype/Format）聚合、跨 Rank P50 与最慢 Rank 统计、**集群快慢卡（`slow_rank`）vs 慢链路（`slow_link`）正交归因**及 **MoE EP 负载均衡度（`ep_imbalance_cv` / `eplb_recommended`）** |
 | **渐进查询与报告** | `__main__.py`, `analyze.py`, `report.py`, `correlate.py`（新增） | 提供 `inventory`、`analyze`、`correlate`、`sql` 子命令，输出带源表定位符（Locator）的紧凑结构化 JSON |
-| **异常、显存与理论建模** | `enrichment*.py`, `memory_*.py`, `theoretical_model.py`, `tensor_cast_provider.py` | 单实例 `waitNs` / `TASK_PMU_INFO` 绑定、P0–P4 显存归因、单算子 Roofline 下界与可选 `msmodeling`（`tensor_cast`）注入式预测 |
+| **异常规则、内存取证与理论建模** | `enrichment*.py`, `advisor_rules.py`, `memory_profile.py`, `memory_forensics.py`, `theoretical_model.py`, `tensor_cast_provider.py` | 单实例 `waitNs` / `TASK_PMU_INFO` 绑定、**昇腾 Advisor 异常与可融合算子序列扫描（AICPU 回退、32B/512B 对齐、多流 MTE 争用、流同步与疑似 GC 停顿）**、P0–P4 显存归因、**4 类低效内存分配模式与跨 Step 单调泄漏取证**、单算子 Roofline 下界与可选 `msmodeling`（`tensor_cast`）注入式预测 |
 | **跨 Run 对比与在线控制** | `compare.py`, `cli_compare.py`, `collect.py`, `framework_capture.py` | 按指标判定可比性的 A/B 差异报告；`/start_profile` 与 `/stop_profile` 在线采集控制及 `completed / failed / unknown` 状态对账 |
 
 ### 3.2 五项必须落地的计量与身份修正（P0）

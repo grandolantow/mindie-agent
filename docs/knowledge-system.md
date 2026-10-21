@@ -67,9 +67,17 @@ MindIE Agent 将可复用的昇腾研发经验组织为带适用条件、代码�
 
 `GradedRepository.query` 为每条命中生成精确引用（`ref`、`unit_ref`、`feedback_ref`），并通过 `feedback.observe` 记录本次实际返回的 `unit_id` 与 `revision`。调用 `explain` 时按精确版本读取完整内容；执行任务后可通过 `feedback.record_vote` 提交 `helpful` / `not_helpful` 反馈，为后续修订提供依据。
 
-为兼顾精确 API 匹配与跨概念召回，检索引擎吸收了 [CANNBot Knowledge](https://gitcode.com/cann/cannbot-knowledge) 的**昇腾标识符子词切分（Subword Tokenization）与声明式检索评测**机制：
-- **复合符号与子词双轨索引**：针对 `DataCopyPad`、`PipeBarrier`、`SetFlag`/`WaitFlag`、`GatedDeltaNet`、`Ascend910B4`、`npu_fused_infer_attention_score` 等驼峰（CamelCase/PascalCase）、下划线与数字边界符号，在保留完整复合符号精确加权的同时自动拆分 constituent 子词（如 `data`、`copy`、`pad`），避免因大小写或复合词形态差异漏检；
+为兼顾精确 API 匹配与跨概念召回，检索引擎吸收了 [CANNBot Knowledge](https://gitcode.com/cann/cannbot-knowledge) 与 `vllm-ascend` 生态的**昇腾标识符子词切分（Subword Tokenization）与声明式检索评测**机制：
+- **复合符号与子词双轨索引**：针对 `DataCopyPad`、`PipeBarrier`、`SetFlag`/`WaitFlag`、`GatedDeltaNet`、`Ascend910B4`、`npu_fused_infer_attention_score` 以及 `npugraph_ex`、`torchair`、`msmodelslim`、`dspark`、`dflash`、`xlite`、`eplb`、`hixl`、`lmcache`、`mooncake`、`sfa_v1`、`dsa_v1`、`mla_v1`、`fa3_v1`、`quarot`、`teacache`、`msmemscope`、`msprof`、`msprobe`、`serving_cast`、`tensor_cast` 等复合标识符，在保留完整复合符号精确加权的同时自动拆分 constituent 子词，避免因大小写或复合词形态差异漏检；
 - **声明式检索评测套件（`evaluate_retrieval_suite`）**：支持按声明式用例（查询词、环境 `conditions`、`mode="standard"|"explore"`、期望命中 `expected_unit_ids`、禁出条目 `forbidden_unit_ids`）确定性度量 **`Recall@K`**、**`MRR`（平均倒数排名）**、**`_common` 基础约束挂载率（`foundation_baseline_rate`）** 以及探索模式下 `L3` 常规工作流的剥离完备率。
+- **七大领域知识库覆盖规模（430 个结构化分级知识单元）**：
+  - `knowledge-vllm-ascend`（`82` 单元）：覆盖 `vllm-ascend` 15 篇架构设计、30 篇特性指南、45+ 官方模型教程、30+ 源码子系统及 46 个 0-day 模型分支家族；
+  - `knowledge-infer-core`（`105` 单元）：覆盖 `cann-recipes-infer` 26 个模型家族优化 Recipe、16 个 `model-infer-*` Skill、公共加速模块及 `Ascend/msagent` 量化/精度诊断工作流；
+  - `knowledge-operators`（`103` 单元，含 `15` 个带消融回执的 `L4` Mutator）：覆盖 AscendC / Triton-Ascend / TileLang / PyPTO / Catlass 算子开发、`cann/ops-transformer` 融合算子契约与模型专属自定义算子；
+  - `knowledge-infer-distributed`（`37` 单元）：覆盖 `Mooncake`、`dynamo`、HCCL 多机集合通信、SHMEM 对称内存及 PD/EPD 分离传输；
+  - `knowledge-infer-observability`（`38` 单元）：覆盖 `msmodeling`、`msprof-analyze`、`msmemscope`、`mskpp`、`ops-test-kit`（TTK）与服务级 Profiling；
+  - `knowledge-infer-ops-compat`（`33` 单元）：覆盖 AutoFuse、GE/TorchAir 图编译、SuperKernel、多流/预取、容器驱动安装与 Volcano/MindIE Motor 部署；
+  - `knowledge-agent-engineering`（`32` 单元）：覆盖多智能体模型调优编排、SOTA 探索循环、`ais_bench` 核心集压缩、Git Bisect 自动修 Bug 与安全审计。
 
 ## 4. 经验提炼与跨任务复用闭环
 
@@ -150,6 +158,9 @@ flowchart LR
 
 本系统的知识组织与长程探索机制吸纳了以下成熟的社区工程实践：
 - [CANNBot 仓群（`cannbot` / `cannbot-knowledge` / `cannbot-skills` / `cannbot-dsl` / `cannbot-sentry` / `cann-bench`）](https://gitcode.com/cann/cannbot)：昇腾算子与推理优化领域的知识卡治理（OKF v0.2 Profile、昇腾 API 子词分词、声明式检索评测）、Ascend C 同步审计（`ascendc-sync-audit`）、复杂算子 DSL 范式、Agent 轨迹双重审计（`sift` 过程合规 + 结果一致性）与硬件锚定性能评分（`HAP`）。
+- [`vllm-project/vllm-ascend`](https://github.com/vllm-project/vllm-ascend) 与 [`cann/cann-recipes-infer`](https://gitcode.com/cann/cann-recipes-infer)：昇腾大模型推理引擎架构（`ModelRunner V1/V2`、`ACLGraph`/`npugraph_ex`、MLA/DSA/SFA 注意力后端、ModelSlim 量化、MTP/DSpark 投机采样、动态 EPLB、PD/EPD 分离）及 45+ 模型家族与 Agentic 调优配方。
+- [昇腾性能与诊断工具链（`Ascend/msmodeling`、`Ascend/msprof-analyze`、`Ascend/msmemscope`、`Ascend/mskpp`、`Ascend/msagent`、`Ascend/agent-skills`）](https://gitcode.com/Ascend)：解析性能与容量规划（`tensor_cast` / `serving_cast`）、15 类 Advisor 规则与集群快慢卡/慢链路归因、内存低效分配与单调泄漏取证、以及量化/精度/算子多智能体编排规程。
+- [`kvcache-ai/Mooncake`](https://github.com/kvcache-ai/Mooncake) 与 [`ai-dynamo/dynamo`](https://github.com/ai-dynamo/dynamo)：以 KVCache 为中心的 PD 分离式服务架构、RDMA/HIXL 零拷贝传输引擎与前缀感知路由。
 - [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载领域操作规程，并在成功排障或纠偏后原地演进已有技能文档。
 - [Anthropic Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)：通过 Git 版本控制与结构化进度文件（`PROGRESS.md` + 实验台账）在多个独立上下文窗口之间接力推进长程研发任务。
 - [AlphaEvolve](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/)：将候选方案生成与确定性实验评估解耦，依靠编译、精度与实机计时结果筛选下一轮演进方向。
