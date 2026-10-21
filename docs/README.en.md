@@ -32,6 +32,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 
 | Document (English) | 中文 | What It Covers |
 |---|---|---|
+| [`0.0.3` Release Record](releases/0.0.3.en.md) | [`0.0.3` 版本发布记录](releases/0.0.3.md) | L1–L4 progressive disclosure, `profiler` and `sim` components, deterministic CANN fault triage, and 12-repository formal benchmarks |
 | [`0.0.2` Release Record](releases/0.0.2.en.md) | [`0.0.2` 版本发布记录](releases/0.0.2.md) | Aligned plugin versions, exact component sources, native acceptance, and recurring ten-repository benchmarks |
 | [`0.0.1` Release Record](releases/0.0.1.en.md) | [`0.0.1` 版本发布记录](releases/0.0.1.md) | Supported host matrix, paired component release mapping, verified capabilities, and known host limitations |
 | [Roadmap & Next Steps](next-steps.en.md) | [后续演进路线图](next-steps.md) | Upcoming work on end-to-end benchmarks, broader host coverage, and developer experience improvements |
