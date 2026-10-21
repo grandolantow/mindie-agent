@@ -44,13 +44,12 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 > **A stable, authenticated GitHub CLI (`gh`) channel is a hard requirement for MindIE Agent**—it powers plugin marketplace fetches, locked release verification, `knowledge-vllm-ascend` corpus sync, automated community PR publication (via `gh api` and `!gh auth git-credential`), and optional issue reporting. Run in the terminal first:
 > ```bash
 > git --version && uv --version && gh --version
-> gh auth status
-> GH_USER=$(gh api user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
-> gh auth setup-git
+> GH_USER=$(gh api --hostname github.com user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
+> gh auth setup-git --hostname github.com
 > ```
 > - **Hard Gate (Never skip or silently ignore failures; a DSH `0.0.3`-only install without community contribution may skip the `gh` gate but still needs `git` and `uv`)**:
 >   - If `gh` is missing: assist the user in installing GitHub CLI for their OS first (macOS: `brew install gh`; Windows: `winget install --id GitHub.cli`; Ubuntu / WSL: `sudo apt update && sudo apt install -y gh`).
->   - If `gh auth status` is not logged in, the token is invalid, or `gh api user` cannot reach GitHub: **do not proceed to the next step**—guide the user to complete `gh auth login` (or set a valid `GH_TOKEN`) and run `gh auth setup-git` until `gh api user --jq .login` reliably returns their GitHub username.
+>   - Reuse a working account. When login is needed, follow the [GitHub sign-in flow](docs/enterprise-network.en.md#github-sign-in-flow): browser login on ordinary networks, or token login on enterprise networks / blocked browser authorization. Guide creation if needed, receive an existing token through the hidden `gh` prompt, and let `gh` save it. Verify the account, Git and subsequent-process reuse before continuing. Resolve network/proxy/certificate failures as transport problems.
 >
 > #### Step 2: Preserve consent and prepare contribution targets only when needed
 > Installation registers the plugin needed by the current host. It requires neither a Star nor a Fork. Starring the project is the user's choice.
@@ -134,7 +133,7 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 
 > **Hard Prerequisite**: Ensure `git`, `uv`, and an authenticated **`gh` (GitHub CLI)** are installed. The DSH `0.0.3` row below does not require `gh` because it enables no contribution or reporting path. Before installing a plugin, run this one-liner to **verify your GitHub channel**:
 > ```bash
-> gh auth status && gh auth setup-git
+> gh api --hostname github.com user --jq .login && gh auth setup-git --hostname github.com
 > ```
 
 Then pick the one-liner for your coding agent:

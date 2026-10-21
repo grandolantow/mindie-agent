@@ -28,6 +28,29 @@ Following [design principles](design-principles.en.md) 1, 8, 9, 10, 14 and 15:
 
 Runtime changes belong to their component and plugin repositories. This repository owns the design and entry documentation. Updates retain existing preparation, idle switching and timeout budgets.
 
+## GitHub sign-in flow
+
+During installation, first-use setup or authentication repair, `/mindie-agent` follows this flow. The Agent guides the choice; `gh` owns credential storage and use. No additional authentication service or MindIE token configuration is needed.
+
+1. **Reuse working authentication.** Install `gh` if missing, then run `gh api --hostname github.com user --jq .login`. If the expected account succeeds, continue without another login question. Use `gh auth status` to diagnose the credential source; an unrelated expired saved account must not block the active valid account.
+2. **Choose a method when login is needed.** Prefer a token when the user reports an enterprise network, proxy/custom CA settings are present, or browser authorization is blocked. Otherwise offer browser login by default, with a token option. Proxy/CA settings are hints, not proof that browser login is impossible. Resolve connection timeouts, proxy 407 responses and certificate failures as transport problems before diagnosing an invalid token.
+3. **Ask only for what is missing.** Use an existing token, or open the [GitHub token creation page](https://github.com/settings/tokens/new?scopes=repo%2Cread%3Aorg%2Cgist&description=MindIE%20Agent) and guide the user back to the terminal after creation. The ordinary persistent flow uses a classic PAT supported by `gh` (`repo`, `read:org`, `gist`); expiry follows the user's or organization's policy. Complete organization SSO authorization when required. If policy requires a fine-grained PAT, configure its actual target repositories and permissions rather than demanding a forbidden token type.
+4. **Receive and save through the native prompt.** In a user-operable terminal run `gh auth login --hostname github.com --git-protocol https`, select `Paste an authentication token`, and let the user paste into the hidden input. If the user already supplied a private token-file path, pipe it into `gh auth login --hostname github.com --git-protocol https --with-token` without another entry step. Keep the token out of chat, command arguments, repositories, MindIE settings and logs. Let `gh` manage storage without adding `--insecure-storage`. Stale token environment variables override saved login and must be addressed in the actual calling process during repair.
+5. **Verify and resume the requested task.** Read the account again, run `gh auth setup-git --hostname github.com`, and perform read-only checks on the repositories needed by the task. Subsequent source/knowledge sync, Git push, PR and Issue operations reuse the same `gh` identity. Login does not change contribution consent or project scope. Treat 401 as a credential failure and investigate repository access, permissions and SSO for 403/404; do not loop through login or create test PRs/Issues.
+
+For a user-supplied file, the Agent binds the path variable to the actual path without printing the contents:
+
+```powershell
+Get-Content -Raw -LiteralPath $TokenFile | gh auth login --hostname github.com --git-protocol https --with-token
+if ($LASTEXITCODE -ne 0) { throw "GitHub token login failed" }
+```
+
+```sh
+gh auth login --hostname github.com --git-protocol https --with-token < "$TOKEN_FILE"
+```
+
+**Reuse across processes:** Saved `gh` credentials are available to new processes using the same user and `GH_CONFIG_DIR`. Verify persistent login with an account lookup in a child process without `GH_TOKEN` / `GITHUB_TOKEN`, so environment credentials cannot hide a missing saved login. Background services retain their existing network/configuration-path transfer. If the user chooses environment-only `GH_TOKEN` authentication (preferred for fine-grained PATs), their existing credential injection must supply each actual caller. Knowledge already transfers credentials through its one-use context. Generated diagnostic network files do not save tokens; independent services need their existing explicit private environment-file mechanism or saved `gh` login. Foreground success alone does not prove authentication after a service restart.
+
 ## Enterprise-network observations
 
 On October 20, 2026, using an authenticated HTTP proxy on Windows:
