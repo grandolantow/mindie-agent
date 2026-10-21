@@ -120,10 +120,21 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 >   }
 >   ```
 >
-> #### 第四步：向用户汇报安装结果
+> #### 第四步：完成首次配置与开发工作区引导
+> 四种完整插件的正常安装都执行本步骤，即使用户未开启知识贡献。复用已验证的 GitHub 认证，介绍已有用户须知，然后按当前宿主的指南提供创建并初始化 [vllm-ascend-workspace](https://github.com/mindie-agent/vllm-ascend-workspace)、复用已有目录或继续当前目录的选择：
+>
+> - [Codex 工作区引导](https://github.com/mindie-agent/mindie-agent-codex/blob/main/plugins/mindie-agent/skills/mindie-agent/references/workspace-setup.md)
+> - [Claude Code 工作区引导](https://github.com/mindie-agent/mindie-agent-cc/blob/main/skills/mindie-agent/references/workspace-setup.md)
+> - [Kimi Code 工作区引导](https://github.com/mindie-agent/mindie-agent-kimi/blob/main/skills/mindie-agent/references/workspace-setup.md)
+> - [DSH 工作区引导](https://github.com/mindie-agent/mindie-agent-dsh/blob/main/skills/mindie-agent/references/workspace-setup.md)
+>
+> 用户同意创建或复用后，自动把所选绝对路径添加到当前宿主的原生项目/工作区入口并核对结果，不再另问一次是否登记。源码初始化遵循检出工作区的 `AGENTS.md` 与 `repo_init.py`，保留已有 Fork 配置；初始化可以稍后完成。已有选择直接复用，不在普通开发任务中重复询问。
+>
+> #### 第五步：向用户汇报安装结果
 > 安装完成后，向用户简要汇报：
 > 1. 适用时已验证的 `gh` GitHub 交互通道及认证账号；
 > 2. 已安装的客户端插件名称、版本与验证结果；
+>    同时报告工作区路径、宿主登记/打开状态和源码初始化状态；原生界面仍需操作时给出剩余步骤；
 > 3. 说明日常开发只需通过单一入口 `/mindie-agent` 唤醒昇腾领域知识与 Skill，而远端 NPU 工具（`remote-dev`）在日常对话中默认自动触发；
 > 4. 说明**社区知识贡献**与**产品故障自动上报**默认均处于关闭状态（Opt-in）；若后续用户开启社区知识贡献，Agent 会自动按需 Fork 对应的目标知识库（如 `mindie-agent/knowledge-vllm-ascend` -> `$GH_USER/knowledge-vllm-ascend`）并完成绑定。
 
@@ -142,9 +153,11 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 | --- | --- | --- |
 | **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.3" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
 | **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.3 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
-| **Kimi Code CLI** | `git clone --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
+| **Kimi Code CLI** | `git clone --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py`，随后按 [Kimi 安装指南](https://github.com/mindie-agent/mindie-agent-kimi#快速开始) 完成原生插件注册 | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
 | **DeepSeek Harness (DSH)** | `git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-dsh.git /tmp/mindie-agent-dsh && uv --native-tls run --quiet --no-project --python 3.11 /tmp/mindie-agent-dsh/scripts/setup.py`，随后在 DSH **Plugins** 页面启用 `git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3` | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) |
 | **仅安装 NPU 监控台 (`npu-top`)** | `uvx --native-tls --from "https://github.com/mindie-agent/npu-top/releases/download/v0.2.1/npu_top-0.2.1-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
+
+四种完整插件手动安装后，在新会话输入 **`/mindie-agent 帮我完成首次配置`**，按上方对应宿主的工作区指南完成安装引导。已有 GitHub 登录直接复用；选择安装工作区后，Agent 继续完成源码初始化和原生项目登记。单独安装 `npu-top` 不需要该步骤。
 
 ---
 
