@@ -198,8 +198,8 @@ flowchart TB
     Diag["🛡️ mindie-diagnostics<br/>CANN/plog 故障诊断 · 本地轮转日志 · 可选白名单上报"]
   end
 
-  subgraph Remote["🖥️ 远端昇腾集群与知识源 (Ascend Fleet & Canonical Feed)"]
-    Feed[("📚 vLLM-Ascend / operators<br/>领域知识、来源与版本反馈")]
+  subgraph Remote["🖥️ 远端昇腾集群与知识源 (Ascend Fleet & Canonical Feeds)"]
+    Feed[("📚 7 大昇腾领域知识库<br/>(vLLM-Ascend · Operators · Infer · Agent Eng)")]
     Cluster[("🚀 远端昇腾 NPU 主机与 Docker 容器")]
   end
 
@@ -296,19 +296,31 @@ MindIE Agent 的核心交互理念是**极简易用与渐进式披露（Progress
 | **[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)** | **Kimi Code CLI** | Kimi Code 原生插件：运行时原子版本切换、会话记录脱敏采集与 MCP 桥接 |
 | **[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)** | **DeepSeek Harness (DSH)** | DSH 原生插件：`/mindie-agent` Skill、知识检索工具、生命周期桥接与 `remote-dev` 集成 |
 
-### 3. 共享运行时底座与公共知识库（Shared Runtime Components & Corpora）
+### 3. 共享运行时组件底座（Shared Runtime Components）
 
 | 仓库 | Python 包 / 入口 | 定位与核心职责 |
 | --- | --- | --- |
-| **[`knowledge`](https://github.com/mindie-agent/knowledge)** | `mindie-knowledge` | 结构化知识单元管理、条件匹配检索、领域路由、版本反馈、脱敏采集与社区 PR 发布 |
-| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | *(Markdown 知识库)* | `vLLM-Ascend` 领域工程知识库：覆盖 Kimi K3 Hybrid、DeepSeek-V4/V4.1、Qwen3.5、PD 分离、MoE EP/MC2、ACLGraph/TorchAir 与 CANN 故障排查的知识单元 |
-| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | *(Markdown 知识库)* | 昇腾算子工程知识库：覆盖 910B / 910C (A3) / 950 (A5) 架构约束、`AscendC`、`Triton-Ascend`、`CATLASS`/`TileLang`、FIA/FlashMLA 与 GMM/SwiGLU 融合调优的知识单元 |
+| **[`knowledge`](https://github.com/mindie-agent/knowledge)** | `mindie-knowledge` | 结构化分级知识单元（L1–L4）管理、条件匹配检索、多领域分片路由、版本反馈、双层脱敏采集与社区 PR 发布 |
 | **[`remote-dev`](https://github.com/mindie-agent/remote-dev)** | `remote-dev` | SSH 远端文件读写与命令执行、Docker 容器直连、后台长作业管理、连接复用与产物同步 |
 | **[`coordinator`](https://github.com/mindie-agent/coordinator)** | `mindie-coordinator` | 远端昇腾环境与多 Agent 资源协调器：SSH 主机/多机互通配置、容器开通与绑定、NPU 拓扑探测（兼容 A2/A3 双 Die/A5）、HCCL/RoCE 预检以及选卡/端口租约防冲突 |
 | **[`profiler`](https://github.com/mindie-agent/profiler)** | `mindie-profiler` / `mindie_profiler` | 昇腾 Profiling 采集与解析组件：受控采集、`msprof` 产物就地只读分析（`inventory / analyze / correlate / compare / sql`）、显存拆解与优化前后对比 CLI |
 | **[`sim`](https://github.com/mindie-agent/sim)** | `mindie-sim` / `mindie_sim` | 昇腾性能建模与 Roofline 求解组件：支持 A2/A3/A5 硬件规格、HBM/PCIe/HCCS/RoCE 传输耗时估算、算子 Cube/Vector/MTE 流水线建模、子图融合收益预估与整网并行推演 |
 | **[`npu-top`](https://github.com/mindie-agent/npu-top)** | `npu-top` | 昇腾 NPU 可视化监控看板：提供 Web 实时状态页（`127.0.0.1:8788`）与 90 天 SQLite 利用率热力图（共享读取 `coordinator` 的 `machines.json`） |
 | **[`diagnostics`](https://github.com/mindie-agent/diagnostics)** | `mindie-diagnostics` / `mindie_diagnostics` | 故障诊断与日志组件：支持 CANN 错误码与 `plog` 根因分析、4×1 MiB 本地轮转日志、离线脱敏诊断包与可选的 GitHub Issue 白名单上报 |
+
+### 4. 昇腾领域公共知识库（Public Domain Knowledge Corpora）
+
+所有公共知识库均采用 `mindie-graded-unit/1` 结构化分级单元格式（`L1` 事实与约束标准 · `L2` 标准排障与开发规程 · `L3` 多阶段工程工作流 · `L4` 深度调优模式），附带适用条件（`applicability`）与实证依据：
+
+| 仓库 | 领域标识 (`domain`) | 定位与覆盖范围 |
+| --- | --- | --- |
+| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | `vllm-ascend` | `vLLM-Ascend` 领域工程知识库：覆盖新模型 0day 接入、PD 分离、MoE EP/MC2、量化与投机解码、ACLGraph/TorchAir 及插件架构调优 |
+| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | `operators` | 昇腾算子工程知识库：覆盖 910B / 910C (A3) / 950 (A5) 硬件约束、`AscendC`、`Triton-Ascend`、TBE/AKG 编译排障、FlashAttention/MLA 与 Matmul/MoE 融合调优 |
+| **[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)** | `infer-core` | 昇腾推理服务与引擎核心知识库：覆盖 MindIE Server / Service / LLM / Motor 部署配置、Batch 调度、KV Cache 管理、采样后处理与多模态推理服务 |
+| **[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)** | `infer-distributed` | 分布式推理与集合通信知识库：覆盖 HCCL 通信排障、RoCE/HCCS 拓扑与 Ranktable 校验、SHMEM 共享内存及多机 DP/TP/EP/PP/CP 并行策略 |
+| **[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)** | `infer-observability` | 推理可观测性、诊断与评测知识库：覆盖 CANN/`plog`/Device 报错根因定位、`msprof` 性能采集与拆解、精度对齐校验及吞吐/时延基准测量规程 |
+| **[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat)** | `infer-ops-compat` | 图编译、算子注册与迁移兼容知识库：覆盖 TorchAir/ACLGraph 图捕获与重编译排障、自定义算子注册接入、CUDA 至昇腾迁移适配及运行时兼容 |
+| **[`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering)** | `agent-engineering` | Agent 工程与治理知识库：覆盖多 Agent 协同编排、知识提炼与质量治理、双层隐私脱敏门禁、CI 发布校验与真机基准评测方法 |
 
 ---
 

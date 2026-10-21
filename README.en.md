@@ -199,7 +199,7 @@ flowchart TB
   end
 
   subgraph Remote["🖥️ Remote Ascend Fleet & Knowledge Repositories"]
-    Feed[("📚 vLLM-Ascend / operators<br/>Domain Knowledge & Source References")]
+    Feed[("📚 7 Ascend Domain Knowledge Corpora<br/>(vLLM-Ascend · Operators · Infer · Agent Eng)")]
     Cluster[("🚀 Remote Ascend NPU Hosts & Docker Containers")]
   end
 
@@ -296,19 +296,31 @@ Every repository under `@mindie-agent` has a clean, single-purpose boundary and 
 | **[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)** | **Kimi Code CLI** | Native Kimi Code plugin: atomic version switching, redacted session capture, and MCP bridging |
 | **[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)** | **DeepSeek Harness (DSH)** | Native DSH plugin: `/mindie-agent`, knowledge tools, lifecycle bridging, and `remote-dev` integration |
 
-### 3. Shared Runtime Components & Public Knowledge Corpora
+### 3. Shared Runtime Components
 
 | Repository | Package / CLI | Role |
 | --- | --- | --- |
-| **[`knowledge`](https://github.com/mindie-agent/knowledge)** | `mindie-knowledge` | Condition-matched retrieval, domain routing, source-pinned references, experience distillation, and community PR publishing |
-| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | *(Markdown Corpus)* | Curated `vLLM-Ascend` domain knowledge repository: model bring-up, adaptation, and optimization entries with pinned source commits and applicability conditions |
-| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | *(Markdown Corpus)* | Curated Ascend operators domain knowledge repository: `AscendC`, `Triton`, and CANN operator implementation and pipeline tuning entries |
+| **[`knowledge`](https://github.com/mindie-agent/knowledge)** | `mindie-knowledge` | Graded knowledge unit (L1–L4) management, condition-matched retrieval, multi-domain shard routing, source-pinned feedback, two-layer redaction, and community PR publishing |
 | **[`remote-dev`](https://github.com/mindie-agent/remote-dev)** | `remote-dev` | SSH file and command tools, container execution, background jobs, pooled connections, and artifact transfer |
 | **[`coordinator`](https://github.com/mindie-agent/coordinator)** | `mindie-coordinator` | SSH & remote Ascend environment manager: host/key inventory, container binding & provisioning, NPU/server probing (`mindie_probe`), NPU/port lease arbitration (`mindie_lease`), and managed task execution |
 | **[`profiler`](https://github.com/mindie-agent/profiler)** | `mindie-profiler` / `mindie_profiler` | Ascend profiling collection and in-place analysis component: controlled capture, `inventory / analyze / correlate / compare / sql` trace analysis, memory breakdown, and cross-run comparison CLI |
 | **[`sim`](https://github.com/mindie-agent/sim)** | `mindie-sim` / `mindie_sim` | Ascend performance modeling and roofline simulator: multi-SKU A2/A3/A5 hardware specs, `H2D`/`D2H`/`D2D` transfer bounds, Cube/Vector/MTE pipeline scheduling solver, subgraph fusion estimator, and distributed parallelism modeling |
 | **[`npu-top`](https://github.com/mindie-agent/npu-top)** | `npu-top` | Human-facing Ascend NPU observability dashboard: live web UI (`127.0.0.1:8788`) and 90-day SQLite utilization history (sharing `coordinator`'s `machines.json`) |
-| **[`diagnostics`](https://github.com/mindie-agent/diagnostics)** | `mindie-diagnostics` / `mindie_diagnostics` | Local fault logging and diagnostics component: bounded 4×1 MiB JSONL rotation, redacted support bundles, and opt-in GitHub Issue reporting |
+| **[`diagnostics`](https://github.com/mindie-agent/diagnostics)** | `mindie-diagnostics` / `mindie_diagnostics` | Local fault logging and diagnostics component: CANN/`plog` deterministic error analysis, bounded 4×1 MiB JSONL rotation, redacted support bundles, and opt-in GitHub Issue reporting |
+
+### 4. Public Domain Knowledge Corpora
+
+All public knowledge corpora follow the `mindie-graded-unit/1` graded schema (`L1` Canonical Facts & Constraints · `L2` Standard Operating Procedures · `L3` Multi-Stage Workflows · `L4` Optimization Patterns) with explicit applicability conditions and verification evidence:
+
+| Repository | Domain (`domain`) | Scope & Coverage |
+| --- | --- | --- |
+| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | `vllm-ascend` | `vLLM-Ascend` engineering corpus: 0-day model bring-up, PD disaggregation, MoE EP/MC2, quantization, speculative decoding, ACLGraph/TorchAir, and plugin architecture tuning |
+| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | `operators` | Ascend operators corpus: 910B / 910C (A3) / 950 (A5) hardware constraints, `AscendC`, `Triton-Ascend`, TBE/AKG compilation troubleshooting, FlashAttention/MLA, and Matmul/MoE fusion tuning |
+| **[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)** | `infer-core` | Ascend inference serving & engine core corpus: MindIE Server / Service / LLM / Motor configuration, batch scheduling, KV cache management, sampling, and multimodal serving |
+| **[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)** | `infer-distributed` | Distributed inference & collective communication corpus: HCCL troubleshooting, RoCE/HCCS topology & ranktable validation, SHMEM, and multi-node DP/TP/EP/PP/CP parallelism |
+| **[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)** | `infer-observability` | Inference observability, diagnostics & benchmarking corpus: CANN/`plog`/device fault root-cause analysis, `msprof` profiling workflows, accuracy alignment, and latency/throughput measurement SOPs |
+| **[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat)** | `infer-ops-compat` | Graph compilation, custom op registration & migration compatibility corpus: TorchAir/ACLGraph capture & guard debugging, custom operator integration, CUDA-to-Ascend migration, and runtime compatibility |
+| **[`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering)** | `agent-engineering` | Agent engineering & governance corpus: multi-agent orchestration, knowledge distillation & quality governance, two-layer privacy redaction gates, CI publication checks, and benchmark evaluation |
 
 ---
 
