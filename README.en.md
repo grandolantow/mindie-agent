@@ -120,7 +120,18 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 >   }
 >   ```
 >
-> #### Step 4: Report back to the user
+> #### Step 4: Finish first-time setup and development workspace onboarding
+> Normal installation of all four full plugins includes this step, even when contribution is disabled. Reuse verified GitHub authentication, present the existing user notice, then offer creating and initializing [vllm-ascend-workspace](https://github.com/mindie-agent/vllm-ascend-workspace), reusing a directory, or keeping the current directory:
+>
+> - [Codex Workspace Setup](https://github.com/mindie-agent/mindie-agent-codex/blob/main/plugins/mindie-agent/skills/mindie-agent/references/workspace-setup.md)
+> - [Claude Code Workspace Setup](https://github.com/mindie-agent/mindie-agent-cc/blob/main/skills/mindie-agent/references/workspace-setup.md)
+> - [Kimi Code Workspace Setup](https://github.com/mindie-agent/mindie-agent-kimi/blob/main/skills/mindie-agent/references/workspace-setup.md)
+> - [DSH Workspace Setup](https://github.com/mindie-agent/mindie-agent-dsh/blob/main/skills/mindie-agent/references/workspace-setup.md)
+>
+> Approval to create or reuse includes automatically adding the selected absolute path through the current harness's native project/workspace entry and checking the result. Do not ask separately for registration. Follow the checkout's `AGENTS.md` and `repo_init.py`, preserving saved fork configuration; initialization can finish later. Reuse existing choices without repeating onboarding during ordinary tasks.
+>
+> #### Step 5: Report back to the user
+> Include the selected workspace path, native registration/open status and source initialization status, with any remaining native UI action.
 > Once finished, report:
 > 1. The verified `gh` GitHub channel and authenticated account, where applicable;
 > 2. Which plugin and version were installed and verified;
@@ -142,9 +153,11 @@ Then pick the one-liner for your coding agent:
 | --- | --- | --- |
 | **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.3" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
 | **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.3 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
-| **Kimi Code CLI** | `git clone --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
+| **Kimi Code CLI** | `git clone --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py`, then complete native plugin registration through the [Kimi installation guide](https://github.com/mindie-agent/mindie-agent-kimi/blob/main/README.en.md#quick-start) | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
 | **DeepSeek Harness (DSH)** | `git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-dsh.git /tmp/mindie-agent-dsh && uv --native-tls run --quiet --no-project --python 3.11 /tmp/mindie-agent-dsh/scripts/setup.py`, then enable `git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3` on the DSH **Plugins** page | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) |
 | **NPU Dashboard Only (`npu-top`)** | `uvx --native-tls --from "https://github.com/mindie-agent/npu-top/releases/download/v0.2.1/npu_top-0.2.1-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
+
+After manually installing one of the four full plugins, enter **`/mindie-agent help me finish first-time setup`** in a new session and follow the matching workspace guide above. Reuse working GitHub authentication; approving workspace installation continues through source initialization and native project registration. Dashboard-only installation does not need this step.
 
 ---
 

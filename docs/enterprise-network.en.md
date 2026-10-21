@@ -28,6 +28,16 @@ Following [design principles](design-principles.en.md) 1, 8, 9, 10, 14 and 15:
 
 Runtime changes belong to their component and plugin repositories. This repository owns the design and entry documentation. Updates retain existing preparation, idle switching and timeout budgets.
 
+## Normal installation and workspace onboarding
+
+The main installation entry, all four plugin auto-install protocols, and first-use setup follow the same sequence: check and reuse GitHub authentication, install the plugin, present the existing user notice, then offer creating `vllm-ascend-workspace`, reusing a directory, or keeping the current directory. Manual installation ends with `/mindie-agent help me finish first-time setup`; background startup and ordinary development tasks do not repeat the questions.
+
+- Initialize [vllm-ascend-workspace](https://github.com/mindie-agent/vllm-ascend-workspace) through its checked-out `AGENTS.md` and `repo_init.py`, preserving saved fork selections in `workspace.json`. Standalone workspace setup also checks authentication; setup entered from a plugin reuses the same verification.
+- Approval to create or reuse a workspace includes adding the selected absolute path to the current harness's native project/workspace facility in the same flow. Do not ask separately for registration. Preserve the initialization choice; source downloads can be deferred while registering the directory.
+- Plugin guidance uses native tools, APIs or UI and reuses an existing record for the same path. CLI clients use their supported working-directory launch mechanism. Do not create a separate MindIE project registry or edit private harness databases.
+- Confirm the path in the native result or project list before reporting registration complete. Creating a directory, changing a child shell's directory, or adding filesystem access does not establish native registration. When the native entry needs user interaction, state the one remaining step.
+- GitHub authentication, workspace registration and contribution consent retain their separate settings. Installing a workspace does not widen contribution scope.
+
 ## GitHub sign-in flow
 
 During installation, first-use setup or authentication repair, `/mindie-agent` follows this flow. The Agent guides the choice; `gh` owns credential storage and use. No additional authentication service or MindIE token configuration is needed.
