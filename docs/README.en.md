@@ -21,6 +21,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | Document (English) | 中文 | What It Covers |
 |---|---|---|
 | [Harness Boundary & Lifecycle](harness-boundary-and-lifecycle.en.md) | [宿主边界与任务生命周期](harness-boundary-and-lifecycle.md) | Task identity attribution, persistent user consent, operation lifetimes, and local state protection |
+| [Execution Resource Budget Design](execution-resource-budget-design.md) | [执行资源预算与进程监管设计](execution-resource-budget-design.md) | Proposed execution contract for time, CPU, memory and concurrency, with platform capabilities, native entrypoint coverage, placement and acceptance tests |
 | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | [版本兼容与无感更新](release-compatibility-and-update.md) | Paired component/plugin release workflow, SemVer host compatibility matching, and background silent updates |
 | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | [诊断日志与故障上报](diagnostics-and-reporting.md) | Bounded local structured logs, strict privacy redaction rules, and opt-in GitHub Issue fault reporting |
 | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | [原生能力与系统机制复用](native-runtime-reuse.md) | How MindIE Agent reuses native plugin managers, `uv` locked environments, and OS process-tree primitives |
