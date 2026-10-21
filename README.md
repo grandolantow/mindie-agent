@@ -1,6 +1,6 @@
 # 📊 MindIE Agent 开源仓库与下载统计
 
-> **最近更新**：`2026-10-20 23:58 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
+> **最近更新**：`2026-10-21 10:22 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
 
 ![MindIE Agent Repository & Download Statistics](./dashboard.zh.svg)
 
@@ -9,7 +9,7 @@
 | 类型 | 仓库 | 最新版本 | Stars | Forks | 累计 Clone | 近 14 天 Clone (独立) | 近 14 天浏览 (独立) | Release 下载 (含附件) |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | 产品入口 | [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) | `v0.0.2` | 54 | 50 | **929** | 857 (336) | 220 (78) | 0 (0) |
-| 技能目录 | [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) | `-` | 2 | 3 | **104** | 104 (57) | 13 (10) | 0 (0) |
+| 技能目录 | [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) | `-` | 2 | 5 | **104** | 104 (57) | 13 (10) | 0 (0) |
 | 客户端插件 | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) | `v0.0.2` | 0 | 1 | **1,457** | 1,351 (349) | 35 (14) | 19 (29) |
 | 客户端插件 | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) | `v0.0.2` | 0 | 0 | **848** | 833 (176) | 3 (3) | 14 (26) |
 | 客户端插件 | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) | `v0.0.2` | 0 | 0 | **915** | 880 (170) | 1 (1) | 12 (22) |
@@ -21,7 +21,7 @@
 | NPU 监控 | [`npu-top`](https://github.com/mindie-agent/npu-top) | `v0.2.0` | 2 | 3 | **371** | 319 (85) | 19 (7) | 605 (625) |
 | 运行时组件 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.5.0` | 0 | 1 | **3,573** | 3,031 (1,021) | 0 (0) | 32 (55) |
 | 评测工具 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | `v0.4.0` | 0 | 0 | **225** | 225 (51) | 0 (0) | 8 (20) |
-| **合计** | **13 个公开仓库** | — | **58** | **65** | **17,525** | **15,905** | — | **1,383** (1,552) |
+| **合计** | **13 个公开仓库** | — | **58** | **67** | **17,525** | **15,905** | — | **1,383** (1,552) |
 
 ## 数据文件
 
