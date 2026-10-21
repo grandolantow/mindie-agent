@@ -161,6 +161,10 @@ Each event carries three distinct dimensions:
 ### 5.3 LLM Inference Workload Semantics
 
 - **Explicit Phase and Step Boundaries**: `inventory` extracts native `ProfilerStep#` and `MSTX_EVENTS` markers (`warmup`, `prefill`, `decode`, `draft`, `verify`, `graph_capture`) from the DB when present; otherwise the caller must supply explicit `--window START:END` or `--full-range` bounds—steps are never guessed from repeating kernel patterns.
+- **Hybrid Architecture (Dense + MoE + MTP) Layer Segmentation & Compute Stream Selection Contract**:
+  - **Primary Compute Stream Selection**: Always select the primary compute `streamId` by maximum cumulative device execution duration (`argmax_s sum(duration_ns)`), never by the first-seen event (which often picks an auxiliary HCCL or event-watch stream).
+  - **MLA Sub-Kernel Cohesion**: Treat `MlaPrologV3`, `KvQuantSparseFlashAttention` (`SFA`), and KV Cache Scatter/Update as internal sub-kernels of a single Transformer layer's `Attention (MLA)` block rather than layer boundaries.
+  - **Unified Step Grouping Across Dense Prefix + MoE Trunk + MTP Draft Layers**: For hybrid models (DeepSeek-V3 / Kimi-K3 / GLM-5 with $K$ dense prefix layers + $M$ MoE trunk layers + MTP draft layers), group all three regimes within one decode pass into a single logical step (e.g., `3 Dense + 75 MoE + 1 MTP = 79 Layers / Step`) rather than splitting one step into 3 pseudo-steps on operator-pattern transitions.
 - **Speculative Decoding (DSpark / MTP)**: Alongside `draft` and `verify` kernel timings, reports and comparisons track serving-side `mean_acceptance_length` and `acceptance_rate` to prevent false optimizations where a faster Verify kernel degrades acceptance length and hurts end-to-end TPOT.
 - **Multi-Dimensional Parallelism & Cross-Rank Aggregation**: Group only homogeneous ranks (e.g., never average across distinct PP stages). Report both `median_rank_p50` and the **per-step slowest rank (`max_rank_per_step`)** distribution so rotating stragglers are not masked by per-rank medians.
 

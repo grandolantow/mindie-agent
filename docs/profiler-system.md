@@ -162,6 +162,10 @@ flowchart TB
 ### 5.3 大模型推理特有语义
 
 - **显式阶段与 Step 边界**：`inventory` 自动提取 DB 中的 `ProfilerStep#` 与 `MSTX_EVENTS` 阶段标记（区分 `warmup`、`prefill`、`decode`、`draft`、`verify`、`graph_capture`）；若源文件无标记，要求调用方显式传入 `--window START:END` 或 `--full-range`，绝不靠 Kernel 周期性规律猜测 Step。
+- **混合架构（Dense + MoE + MTP）层切分与主流选择契约**：
+  - **主计算流识别**：选择主计算 `streamId` 时必须按窗口内累计设备执行时长最大值（`argmax_s sum(duration_ns)`）判定，禁止取首个出现事件的 `streamId`（易误选通信辅助流或事件监听流）。
+  - **MLA 子算子内聚**：`MlaPrologV3`、`KvQuantSparseFlashAttention`（`SFA`）及 KV Cache Scatter/Update 属于同一 Transformer 层的 `Attention (MLA)` 内部子算子，严禁将其切分为独立层；在统计 `Attention` vs `MoE` 占比时，单层内的 `AllReduce`/`Dispatch`/`Combine` 归入对应语义块，不把通信算子误当作层边界。
+  - **Dense 前置层 + MoE 主干层 + MTP Draft 层统一 Step 归并**：针对 DeepSeek-V3 / Kimi-K3 / GLM-5 等“前 $K$ 层 Dense + 后 $M$ 层 MoE + 1–2 层 MTP”混合架构，同一 Decode Step 内的 Dense 层、MoE 层与 MTP 验证/起草层必须归并为单个完整 Step（例如 `3 Dense + 75 MoE + 1 MTP = 79 Layers / Step`），严禁按算子类型突变将单个 Step 误拆为 3 个伪 Step。
 - **投机采样（Speculative Decoding / DSpark）**：不仅统计单次 `draft` / `verify` 的设备耗时，还在报告与对比中关联服务侧的 `mean_acceptance_length` 与 `acceptance_rate`——防止“单次 Verify Kernel 变快但接受长度下降，导致端到端 TPOT 劣化”的假优化。
 - **多维并行与跨 Rank 统计**：按同质角色分组（例如不同 PP Stage 不混算均值）。同时报告 `median_rank_p50` 与**逐 Step 最慢 Rank（`max_rank_per_step`）**分布，防止慢 Rank 轮换时被单 Rank 中位数掩盖长尾。
 
