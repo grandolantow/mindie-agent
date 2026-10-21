@@ -2,9 +2,9 @@
 
 [English](testing-architecture.en.md) · [返回文档中心](README.md)
 
-本文定义 MindIE Agent 各仓库（`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`diagnostics`、四个宿主插件与评测仓 `mindie-bench`）统一的**用例有效性红线**与**四级测试金字塔（Tier 0 ~ Tier 3）**。
+本文定义 MindIE Agent 各仓库（`knowledge`、`remote-dev`、`coordinator`、`profiler`、`sim`、`npu-top`、`diagnostics`、四个宿主插件与评测仓 `mindie-bench`）统一的**用例有效性红线**与**四级测试金字塔（Tier 0 ~ Tier 3）**。
 
-> **说明**：表中的四级分类与耗时预算是工程测试体系的设计目标；每次版本发布实际覆盖的源码 SHA、测试范围、运行环境、实测耗时与已知限制均在对应版本的[发布说明](releases/0.0.2.md)中如实记录。
+> **说明**：表中的四级分类与耗时预算是工程测试体系的设计目标；每次版本发布实际覆盖的源码 SHA、测试范围、运行环境、实测耗时与已知限制均在对应版本的[发布说明](releases/0.0.3.md)中如实记录。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
 
@@ -84,7 +84,7 @@ flowchart TB
    - 日常 PR、分支 CI 与发布前本地组件检查默认执行 `pytest -m "not live_npu"`，不自动连接常备昇腾集群或消耗付费宿主模型 Token。
    - 所有真实 NPU 集成用例统一标记 `@pytest.mark.live_npu`。在单测中直接调用 `mcp_server.handle()` 属于 Tier 1 组件契约测试；驱动真实宿主 CLI 才属于 Tier 3 宿主验收。
 2. **版本发布实测门禁**：
-   - 正式版本发布时，基于锁定版本的 `mindie-bench` 运行器校验各组件精确源码身份及端到端研发任务、跨任务经验复用与组件场景实测报告（详见[组件与插件配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)与 [`0.0.2` 版本发布说明](releases/0.0.2.md#三实测收益与-003-优化计划)）。
+   - 正式版本发布时，基于锁定版本的 `mindie-bench` 运行器校验各组件精确源码身份及端到端研发任务、跨任务经验复用与组件场景实测报告（详见[组件与插件配套发布](release-compatibility-and-update.md#每次发布的-benchmark-交付)与 [`0.0.3` 版本发布说明](releases/0.0.3.md#三各组件价值验证与实测证据)）。
 3. **验证层级的职责边界**：
 
 | 验证层级 | 验证的核心事实 | 适用边界 |

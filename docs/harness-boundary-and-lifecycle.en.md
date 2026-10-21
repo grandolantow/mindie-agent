@@ -5,7 +5,7 @@
 This document explains how responsibilities are divided between MindIE Agent's native Harness plugins (**Claude Code**, **OpenAI Codex CLI**, **Kimi Code**, **DeepSeek Harness**) and its shared runtime components, as well as how task identity, user consent, long-running jobs, and local data recovery work in practice.
 
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
-- Release Records: [`0.0.2` Release Record](releases/0.0.2.en.md) · [`0.0.1` Release Record](releases/0.0.1.en.md)
+- Release Records: [`0.0.3` Release Record](releases/0.0.3.en.md) · [`0.0.2` Release Record](releases/0.0.2.en.md) · [`0.0.1` Release Record](releases/0.0.1.en.md)
 
 ---
 

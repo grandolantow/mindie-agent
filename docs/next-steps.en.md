@@ -4,22 +4,19 @@
 
 For the system architecture and knowledge loop design, see [Architecture & Module Boundaries](architecture.en.md) and [Knowledge & Experience System](knowledge-system.en.md). Engineering guidelines are documented in [Engineering Design Principles](design-principles.en.md).
 
-The current release is [`0.0.2`](releases/0.0.2.en.md), which aligns the product and the four host plugins (Codex, Claude Code, Kimi Code, and DSH) on version `0.0.2` while keeping independent version sequences for shared runtime components and `mindie-bench` (historical initial release notes remain at [`0.0.1`](releases/0.0.1.en.md)). In `0.0.2`, we simplified cross-repository state management, unified community knowledge sharing and automatic fault reporting under a single contribution switch, tightened locked dependency installation, and introduced automated per-release benchmarks across all ten code repositories.
+The current release is [`0.0.3`](releases/0.0.3.en.md), which aligns the product and the four host plugins (Codex, Claude Code, Kimi Code, and DSH) on version `0.0.3` while keeping independent version sequences for shared runtime components and `mindie-bench` (previous release records remain at [`0.0.2`](releases/0.0.2.en.md) and [`0.0.1`](releases/0.0.1.en.md)). In `0.0.3`, we delivered L1–L4 progressive disclosure, token-budget gating, and `mode="explore"` de-biased exploration in `knowledge` (`v0.13.0`) across 7 public Ascend domain corpora, shipped formal releases of `profiler` (`v0.5.0`) and `sim` (`v0.7.0`), added deterministic CANN/`plog` fault triage in `diagnostics` (`v0.5.1`) and Ascend A5 topology/HCCL preflight support in `coordinator` (`v0.6.2`), and verified formal benchmarks and component value across all twelve code repositories.
 
 ---
 
 ## Upcoming Priorities
 
-1. **`0.0.3` Knowledge Retrieval Latency & Context Efficiency Optimization**
-   - In the `0.0.2` live Ascend evaluations, enabling `mindie-knowledge` raised solved counts from `2/3` to `3/3` on both `dp2` and `dsh`, while introducing retrieval and long-context reading overhead. `0.0.3` will focus on optimizing retrieval granularity and context delivery so we keep the solve-rate gains while reducing latency overhead.
-2. **Host Lifecycle Reliability & Live Test Speed**
-   - Monitor real-world usage of the unified contribution and fault-reporting pipeline, prioritize fixes for reported tool faults, and expand automated cross-platform upgrade verification.
-   - Streamline the `remote-dev` live A2/A3 integration suite so its total execution time drops from ~51 seconds into the 25-second Tier 2 design budget.
-3. **Broader Ascend AI Infra Knowledge, Profiling/Simulation (`profiler` / `sim`) & Skills Coverage**
-   - Expand [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend), [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators), and [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) across the Ascend NPU AI Infra workflow, covering architecture design, `vLLM-Ascend` feature development, `AscendC`/`Triton` kernel implementation, accuracy verification, and profiling.
-   - Advance end-to-end integration and benchmark verification of the standalone profiling component [`profiler`](https://github.com/mindie-agent/profiler) (`mindie-profiler`) and 4-layer boundary solver [`sim`](https://github.com/mindie-agent/sim) (`mindie-sim`) with [`mindie-bench`](https://github.com/mindie-agent/mindie-bench).
-4. **Optional `coordinator` Integration Path**
-   - Today, [`coordinator`](https://github.com/mindie-agent/coordinator) (Agent-facing SSH host management, agentless NPU/server probing, container binding, and lease arbitration) and [`npu-top`](https://github.com/mindie-agent/npu-top) (human-facing Web dashboard and 90-day heatmaps) are installed standalone on demand, while the four host plugins bundle `knowledge`, `remote-dev`, and `diagnostics`.
-   - Exposing `coordinator` tools by default inside host plugins will be evaluated as a dedicated step with explicit dependency locking, tool registration, and host verification.
+1. **End-to-End Multi-Host Product Matrix (`P0–P3`) & Knowledge Flywheel Evolution**
+   - Expand cross-model, cross-host end-to-end engineering task and experience-transfer (`P0–P3`) evaluations on `mindie-bench` (`v0.4.1`), tracking net engineering gains from L1–L4 progressive disclosure and subcontext fact packs on complex kernel and serving workloads.
+2. **Ascend A5 (950) Live Communication Expansion & Contention Calibration**
+   - Execute the [A5 Communication & Contention Calibration Plan](a5-communication-calibration-todo.md) on live A5 hardware to calibrate AICPU/AIV collective expansion and contention parameters in `mindie-sim` and `mindie-profiler`.
+3. **Expanding the 7 Public Domain Knowledge Corpora & `awesome-mindie-skills`**
+   - Continuously grow verified `L1–L4` units and practical guides across [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend), [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators), [`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core), [`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed), [`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability), [`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat), [`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering), and [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills).
+4. **Streamlined Coordination Across `coordinator`, `profiler`, `sim`, and Host Plugins**
+   - Today, the four host plugins bundle `knowledge`, `remote-dev`, and `diagnostics` by default, while `coordinator`, `profiler`, `sim`, and `npu-top` are installed standalone on demand or invoked by engineering workflows; we will continue streamlining their on-demand workflow integration.
 5. **Upstream Host CLI Tracking**
    - Track upstream fixes in OpenAI Codex CLI for forwarding cancellation signals to in-flight MCP tool calls when a child agent (`spawn_agent`) is interrupted, and update `harness-compatibility.json` once upstream ships the fix.

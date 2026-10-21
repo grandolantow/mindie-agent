@@ -11,9 +11,7 @@ This document explains how MindIE Agent coordinates paired component and plugin 
 
 ## Paired Component and Plugin Releases
 
-MindIE Agent ships **verified combinations of components and plugins**. Starting with `0.0.2`, the OpenAI Codex CLI, Claude Code, Kimi Code, and DeepSeek Harness (DSH) plugins align their version number with the main product. Shared runtime components (`diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, `profiler`, `sim`) and `mindie-bench` maintain independent version sequences, and unchanged components reuse their existing formal Releases.
-
-> **DSH `0.0.2` Same-Version Refresh Note**: DSH remains at `0.0.2` for this release as an authorized one-time replacement of the earlier `0.0.2` tag (`828c375...`). Existing installations of the earlier `0.0.2` require a one-time explicit refresh of both the runtime and plugin bundle followed by a full DSH process restart; see the [`0.0.2` Release Notes](releases/0.0.2.en.md#4-dsh-002-same-version-refresh-notice).
+MindIE Agent ships **verified combinations of components and plugins**. Starting with `0.0.2`, the OpenAI Codex CLI, Claude Code, Kimi Code, and DeepSeek Harness (DSH) plugins align their version number with the main product (currently `0.0.3`). Shared runtime components (`diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, `profiler`, `sim`) and `mindie-bench` maintain independent version sequences, and unchanged components reuse their existing formal Releases.
 
 ### Topological Release Order & Checklist
 
@@ -48,9 +46,9 @@ Every new code repository Release ships the following alongside its wheel/sdist 
 
 Any failed, missing, or timed-out required scenario—or any checkout modification during measurement—blocks publication. Public reports contain synthetic workload descriptions, environment metadata, and numeric measurements only, excluding credentials, user transcripts, and local paths.
 
-Product `0.0.2` and subsequent release records verify and aggregate the formal benchmark and real-task evaluation reports across all ten code repositories: `diagnostics`, `knowledge`, `remote-dev`, `coordinator`, `npu-top`, the four Harness plugins, and `mindie-bench` (see the [`0.0.2` Release Notes](releases/0.0.2.en.md#3-benchmark-results-and-003-roadmap)).
+Product `0.0.3` and subsequent release records verify and aggregate the formal benchmark and component-value evaluation reports across all twelve code repositories: `diagnostics`, `profiler`, `sim`, `npu-top`, `remote-dev`, `knowledge`, `coordinator`, the four Harness plugins, and `mindie-bench` (see the [`0.0.3` Release Notes](releases/0.0.3.en.md#3-component-value-verification--measured-evidence)).
 
-> **Note**: `knowledge` is a software runtime package governed by this release checklist, whereas [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) and [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) are domain content repositories updated continuously without requiring a new software release for every new knowledge unit.
+> **Note**: `knowledge` is a software runtime package governed by this release checklist, whereas [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend), [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators), [`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core), [`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed), [`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability), [`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat), and [`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering) are domain content repositories updated continuously without requiring a new software release for every new knowledge unit.
 
 ---
 
