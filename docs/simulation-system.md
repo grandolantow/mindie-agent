@@ -197,8 +197,21 @@ flowchart LR
 | --- | --- | --- | --- |
 | **`hardware`** | 核查目标板卡规格、片上存储分配方案、互联拓扑（`D2D`/`H2D`/`D2H`/`RH2D`/`RD2H`）与热态频率下界 | `--soc` / `--ini` / `--sku-profile` / `--npu-smi-file` / `--topo-file` / `--pcie-link-info`, `--buffers <alloc.json>`, `--workload <flops_bytes.json>`, `--transfers <transfer_plan.json>` | 板卡配置 vs 实机容量对照、7 类传输通道带宽/路径下界（含 PCIe 降级与 `RH2D`/`RD2H` 直通 vs 跳板对比）、各片上 Buffer 诊断、热态频率下界表与 $(W-C)$ 敏感性矩阵 |
 | **`pipeline`** | 算子内微阶段周期依赖图构建、拓扑自检与最大环均值求解 | `--graph <microstage_graph.json>`, `--durations <measured_or_null.json>`, `--compare-variant <alt_graph.json>`, `--self-check` | 双相位/多相位展开图、拓扑合法性自检结果、`minimum_period_ns`、`minimum_tile_ii_ns`、关键限制环列表及变体松弛对比 |
-| **`subgraph`** | 子图跨算子融合收益预判与并发关键路径核算 | `--dag <subgraph_dag.json>`, `--profile-report <analyze.json>`, `--candidate-fusion <fusion_spec.json>` | 可消除 GM 往返字节数、片上容量可行性、并发掩盖下的端到端理论省时区间 $[0, \Delta_{\max}]$ 与不可合原因 |
-| **`net`** | 整网与多维并行理论预测（含 `msmodeling` / `tensor_cast` 桥接） | `--model-spec <spec.json>`, `--parallel <dp_tp_ep_pp_dcp.json>`, `--provider-source <msmodeling_dir>` | 三值分离报告（`ideal_hardware_lower_bound_ms`, `model_predicted_ms`, `measured_device_ms`）及 Step/TPOT 分解 |
+| **`subgraph`** | 子图跨算子融合收益预判、7 类标准可融合模式扫描与并发关键路径核算 | `--dag <subgraph_dag.json>`, `--profile-report <analyze.json>`, `--candidate-fusion <fusion_spec.json>` | 可消除 GM 往返字节数、片上容量可行性、7 类标准融合模式（`add_rmsnorm_dynamic_quant`、`qkv_rope_reshape_cache`、`mla_prologue_epilogue`、`lightning_indexer_topk`、`moe_gating_topk_dispatch`、`gmm_swiglu_dynamic_quant`、`dit_usp_teacache_block`）收益、并发掩盖下的端到端理论省时区间 $[0, \Delta_{\max}]$ 与不可合原因 |
+| **`net`** | 整网与多维并行理论预测、HBM KV/混合状态容量规划与 PD/EPD 分离配比优化 | `--model-spec <spec.json>`, `--parallel <dp_tp_ep_pp_dcp.json>`, `--provider-source <msmodeling_dir>` | 三值分离报告（`ideal_hardware_lower_bound_ms`, `model_predicted_ms`, `measured_device_ms`）、Step/TPOT 分解、`plan_hbm_kv_capacity` 显存预算及 `optimize_pd_disaggregation_ratio` 最优 P:D 配比 |
+
+### 5.0 服务容量规划、PD/EPD 分离配比与扩展模型架构目录（`serving_planner.py` & `model_catalog.py`）
+
+结合 [`Ascend/msmodeling`](https://gitcode.com/Ascend/msmodeling)（`tensor_cast` / `serving_cast`）、[`cann-recipes-infer`](https://gitcode.com/cann/cann-recipes-infer) 与 [`vllm-ascend`](https://github.com/vllm-project/vllm-ascend) 的工程实践，`mindie-sim` 内置了整网容量与服务配比求解器：
+
+1. **HBM KV 与混合状态精确容量核算（`plan_hbm_kv_capacity`）**：
+   - 从单卡可用 HBM 中确定性扣除 TP/EP/PP 切分权重、`eplb_redundant_experts` 冗余专家权重、运行时 Workspace、`ACLGraph` 分桶图捕获池（`aclgraph_bucket_count` $\times$ `aclgraph_per_bucket_mib`）与 HCCL 通信缓冲区（`hccl_buffsize_mib`）；
+   - **线性注意力/循环状态防高估守卫**：显式区分随 `seq_len` 线性增长的 Attention KV Cache 与仅随并发请求数 `max_num_seqs`（$\mathcal{O}(1)$ in `seq_len`）增长的 `GDN` / `KDA` / `Mamba` 循环与卷积状态；
+   - **跨层 KV/Index Owner 去重守卫**：针对 `MiniMax-M3`、`DeepSeek-V4`、`Gemma4` 等跨层共享 KV 或稀疏 Indexer 的架构，仅对物理 Owner 层（`physical_kv_owner_layers`）计入物理块分配，防止对 Consumer 层重复扣减显存。
+2. **PD 分离与 EPD 三段式最优配比求解（`optimize_pd_disaggregation_ratio`）**：
+   - 在给定 `ttft_slo_ms`、`tpot_slo_ms` 以及非对称 TP 约束（`tp_p >= tp_d` 且 `tp_p % tp_d == 0`）下，对比 `direct_rdma`、`mooncake_layerwise` / `hixl_layerwise`（计算与逐层 KV 推送重叠）与 `host_staged` 传输瓶颈，求解最优整数 `prefill_instances : decode_instances`（及多模态 `encoder_instances`）配比，并输出 `colocated` vs `pd_disaggregated` vs `epd_disaggregated` 单卡有效吞吐对比。
+3. **扩展模型架构预设目录（`ARCHITECTURE_PRESET_CATALOG`）**：
+   - 在保留 9 个基础校准模型的同时，扩展支持 `qwen3.5-moe`（3:1 `GDN`+`GQA`）、`bailing-v3`（`KDA`+`MLA` + `Latent MoE` 降维分发）、`minimax-m3`（2:1 跨层 KV 共享 + Sparse Indexer）、`longcat-flash-lite`（`MLA` + N-gram + `zero_expert_num` 恒等专家）与 `hunyuan-video-dit`（3D Patch 展开 + `TeaCache` + `USP`）等架构不变量校验。
 
 ### 5.1 硬件锚定性能评分（`HAP`）与 MFU / 带宽利用率闭环
 
