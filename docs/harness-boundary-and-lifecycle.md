@@ -5,7 +5,7 @@
 本文说明 MindIE Agent 各宿主插件（Claude Code、Codex、Kimi Code、DeepSeek Harness）与底层共享组件之间的职责划分，以及任务身份识别、用户授权、长任务执行与本地数据恢复的生命周期规则。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
-- 版本发布记录：[`0.0.2` 版本发布记录](releases/0.0.2.md) · [`0.0.1` 版本发布记录](releases/0.0.1.md)
+- 版本发布记录：[`0.0.3` 版本发布记录](releases/0.0.3.md) · [`0.0.2` 版本发布记录](releases/0.0.2.md) · [`0.0.1` 版本发布记录](releases/0.0.1.md)
 
 ---
 

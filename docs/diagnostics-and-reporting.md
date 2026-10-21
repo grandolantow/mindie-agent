@@ -6,7 +6,7 @@
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md)
 - 核心组件仓库：[`mindie-agent/diagnostics`](https://github.com/mindie-agent/diagnostics)
-- 当前验证详情：[`0.0.2` 版本发布说明](releases/0.0.2.md)（历史首发：[`0.0.1`](releases/0.0.1.md)）
+- 当前验证详情：[`0.0.3` 版本发布说明](releases/0.0.3.md)（历史版本：[`0.0.2`](releases/0.0.2.md)、[`0.0.1`](releases/0.0.1.md)）
 
 ---
 

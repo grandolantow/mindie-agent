@@ -11,9 +11,7 @@
 
 ## 组件与插件配套发布
 
-MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0.0.2` 起，OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件跟随主产品统一版本号；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`profiler`、`sim`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件可直接复用已有正式 Release。
-
-> **DSH `0.0.2` 同版本刷新说明**：DSH 本次保持 `0.0.2` 版本号并对早先发布的 `0.0.2`（`828c375...`）做单次授权替换；已安装旧 `0.0.2` 的环境需按[`0.0.2` 发布说明](releases/0.0.2.md#四dsh-002-同版本刷新说明)显式刷新一次运行环境与插件包并重启整个 DSH 进程。
+MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0.0.2` 起，OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件跟随主产品统一版本号（当前为 `0.0.3`）；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`profiler`、`sim`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件可直接复用已有正式 Release。
 
 ### 发布顺序与依赖闭环
 
@@ -48,9 +46,9 @@ MindIE Agent 对外发布的是**经过验证的组件与插件组合**。从 `0
 
 若必选基准场景失败、缺失、超时，或测量期间工作区源码发生变化，发布流水线将直接拦截。公开报告仅包含合成输入描述、环境信息与测量数值，不包含凭据、用户对话或私有路径。
 
-主仓库 `0.0.2` 及后续版本发布自动校验并汇总 `diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、四个宿主插件与 `mindie-bench` 共十个代码仓的正式评测报告与任务实测结果（详见 [`0.0.2` 版本发布说明](releases/0.0.2.md#三实测收益与-003-优化计划)）。
+主仓库 `0.0.3` 及后续版本发布自动校验并汇总 `diagnostics`、`profiler`、`sim`、`npu-top`、`remote-dev`、`knowledge`、`coordinator`、四个宿主插件与 `mindie-bench` 共十二个代码仓的正式评测报告与组件价值实测结果（详见 [`0.0.3` 版本发布说明](releases/0.0.3.md#三各组件价值验证与实测证据)）。
 
-> **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) 与 [`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators) 是领域知识内容仓库，按固定的内容契约持续合入更新，日常新增知识单元无需同步发布软件版本。
+> **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)、[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)、[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)、[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)、[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat) 与 [`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering) 是领域知识内容仓库，按固定的内容契约持续合入更新，日常新增知识单元无需同步发布软件版本。
 
 ---
 
