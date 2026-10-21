@@ -44,13 +44,12 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 > **稳定的 GitHub 交互通道（已安装并登录 `gh` CLI）是 MindIE Agent 的硬性指标**——插件版本拉取、锁定发行版校验、`knowledge-vllm-ascend` 知识源同步、经验闭环自动提交 PR（底层通过 `gh api` 与 `!gh auth git-credential` 驱动）以及组件故障上报均依赖该通道。请先在终端运行：
 > ```bash
 > git --version && uv --version && gh --version
-> gh auth status
-> GH_USER=$(gh api user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
-> gh auth setup-git
+> GH_USER=$(gh api --hostname github.com user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
+> gh auth setup-git --hostname github.com
 > ```
 > - **门禁要求（严禁跳过或静默忽略；仅安装 DSH `0.0.3` 且不启用社区贡献时可跳过 `gh` 门禁，但仍需 `git` 与 `uv`）**：
 >   - 若未安装 `gh`：请先按宿主系统协助安装（macOS：`brew install gh`；Windows：`winget install --id GitHub.cli`；Ubuntu / WSL：`sudo apt update && sudo apt install -y gh`）。
->   - 若 `gh auth status` 未登录、Token 失效或 `gh api user` 无法连通 GitHub：**请勿继续执行后续步骤**，立即引导用户完成 `gh auth login`（或配置有效的 `GH_TOKEN`）并运行 `gh auth setup-git`，直至 `gh api user --jq .login` 稳定返回当前 GitHub 账号名。
+>   - 账号读取成功时直接复用已有认证。需要登录时按 [GitHub 登录引导](docs/enterprise-network.md#github-登录引导) 处理：普通网络使用浏览器，企业网络或浏览器授权受阻时优先 Token；已有 Token 就通过 `gh` 隐藏提示输入，没有则引导创建。由 `gh` 保存凭据，验证账号、Git 及后续进程复用后继续安装。网络、代理或证书失败先修复传输，不把它们当作 Token 失效。
 >
 > #### 第二步：保留用户授权，按需准备贡献目标
 > 安装只注册当前宿主所需的插件，不要求 Star 或 Fork。Star 由用户自行选择。
@@ -134,7 +133,7 @@ Agent 读取本页面后，会自动校验 **`gh`（GitHub CLI）稳定交互通
 
 > **硬性前置指标**：请确保本机已安装 `git`、`uv` 以及已登录的 **`gh`（GitHub CLI）**。下表 DSH `0.0.3` 不启用贡献与上报，因此不依赖 `gh`。安装前可先在终端运行下方一行命令，完成 **GitHub 通道校验**：
 > ```bash
-> gh auth status && gh auth setup-git
+> gh api --hostname github.com user --jq .login && gh auth setup-git --hostname github.com
 > ```
 
 随后按你使用的客户端复制一行即可完成插件安装：
