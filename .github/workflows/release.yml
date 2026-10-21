@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   publish:
-    uses: mindie-agent/mindie-bench/.github/workflows/publish-product.yml@68d90d7a689f836c61a64ab054a0282e7361fd16
+    uses: mindie-agent/mindie-bench/.github/workflows/publish-product.yml@c69074fba55eb2d60b99254ab5266797b2b9082f
     with:
-      benchmark-ref: 68d90d7a689f836c61a64ab054a0282e7361fd16
+      benchmark-ref: c69074fba55eb2d60b99254ab5266797b2b9082f
+      value-suite-path: docs/releases/0.0.3/value-suite.json

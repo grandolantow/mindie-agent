@@ -5,7 +5,7 @@
 This document explains how MindIE Agent coordinates paired component and plugin releases, matches plugin versions against your installed host CLI, and performs silent background updates without interrupting active engineering sessions.
 
 - Governed by: [Engineering Design Principles](design-principles.en.md)
-- Current Release Details: [`0.0.2` Release Notes](releases/0.0.2.en.md) (initial release: [`0.0.1`](releases/0.0.1.en.md))
+- Current Release Details: [`0.0.3` Release Notes](releases/0.0.3.en.md) (previous releases: [`0.0.2`](releases/0.0.2.en.md), [`0.0.1`](releases/0.0.1.en.md))
 
 ---
 

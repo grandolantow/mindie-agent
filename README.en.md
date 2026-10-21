@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.2.en.md"><img src="https://img.shields.io/badge/release-v0.0.2-7045F5.svg" alt="Release v0.0.2"></a>
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.3.en.md"><img src="https://img.shields.io/badge/release-v0.0.3-7045F5.svg" alt="Release v0.0.3"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-cc"><img src="https://img.shields.io/badge/Claude_Code-Plugin-D97757.svg" alt="Claude Code Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-codex"><img src="https://img.shields.io/badge/OpenAI_Codex-Plugin-10A37F.svg" alt="OpenAI Codex Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-kimi"><img src="https://img.shields.io/badge/Kimi_Code-Plugin-2563EB.svg" alt="Kimi Code Plugin"></a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="./README.md">中文</a> · <strong>English</strong> · <a href="#-zero-friction-one-sentence-install">⚡ 1-Sentence Install</a> · <a href="#-why-mindie-agent">✨ Why MindIE Agent</a> · <a href="#️-architecture--experience-flywheel">🏗️ Architecture</a> · <a href="#-how-to-use-after-installation-trigger-modes--examples">🔥 Workflows</a> · <a href="#-repository-ecosystem">📦 Ecosystem</a> · <a href="#-current-release--benchmark-results-v002">🚀 v0.0.2 Benchmarks</a> · <a href="./docs/README.en.md">📚 Docs</a>
+  <a href="./README.md">中文</a> · <strong>English</strong> · <a href="#-zero-friction-one-sentence-install">⚡ 1-Sentence Install</a> · <a href="#-why-mindie-agent">✨ Why MindIE Agent</a> · <a href="#️-architecture--experience-flywheel">🏗️ Architecture</a> · <a href="#-how-to-use-after-installation-trigger-modes--examples">🔥 Workflows</a> · <a href="#-repository-ecosystem">📦 Ecosystem</a> · <a href="#-current-release--benchmark-results-v003">🚀 v0.0.3 Benchmarks</a> · <a href="./docs/README.en.md">📚 Docs</a>
 </p>
 
 ---
@@ -62,27 +62,27 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 >
 > - **Branch A — If you are running inside Claude Code (`CLAUDECODE` env or `claude` CLI)**:
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.2"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.3"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.0.2`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
+>   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.0.3`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
 >
 > - **Branch B — If you are running inside OpenAI Codex CLI (`CODEX_CI` / `CODEX_THREAD_ID` env or `codex` CLI)**:
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.2
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.3
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.0.2`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
+>   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.0.3`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
 >
 > - **Branch C — If you are running inside Kimi Code CLI (`KIMI_CODE_HOME` env or `kimi` CLI)**:
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-kimi-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
 >   SETUP_OUT=$(python3 "$MINDIE_TMP/scripts/setup.py")
 >   echo "$SETUP_OUT"
 >   NATIVE_PKG=$(printf '%s\n' "$SETUP_OUT" | python3 -c 'import sys, json; text=sys.stdin.read(); data=json.loads(text[text.find("{"):]); print(data["native_package"])')
@@ -94,19 +94,18 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-dsh-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
 >   uv --native-tls run --quiet --no-project --python 3.11 "$MINDIE_TMP/scripts/setup.py"
 >   ```
 >   Then install and enable in the DSH Web **Plugins** page:
 >   ```text
->   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.2
+>   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3
 >   ```
 >   Inside a DSH session that has the `plugin_manager` tool, the same step is:
 >   ```text
->   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.2")
+>   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3")
 >   ```
->   *Verification*: `setup.py` reports `status: ready`, components `knowledge 0.12.2 / remote-dev 0.10.1 / diagnostics 0.4.3`, and `knowledge.status: ready`; the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
->   *Note*: DSH `0.0.2` is read-only knowledge plus `remote-dev`; it does not enable community contribution or fault reporting, so this branch **does not require `gh`**.
+>   *Verification*: `setup.py` reports `status: ready`, components `knowledge 0.13.0 / remote-dev 0.10.4 / diagnostics 0.5.1`, and `knowledge.status: ready`; the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
 >
 > - **Branch E — If you are running inside Cursor or another generic MCP client (standalone `remote-dev` SSH toolset)**:
 >   Add `remote-dev` to `.mcp.json` (or `.cursor/mcp.json`):
@@ -116,7 +115,7 @@ When your Agent reads this page, it will automatically verify a **stable `gh` (G
 >       "remote-dev": {
 >         "type": "stdio",
 >         "command": "uvx",
->         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.1", "remote-dev", "server"]
+>         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.4", "remote-dev", "server"]
 >       }
 >     }
 >   }
@@ -142,11 +141,11 @@ Then pick the one-liner for your coding agent:
 
 | Coding Agent | One-Line Terminal Command | Plugin Repo |
 | --- | --- | --- |
-| **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.2" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
-| **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.2 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
-| **Kimi Code CLI** | `git clone --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
-| **DeepSeek Harness (DSH)** | `git clone --depth 1 --branch v0.0.2 https://github.com/mindie-agent/mindie-agent-dsh.git /tmp/mindie-agent-dsh && uv --native-tls run --quiet --no-project --python 3.11 /tmp/mindie-agent-dsh/scripts/setup.py`, then enable `git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.2` on the DSH **Plugins** page | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) |
-| **NPU Dashboard Only (`npu-top`)** | `uvx --native-tls --from "https://github.com/mindie-agent/npu-top/releases/download/v0.1.9/npu_top-0.1.9-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
+| **Claude Code** | `claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.3" && claude plugin install mindie-agent@mindie-agent-cc --scope user && claude --init-only` | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) |
+| **OpenAI Codex CLI** | `codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.3 && codex plugin add mindie-agent@mindie-agent --json` | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) |
+| **Kimi Code CLI** | `git clone --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git && cd mindie-agent-kimi && python3 scripts/setup.py` | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) |
+| **DeepSeek Harness (DSH)** | `git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-dsh.git /tmp/mindie-agent-dsh && uv --native-tls run --quiet --no-project --python 3.11 /tmp/mindie-agent-dsh/scripts/setup.py`, then enable `git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3` on the DSH **Plugins** page | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) |
+| **NPU Dashboard Only (`npu-top`)** | `uvx --native-tls --from "https://github.com/mindie-agent/npu-top/releases/download/v0.2.1/npu_top-0.2.1-py3-none-any.whl" npu-top serve` | [`npu-top`](https://github.com/mindie-agent/npu-top) |
 
 ---
 
@@ -335,16 +334,18 @@ MindIE Agent is guided by a cohesive set of **[Engineering Design Principles](./
 
 ---
 
-## 🚀 Current Release & Benchmark Results (v0.0.2)
+## 🚀 Current Release & Benchmark Results (v0.0.3)
 
-The current release is **[`v0.0.2`](./docs/releases/0.0.2.en.md)** ([中文发布说明](./docs/releases/0.0.2.md) · [Detailed Benchmark Report](./docs/releases/0.0.2/value-results.md)). `0.0.2` ships a unified `0.0.2` release across the product and all four native host plugins (Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness), unifies community knowledge sharing and product fault reporting under a single consent switch, and delivers live Ascend NPU benchmark results across the shared runtime stack:
+The current release is **[`v0.0.3`](./docs/releases/0.0.3.en.md)** ([中文发布说明](./docs/releases/0.0.3.md) · [Component Value Report](./docs/releases/0.0.3/component-value-results.md) · [12-Repo Benchmark Summary](./docs/releases/0.0.3/benchmark-results.md)). `0.0.3` ships a unified `0.0.3` release across the product and all four native host plugins (Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness), introduces L1–L4 progressive disclosure with bounded token budgets, adds the `profiler` and `sim` components, and delivers formal benchmark and component-value verification across all twelve code repositories:
 
 | Component / Benchmark Suite | Version | Measured Gains & Key Takeaways |
 | --- | --- | --- |
-| **⚡ `remote-dev` Remote Container & Long-Job Execution** | `v0.10.1` | On live Ascend tasks, `quarot` quantization bugfix solves **`3/3` runs** and cuts 3-run total delivery time from `747.31s` to **`550.89s`** (paired solved-run time `564.39s → 550.89s`, **`1.025x` speedup**); `dp2` dual-NPU debugging solves `2/3` runs (matching baseline at `0.963x`) with reliable remote file edits and background jobs |
-| **🎯 `coordinator` Multi-Agent Anti-Collision** | `v0.5.3` | Across 3 two-agent contention runs: active listeners increase from `3` to **`6`**, port conflicts drop **`3 → 0`**, duplicate device selections drop **`3 → 0`**, and handoff after release completes in **`~2ms`** |
-| **📊 `npu-top` & 🛡️ `diagnostics` Observability & Privacy** | `v0.1.9` / `v0.4.3` | `npu-top` verifies 3 Ascend hosts / 24 NPUs, `16/16` process-card mappings, and `3/3` container attributions; `diagnostics` deduplicates 9 repeated faults into 3 reports with **`3/3` redaction and opt-out stop checks passed** |
-| **🧠 `knowledge` Domain Memory & Cross-Task Reuse** | `v0.12.2` | Enabling domain knowledge raises solved count from `2/3` to **`3/3`** on both `dp2` and `dsh`; cross-task experience reuse hits on **`5/6` follow-up tasks** (**`1.011x` eval timing ratio**). Long-context retrieval latency overhead is **scheduled for focused optimization in `0.0.3`** |
+| **⚡ `remote-dev` Remote Container & Long-Job Execution** | `v0.10.4` | On live Ascend tasks, `quarot` quantization bugfix solves **`3/3` runs** and cuts 3-run total delivery time from `747.31s` to **`550.89s`** (**`1.025x` speedup**); passes all patch-parser, tool-protocol, and record-serialization release benchmarks in `v0.10.4` |
+| **🎯 `coordinator` Multi-Agent Anti-Collision & A5 Preflight** | `v0.6.2` | Across 3 two-agent contention runs: active listeners double from `3` to **`6`**, port conflicts drop **`3 → 0`**, duplicate device selections drop **`3 → 0`**, and handoff after release completes in **`~1.9 ms`**; adds Ascend A5 topology and HCCL/RoCE preflight checks |
+| **🔬 `profiler` Slow-Rank / Slow-Link & Memory Attribution** | `v0.5.0` | In-place read-only `msprof` analysis (`~7.6 ms`) **100% distinguishes slow-link (`Comm`) from slow-rank (`Attention`) bottlenecks**; attributes **`9.9 GB` (99%) of a `10.0 GB` peak allocation** to known memory buckets with **`50 MB` (0.5% < 10% target) explicit residual** and zero SQLite mutation |
+| **📐 `sim` Operator Pipeline, Subgraph Screening & A3 Modeling** | `v0.7.0` | Predicts Ascend A3 Qwen2.5-7B-Instruct `c=1` whole-network TPOT at **`15.06 ms`** vs. **`15.71 ms` measured** (**`-4.14%` error**, within `±15%` gate); identifies **`2.0 MiB` removable GM traffic** and **`5.0 μs` critical-path savings** while rejecting UB-overflowing subgraph candidates |
+| **📊 `npu-top` & 🛡️ `diagnostics` Observability & Triage** | `v0.2.1` / `v0.5.1` | `npu-top` verifies `24/24` physical NPUs, `16/16` process mappings, and `3/3` live container attributions; `diagnostics` adds deterministic CANN/`plog` triage that **100% pinpoints root-cause `Rank 3` (`aicore_memory_or_tiling`) and separates cascading `HCCL` timeout `Rank 7`** with **`3/3` redaction passes** |
+| **🧠 `knowledge` Progressive Disclosure & Closed-Loop Flywheel** | `v0.13.0` | All 7 public Ascend corpora ready; passes 21/21 P0–P4 progressive-disclosure checks with single-task reading bounded at **`4,814–5,599` tokens (`< 8,000` ceiling)** and **`+77,280` to `+89,120` tokens** net multi-task benefit at `k=8` |
 
 ---
 
@@ -354,7 +355,8 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 
 | Topic | 中文 | English |
 | --- | --- | --- |
-| **`v0.0.2` Release & Benchmark Report (Current)** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
+| **`v0.0.3` Release & Benchmark Report (Current)** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
+| **`v0.0.2` Release & Benchmark Report** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
 | **System Architecture & Domain Boundaries** | [docs/architecture.md](./docs/architecture.md) | [docs/architecture.en.md](./docs/architecture.en.md) |
 | **Engineering Design Principles** | [docs/design-principles.md](./docs/design-principles.md) | [docs/design-principles.en.md](./docs/design-principles.en.md) |
 | **Knowledge & Experience System** | [docs/knowledge-system.md](./docs/knowledge-system.md) | [docs/knowledge-system.en.md](./docs/knowledge-system.en.md) |
