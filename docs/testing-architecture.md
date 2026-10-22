@@ -59,6 +59,7 @@ flowchart TB
 ### 3.2 Tier 1：Session 级 Fixture 模板化与可注入超时
 - **预构建模板复用**：凡涉及 Git 仓库初始化（`git init` + `commit`）或 SQLite Schema 建表的测试，统一在 `conftest.py` 的 `scope="session"` Fixture 中一次性构建基准目录，单个测试通过拷贝文件树获得独立沙箱，将单次准备耗时控制在毫秒级。
 - **毫秒级进程生命周期验证**：验证子进程取消、挂死回收或 `owner-pipe` / `systemd` / Job Object 清理时，通过注入 `50ms ~ 100ms` 级的测试超时参数触发真实信号路径，禁止硬编码数秒的等待周期。
+- **宿主机环境零污染（`conftest.py` 强制隔离）**：每个仓库的 `tests/conftest.py` 必须配置 `autouse=True` Fixture，将 `MINDIE_DIAGNOSTICS_ROOT`、`MINDIE_DIAGNOSTICS_CONFIG`、`HOME` / `XDG_CONFIG_HOME` / `XDG_STATE_HOME` 及组件状态目录重定向至 `tmp_path`，严禁测试运行污染宿主机 `~/.local`、`~/.config`、`~/Library/LaunchAgents` 或系统后台服务。
 
 ### 3.3 Tier 2：常备 A2/A3 NPU 真机无损沙箱规范（`@pytest.mark.live_npu`）
 - **常驻集群就绪**：开发环境默认常备 A2（`173.125.1.2`）与 A3（`192.168.13.165` / `.156` / `.154`）真机 SSH 通道。涉及硬件拓扑、远端同步或容器执行的改动，不能只停留在本地模拟，必须跑通 `@pytest.mark.live_npu`。

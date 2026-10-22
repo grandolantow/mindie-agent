@@ -57,6 +57,7 @@ flowchart TB
 ### 3.2 Tier 1: Session-Scoped Template Fixtures & Injectable Timeouts
 - **Pre-built Template Reuse**: Any test requiring a Git repository (`git init` + `commit`) or SQLite schema initialization must clone from a `scope="session"` template fixture via `shutil.copytree`, keeping per-test setup in the single-digit millisecond range.
 - **Millisecond Process Lifecycle Verification**: Exercise subprocess cancellation, hang recovery, and `owner-pipe` / `systemd` / Job Object cleanup by injecting `50ms–100ms` timeouts rather than multi-second waits.
+- **Zero Host Pollution (`conftest.py` Mandatory Isolation)**: Every repository's `tests/conftest.py` must define an `autouse=True` fixture redirecting `MINDIE_DIAGNOSTICS_ROOT`, `MINDIE_DIAGNOSTICS_CONFIG`, `HOME` / `XDG_CONFIG_HOME` / `XDG_STATE_HOME`, and component state directories to `tmp_path`, ensuring test runs never pollute host `~/.local`, `~/.config`, `~/Library/LaunchAgents`, or background user services.
 
 ### 3.3 Tier 2: Non-Destructive Live A2/A3 NPU Sandbox Rules (`@pytest.mark.live_npu`)
 - **Always-On Cluster Access**: Standing SSH access to A2 (`173.125.1.2`) and A3 (`192.168.13.165` / `.156` / `.154`) is standard in our development environment. Changes touching hardware topology, remote file sync, or container execution must be verified with `@pytest.mark.live_npu`.

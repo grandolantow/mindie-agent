@@ -44,6 +44,7 @@ flowchart LR
 | **2. 单进程 `1 GiB` 缺陷警戒线** | 控制面与分析组件（`sim`、`profiler`、`knowledge`、`coordinator`）单次常规调用内存增量 `<= 256 MiB`（峰值 `<= 512 MiB`）。除真实加载模型权重或大型 C++ 并行链接外，单进程峰值 `> 1 GiB` 默认定性为**代码算法 Bug**。 | 不优化数据结构（不使用 `__slots__`/扁平数组/流式迭代），试图靠调大机器内存限额放行。 |
 | **3. 热路径性能与并发纪律** | 热循环内零 `deepcopy`、零外部子进程、零逐行 `sqlite.commit()`；同质重复步采用事件跳步（Analytical Step Folding）；并行度必须按 $\text{Workers} = \max(1, \min(\text{可用 CPU 核数}, \lfloor\text{可用安全内存}/\text{单 Worker 峰值内存}\rfloor))$ 计算。 | 在循环内跑 `subprocess.run`；无脑按 `os.cpu_count()` 启动十几个高内存子进程把本机乘爆。 |
 | **4. 显存（HBM/VRAM）安全** | **零权重控制面**：读取模型结构只解析 `config.json` 或 `safetensors` 头部（前 8 字节 + JSON Header），严禁加载权重或初始化 `torch_npu`/CUDA 上下文。<br>**先算账后上卡**：上卡前必须核算 $\text{Expected VRAM} = \text{权重} + \text{KV Cache} + \text{激活峰值} + \text{HCCL Buffer} + \text{Runtime 预留}$，确认 `vram_free_mb >= Expected VRAM`。 | 为读词表/层数而调用 `from_pretrained`；未核对空闲 HBM 直接拉起推理/压测进程导致 OOM 炸卡。 |
+| **5. 工具输出折叠与上下文保护** | **全量落盘 + 连续重复行折叠 + 头尾有界回显**：`remote-dev` 远端作业日志在磁盘文件保持 100% 原始完整；返回给宿主 LLM 的工具预览通过 [`preview.py:fold_repeated_lines`](../../remote-dev/remote_dev/core/preview.py) 将 `> 2` 行连续相同日志折叠为 `[previous line repeated N more times]`，超长时保留 Head/Tail 并附带原始日志指针供按需切片读取；中途阶段预算提醒一律追加于工具结果尾部（`additionalContext`），严禁改写会话起始 System Prompt 破坏 Prompt Prefix Cache（吸收 `HarnessPro` `arXiv:2610.26770v2`）。 | 把数千行重复编译 Warning / 进度条直接塞进对话历史撑爆上下文；在任务中途动态修改 System Prompt 导致 90% 折扣的 KV Cache 全部失效。 |
 
 ---
 
