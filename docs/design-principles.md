@@ -117,6 +117,22 @@ MindIE Agent 全系 11 个仓库均为 **100% 由编程 Agent 阅读、演进与
    - **必须写注释的地方**：非显而易见的昇腾硬件行为（如 A3 910C 双 Die 拓扑下 `8 NPU × 2 Die = Phy-ID 0..15` 映射规则）、跨进程/容器协议边界（如 Linux `/proc` 跨容器 PID 命名空间排空、`SIGTERM -> SIGKILL` 排水宽限期算术）、以及核心领域不变量；
    - **严禁写注释的地方**：严禁复述代码字面意思，严禁编写长篇大论替“假想敌防御分支”“冗余兜底状态”找合理化借口（遇到需要靠大段注释辩解的防御性累赘代码，应直接连代码带注释一并删掉重写）。
 
+### 18. 编码性能、内存/显存有界性与本地/远端规格分流准则（Bounded Memory/VRAM & Spec-Driven Placement）
+详见[执行资源预期与本地/远端规格匹配设计](execution-resource-budget-design.md)。所有组件代码在设计阶段即必须对计算耗时（影响超时）、内存（影响本机死机）与显存（影响炸卡）负责，严禁编写一出问题就靠堆砌大机器掩盖的粗放实现：
+1. **内存工作集有界铁律（$O(\text{Active State})$ 而非 $O(\text{Total History})$）**：
+   - **状态与历史解耦**：模拟器（`sim`）、性能分析器（`profiler`）、诊断采集（`diagnostics`）在主循环中，常驻内存只能与**当前活跃状态（Active Batch / 当前时间窗）**成正比，**严禁随总迭代步数（$T$）、总生成 Token 数或日志总行数做无界累加（如 `history.append` 全量快照）**；
+   - **在线增量聚合与有界滑窗**：吞吐、分位数（P50/P90/P99）、算子耗时汇总在循环内增量计算；确需保留明细事件时必须使用**显式有界环形缓冲区（Ring Buffer / Top-K）或边算边流式落盘（JSONL Streaming）**，用完即释放引用；
+   - **大文件禁止全量读入内存**：读取超过 **`50 MB`** 的 Profiling Trace、日志或索引文件时，严禁直接 `json.load()` / `file.read()` 全量展开为庞大对象图，必须采用流式扫描（分块读取 / 行迭代 / `mmap` / SQLite 索引）。
+2. **量化内存红线与算法性能纪律（`1 GiB` 缺陷警戒线）**：
+   - **控制面与分析组件体量基线**：常规工具调用与分析任务（`sim` 仿真、`profiler` 汇总、`knowledge` 检索、`coordinator` 调度）单进程工作集增量应控制在 **`<= 256 MiB`（峰值 `<= 512 MiB`）**。除真正加载大模型权重或 C++ 大型并行链接外，任何 Python 组件单进程峰值内存超过 **`1 GiB`** 默认视为**算法或数据结构缺陷（Bug）**，必须重构代码（如使用 `__slots__`、数组、流式处理），严禁靠调大机器限额放行；
+   - **消灭三大超时与内存膨胀反模式**：（1）严禁在解释器热循环内跑 `copy.deepcopy`、调用外部子进程（`subprocess.run`）或逐行 `sqlite.commit()`；（2）模拟器遇到同质重复阶段应采用解析跳步/批折叠（Event-Driven Jump）代替逐拍空转；（3）并行 Worker 数必须受 CPU 与可用内存双重约束：$\text{Workers} = \max(1, \min(\text{可用 CPU 核数}, \lfloor \text{可用安全内存} / \text{单 Worker 峰值内存} \rfloor))$，严禁无脑 `os.cpu_count()`。
+3. **显存（HBM / VRAM）安全铁律：“零权重控制面”与“先算账、后上卡”**：
+   - **控制与分析路径零权重、零设备上下文**：仅需读取模型结构（层数、Hidden Size、词表大小）或算子签名时，只允许解析 `config.json` 或 `safetensors` 文件头（前 8 字节 + JSON Header），**严禁为了读元数据而加载权重文件或 `import torch_npu` 初始化设备上下文**；
+   - **上卡前静态显存预算核验（Pre-Flight VRAM Sizing）**：真正占用 NPU/GPU 的操作（模型服务、算子压测、`mindie-bench`）在启动前必须核算 $\text{Expected VRAM} = \text{权重} + \text{KV Cache} + \text{激活峰值} + \text{HCCL 通信 Buffer} + \text{Runtime 预留}$，并核对目标卡实际空闲显存（`vram_free_mb >= Expected VRAM`，A3 910C 按单 Die 物理边界核算），不满足时在启动前拦截或重选节点，严禁盲目拉起进程等 OOM 炸卡。
+4. **跨平台（Windows / macOS / Linux）按真实规格分流，严禁按操作系统硬编码**：
+   - **禁止写死 `sys.platform == "darwin"` 或 `os.name == "nt"` 决定能否运行**：MindIE Agent 同时服务 Windows、macOS 与 Linux 用户；
+   - **声明资源预期（`WorkloadExpectation`）并与真实机器规格（`HostHardwareSpec`）匹配**：重计算/重内存/需显存的操作在启动前声明 `{cpu_cores, memory_mb, vram_mb, expected_seconds}`，由执行层统一对比**本机（Windows/macOS/Linux）**与**远端服务器（`fleet_probe.py`）**的真实可用规格——**本机规格充裕（包括高配本地工作站规格大于服务器时）直接本地执行并按本机算力自适应并发度与超时；本机规格不足则启动前自动分流至匹配的远端服务器**。
+
 ---
 
 ## 三、开发 PR 提交前自查清单（Pre-PR Review）
@@ -138,5 +154,6 @@ MindIE Agent 旗下所有仓库的代码、配置、依赖、CI 与文档改动�
 | **11. 反过度防御性编程（`v0.0.2` 四大铁律）** | 是否严格遵守 `v0.0.2` 四大铁律：（1）零热路径 SQL `.owner`/Schema 反射自检；（2）仅不可逆外部写用 `unknown`，本地状态零单向自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；（3）零跨仓复制 `*_fallback.py`/`*_bootstrap.py` 与 Win32 ACL 繁文缛节（统一 `os.replace()`）；（4）零 `inspect.signature` 内部签名锁死与巨型内嵌 Python 字符串（远端 worker 独立 `.py` 模块）？ |
 | **12. 分级测试有效性** | 新增测试是否验证真实核心业务与领域质量，而非测防御性 `chmod`/`symlink`/`ValueError` 假想敌、替静默吞错背书、覆写生产脚本或 grep 文档？是否符合 Tier 0 (`<5s`) ~ Tier 3 耗时预算与常备 A2/A3 真机无损验证要求？ |
 | **13. Agent-Native 代码与注释规范** | 核心模块是否保持精炼（单次 `view_file` 800 行友好、无多层子进程蹦床）并在顶部前 30 行声明 `[Role]`/`[Invariants]`/`[Timeouts & Locks]`/`[Side-Effect Policy]` 契约头？注释是否聚焦业务不变量与硬件/协议边界（如 A3 双 Die `Phy-ID`），而非替防御性假想敌代码写借口？ |
+| **14. 性能、内存/显存有界性与规格分流** | 内存工作集是否严格保持 $O(\text{活跃状态})$ 而非无界累加全量历史或一次性展开 `>50MB` 大文件（控制/分析组件单进程常规峰值 `<= 512 MiB`，严禁 `> 1 GiB` 膨胀）？热循环内是否消除了 `deepcopy`/起子进程/逐行 Commit？并发 Worker 数是否同时受可用内存与核数约束？控制面是否保持零权重/零设备上下文，且重计算或显存（HBM/VRAM）操作在启动前按 Windows/macOS/Linux 本机与远端的真实规格自动分流（无 `sys.platform` 硬编码特判）？ |
 
-提交开发 PR 时，请在 PR 描述中附上简明的 `## 设计原则 Review` 小结，记录本次改动的自查结论、发现并修复的问题以及实际验证方式。
+提交开发 PR 时，请在 PR 描述中附上简明的 `## 设计原则 Review` 小结（参考 [`.github/pull_request_template.md`](../.github/pull_request_template.md)），记录本次改动的自查结论、发现并修复的问题以及实际验证方式。
