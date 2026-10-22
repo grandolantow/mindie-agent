@@ -192,6 +192,8 @@ B_new = min(H, 本次加载上限, 当前知识工作集的剩余额度)
 - 多次查询重复同一主题：合并查询意图，复用当前可见版本，避免继续堆结果。
 - 正文已读但关键条件不明：补事实，不扩大正文数量。
 - 工具响应经常大于声明预算：先修计量和装配，不上调额度掩盖问题。
+- **保护宿主 Prompt Prefix Cache 的尾部阶段注入**：中途切换策略或注入分阶段收敛提示（[`stage_budget_guidance`](https://github.com/mindie-agent/knowledge/blob/main/mindie_knowledge/graded/explore_support.py)：`economy` 合并独立探针 → `convergence` 停止发散探索、仅验证存活假设 → `finalization` 预留收尾构建与契约核对）时，一律追加在当前工具返回末尾（`PreToolUse` `additionalContext` / Tool Result Tail），**严禁中途改写会话起始 System Prompt 击穿 KV Cache 前缀**。
+- **工具输出连续重复行折叠与头尾有界回显**：`remote-dev` 在远端磁盘日志保持 100% 完整的前提下，通过 [`preview.py:fold_repeated_lines`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/preview.py) 将 `> 2` 行连续相同输出折叠为 `[previous line repeated N more times]`，防止重复编译告警或进度刷屏挤占有效诊断上下文。
 
 默认预算由离线回放调整。比较成功率、总 tokens、重读次数、上下文压缩次数和任务时长；选择质量相当时成本较低的方案。每轮只改变一个主要加载参数，不在任务中用噪声反馈反复重排系统提示。
 
@@ -535,6 +537,19 @@ MindIE 吸收的是**条件化策略复用、根据可见执行证据选择方�
 
 论文先执行基础 Harness，选中专用 Harness 时再执行；表 1 的 Steps 只计算最终选中轨迹，未计其他执行与辅助选择调用。因此其步数不能用来推断 MindIE 的总成本收益。迁移到 NPU 任务时，在已有执行的自然决策点选择后续方法，继续使用原运行身份；最小对照方案见[分级测试方案第 4.7 节](knowledge-tiered-testing-plan.md#strategy-selection-pilot)。
 
+### 12.7 HarnessPro：成本感知的帕累托多档位筛选、尾部阶段预算与局部 Oracle 门控
+
+[HarnessPro，arXiv:2610.26770v2](https://arxiv.org/abs/2610.26770) 针对递归自进化（RSI）因堆砌探索与验证导致执行成本暴涨的问题，引入了带初始通过率下界（$\text{PR}(h) \ge \text{PR}(h_0)$）的帕累托非支配筛选与归一化加权平方距离选择（保留 `lite` `(1,2)`、`medium` `(1,1)`、`heavy` `(2,1)` 三档代表点），并在进化出的 Harness 中沉淀了四项运行时降本机制。
+
+MindIE 直接吸收其中四项经源码验证的高收益机制，同时显式剔除两项与工程原则冲突的做法：
+
+| 机制维度 | 吸收的机制与代码落点 | 明确剔除的边界（遵守设计原则 1、5、14、16） |
+| --- | --- | --- |
+| **1. 工具输出连续重复行折叠 + Head/Tail 有界回显** | `remote-dev` 的 [`preview.py:fold_repeated_lines`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/preview.py) 将 `> 2` 行连续相同日志折叠为 `[previous line repeated N more times]`，超长时保留 Head/Tail 并附带原始日志指针，消灭编译告警/进度刷屏导致的上下文线性膨胀 | 远端磁盘日志文件 100% 保持完整原文不截断；仅对返回给宿主上下文的预览文本做无损折叠与头尾切片 |
+| **2. 保护 Prompt Prefix Cache 的尾部阶段预算提醒** | `knowledge` 的 [`explore_support.py:stage_budget_guidance`](https://github.com/mindie-agent/knowledge/blob/main/mindie_knowledge/graded/explore_support.py) 生成 `economy`（合并独立探针）→ `convergence`（停止发散探索、仅验证存活假设）→ `finalization`（预留收尾构建与契约核对）三阶段提醒，一律追加于工具结果尾部（`additionalContext`），100% 保护 KV Cache 前缀 | **交互式会话默认 `allow_hard_deny=False`**（绝不在用户日常开发中返回 `permissionDecision: "deny"` 硬锁工具绑手脚）；硬熔断仅用于 `mindie-bench` 无人值守评测或显式预算的 `L4` 子会话 |
+| **3. 局部强 Oracle 与可区分假设门控** | `knowledge` 的 [`explore_support.py:enforce_direction_budget`](https://github.com/mindie-agent/knowledge/blob/main/mindie_knowledge/graded/explore_support.py) 增加 `oracle_strength` 与 `probe_cost_fraction` 门控：当缺少局部可重复验证器（`weak_e2e`）或单次验证占剩余预算 `> 25%` 时，自动将 `deep` 方向降级为 `standard_build_local_probe_first` | **不采用每轮任务前串行增加一次独立 `gpt-5.5` 路由分类器调用**（论文 Case 5 已证实前置分类器常高估难度且在简单任务上为净负收益；MindIE 在自然决策点按已观察证据选择） |
+| **4. 帕累托前沿筛选、Cost-of-Pass ($\text{CoP}$) 与无泄漏测试合成** | `knowledge` 的 [`select_pareto_candidates`](https://github.com/mindie-agent/knowledge/blob/main/mindie_knowledge/graded/explore_support.py) 与 `mindie-bench` 的 [`summarize_arm_pareto_and_cop`](https://github.com/mindie-agent/mindie-bench/blob/main/src/mindie_bench/evaluation/knowledge_tiered_support.py) 过滤低于基线或被支配的方案，输出 `lite`/`medium`/`heavy` 代表点及单次成功成本 $\text{CoP}$；评测器严格区分 `infra_error` 与 `passed=false` | 合成验证用例只准从公开任务契约与独立参考推导，**严禁从被测候选产物中倒推期望常量、Hash 或容差**；`infra_error` / `unknown` 独立归入 `inconclusive_ids`，绝不伪装成 `0` 分有效负例 |
+
 ## 13. 接口设计与数据闭环验收
 
 ### 13.1 在现有入口上调整
@@ -838,6 +853,7 @@ T4 提到的 Cursor 会话 `e1a48dc1-b970-4d07-b486-cd17400b19f4` 未直接读�
 | 同一输入 eager 正确、Graph 路径错误 | 定位首个数值/状态分歧，检查捕获边界、状态所有权及生命周期 | 尚未定位便断定是单个 Kernel 精度问题 |
 | 增加 dump 或同步后症状消失 | 设计最小干预和无插桩对照，区分观察扰动与修复作用 | 插桩后通过等于原路径已修复 |
 | 局部 Kernel 变快、系统指标无收益 | 对齐相同 Run/Step/Rank 和负载窗口，检查通信、Host gap、调度及瓶颈转移 | 局部加速比等于整网收益 |
+| 仅具备慢速端到端二值验证（单次验证占剩余预算 `> 25%`） | 先构造单算子、单层或单机裁剪权重（`S0/S1`）的快速局部可重复探针，再迭代验证竞争假设 | 缺乏局部 Oracle 时靠多轮全量启动深搜能提高收敛率 |
 | 已有方法前提不匹配，或缺少必要设备事实 | 保留默认诊断路径，补足最小事实；存在解释缺口时再探索 | 关键词命中或模型自报置信度足以确认适用 |
 
 这是候选选择方式，不是新的固定分类器。主 Agent 可以采用其他有依据的方法，也可以不采用任何专用策略；不按失败次数强制换路，不直接移植论文中未校准的自报置信度阈值。

@@ -527,6 +527,19 @@ Source review of [`AMD-AGI/GEAK`](https://github.com/AMD-AGI/GEAK) (`kernel_work
 | **7. Speculative Decoding (MTP/DSpark) Fake Speedup via Disabled Drafting** (Apple `acceptance.py:135-205`, `equivalence.py:36-113`) | Candidates reduced step latency by breaking speculative drafting (`num_drafts <= 0`) or degrading `mean_acceptance_length` | `rsi_campaign.evaluate_speculative_acceptance` enforces `num_drafts > 0` and `cand_acceptance_length >= pristine_acceptance_length * (1 - rtol)` (`rtol=0.05`) |
 | **8. Ratio-of-Means Distortion & Infra Void Misclassification** (Apple `regression_scoring.py:30-71`, `preflight.py:40-71, 227-249`) | Dividing separate means distorts speedup; `/dev/shm` starvation or wedged `smi` scored as `0` pollutes the ledger | Use **per-round paired AB/BA ratios -> workload median -> cross-workload geomean** (with per-guard `min_ratio`), and classify preflight/infra faults as `infra_failed` / `repair_execution_conditions` rather than `refuted` |
 
+### 12.6 OO-Harness: Conditional Strategy Selection from Execution Evidence
+
+[Object-Oriented Harness (`arXiv:2610.28380v1`)](https://arxiv.org/html/2610.28380v1) clusters tasks by shared execution needs and learns both specialized execution strategies and routing conditions. MindIE absorbs **conditional strategy reuse, selecting methods from observable execution evidence at natural decision points, retaining a safe default path when conditions mismatch or remain unknown, and evaluating frozen corpora on held-out tasks** (implemented in `knowledge.graded.explore.build_strategy_navigation_cards` and `mindie_bench.evaluation.strategy_selection`).
+
+### 12.7 HarnessPro: Cost-Aware Pareto Selection, Prefix-Cache-Preserving Budget Reminders & Local Oracle Gating
+
+[HarnessPro (`arXiv:2610.26770v2`)](https://arxiv.org/abs/2610.26770) addresses cost inflation in recursive self-improvement by combining a baseline pass-rate floor ($\text{PR}(h) \ge \text{PR}(h_0)$), Pareto dominance filtering, and normalized weighted squared-distance selection (`lite` `(1,2)`, `medium` `(1,1)`, `heavy` `(2,1)`). MindIE absorbs four runtime and evaluation mechanisms while rejecting two anti-patterns:
+
+1. **Consecutive Repeated-Line Folding & Bounded Head/Tail Preview (`remote_dev/core/preview.py:fold_repeated_lines`)**: Folds runs of `> 2` identical consecutive log lines into `[previous line repeated N more times]` before head/tail slicing so verbose compiler or multi-rank spam cannot evict diagnostic context, while preserving 100% raw logs on disk.
+2. **Prefix-Cache-Preserving Staged Budget Reminders (`knowledge/mindie_knowledge/graded/explore_support.py:stage_budget_guidance`)**: Emits `economy` $\to$ `convergence` $\to$ `finalization` reminders appended to the tool-result tail (`additionalContext`) without mutating the system prompt prefix (preserving KV cache hits). Interactive user sessions keep `allow_hard_deny=False`; hard tool denial is reserved for unattended `mindie-bench` or bounded `L4` subagent runs.
+3. **Local Strong-Oracle & Evidence-Resolvable Hypothesis Gate (`enforce_direction_budget`)**: Downgrades `deep` multi-iteration directions to `standard_build_local_probe_first` when only a slow end-to-end binary oracle is available (`oracle_strength="weak_e2e"` or `probe_cost_fraction > 0.25`), without adding an extra pre-task LLM classifier turn before every user request.
+4. **Pareto Frontier Selection, Cost-of-Pass ($\text{CoP}$) & Leak-Free Test Synthesis (`select_pareto_candidates`)**: Evaluates arms by pass rate, Cost-of-Pass, and Pareto dominance while separating `infra_error`/`unknown` runs into `inconclusive_ids` and prohibiting synthetic tests from deriving expected constants from candidate outputs.
+
 ## 13. Interfaces and acceptance
 
 ### 13.1 Evolve existing entry points

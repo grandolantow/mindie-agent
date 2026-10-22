@@ -48,6 +48,7 @@
 | [AgentKernelArena][O-arena] | 原始实现与候选实现使用同一批隐藏输入，区分正确性回退与收益保留 | 复用现有私有 shape 和性能证据机制；增加候选冻结后的泛化复验与分类汇总 |
 | [RSI-Inference Bench][O-rsi] | 固定推理引擎，真实执行模型支持、优化和回归修复任务，独立验证产物 | 已有 native inference 管线承接；继续使用 MindIE runner，不引入 Pier/Harbor 运行依赖 |
 | [OO-Harness][O-ooharness] | 按执行需求形成专用策略，分别学习执行方法与选择条件，固定后用独立任务评测 | 用第 4.7 节分离题面选择、证据选择与默认路径；完整计入前缀、选择和后续执行成本，结果不外推为昇腾收益 |
+| [HarnessPro][O-harnesspro] | 带初始通过率下界的帕累托非支配筛选、`lite`/`medium`/`heavy` 归一化加权平方距离选择、Cost-of-Pass ($\text{CoP}$) 与无泄漏生成式测试门禁 | 用于多档位策略/候选对比与评测门禁（`select_pareto_candidates`）；剔除前置串行分类器开销，交互式会话不硬锁工具调用，且 `infra_error` 严格独立于 `passed=false` |
 
 协议移植需保留以下具体边界：
 
@@ -55,6 +56,7 @@
 - PAST-Bench 的[无持久化实现][O-past-runner]还会关闭相关记忆、技能与会话检索工具。该对照可以衡量整套持久化能力，不能单独归因于知识修订。
 - AgentKernelArena 的隐藏输入复验需要单独调用；普通任务完成不代表泛化复验完成。换名称或复用可见输入也不产生新的隐藏样本。
 - Apple 的[局部性能奖励][O-rsi-scoring]使用 `max(0, speedup - 1)`。MindIE 已把连续实测值和验收结果分开，应继续保留低于 1 的比值、失败、预算超限与缺失观测，详见 [native inference 协议][B-inference-doc]。
+- HarnessPro 的测试集成本只统计冻结后候选在测试集上的单任务平均 Token 账单，不含多轮进化期间的 Rollout、Planner、Editor 与测试合成开销；且当无标注任务需要合成验证脚本时，只允许从公开任务契约与独立参考构造断言，严禁从待测候选产物中倒推期望常量或 Hash。
 
 ## 3. 现有覆盖与缺口
 
@@ -397,6 +399,7 @@ NPU 成本报告实际物理卡数、Die 数、租约及负载区间；卡时与
 | 任务成功率与覆盖 | `pass / (pass + fail)`；另列计划、已运行、有效、infra、unknown、未运行 | 沿用终态语义；同时报告任务族分布，不能只展示有效子集 |
 | 配对成功率变化 | 相同任务和条件下 treatment 与 control 的成功率差，单位为百分点 | 使用匹配有效样本；披露未配对量，基线全过时不声称完成率提升 |
 | 完成时间与总成本 | 准备到验证/清理结束的耗时；前台、子调用、提炼、索引、审阅、Seed 和 NPU 成本 | 沿用回执与 P3 cost ledger；共享前置成本计一次并标明摊销规则 |
+| Cost-of-Pass ($\text{CoP}$) 与帕累托前沿 | $\text{CoP} = \text{总执行成本} / \text{成功任务数}$（分别按墙钟秒数、模型调用数、NPU Die 时计算）；以 $\text{PR}(h) \ge \text{PR}(h_0)$ 过滤并选出 `lite` `(1,2)`、`medium` `(1,1)`、`heavy` `(2,1)` 帕累托代表点 | 委托 `mindie_knowledge.graded.explore.select_pareto_candidates`；`infra_error` / `unknown` 归入 `inconclusive_ids`，不混入 `0` 分有效分母 |
 | 模型与上下文成本 | 原生 input/output/cached tokens、调用数、重读成本；估算正文与响应大小另列 | `UTF-8 bytes / 4` 不能代替原生 usage 或计费，缺失计量不视为零成本 |
 | 决策效率 | 到独立验证的根因/有效方案的耗时、实验数、无信息实验数 | 真实轨迹与预先标注；不使用离线回放推算的 steps/attempts |
 | L4 正确性保持率 | `both_pass / (both_pass + opt_regression)` | 只在原始实现正确的隐藏项上计算；同时报告其余三种分类和总数 |
@@ -474,6 +477,7 @@ NPU 成本报告实际物理卡数、Die 数、租约及负载区间；卡时与
 [O-rsi]: https://github.com/apple-aiml-research/ml-rsi-inference-bench/blob/a6b10af282014412b4eae14f3105d68555889821/README.md
 [O-rsi-scoring]: https://github.com/apple-aiml-research/ml-rsi-inference-bench/blob/a6b10af282014412b4eae14f3105d68555889821/tasks/optimize_dsv4_flash_4xh100_dspark_sglang_open/tests/_verifier_lib/scoring.py
 [O-ooharness]: https://arxiv.org/html/2610.28380v1
+[O-harnesspro]: https://arxiv.org/abs/2610.26770
 [K-units]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_graded_units.py
 [K-context]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_context_progressive_loading.py
 [K-experience]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_experience_and_exploration_loop.py
