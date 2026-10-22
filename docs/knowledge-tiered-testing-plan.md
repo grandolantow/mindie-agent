@@ -47,6 +47,7 @@
 | [PAST-Bench][O-past] | 有顺序的任务族、新会话、经验保留对照、更新与遗忘检查 | 用于连续学习；另设工具相同、初始知识相同、只阻断跨任务更新的对照 |
 | [AgentKernelArena][O-arena] | 原始实现与候选实现使用同一批隐藏输入，区分正确性回退与收益保留 | 复用现有私有 shape 和性能证据机制；增加候选冻结后的泛化复验与分类汇总 |
 | [RSI-Inference Bench][O-rsi] | 固定推理引擎，真实执行模型支持、优化和回归修复任务，独立验证产物 | 已有 native inference 管线承接；继续使用 MindIE runner，不引入 Pier/Harbor 运行依赖 |
+| [OO-Harness][O-ooharness] | 按执行需求形成专用策略，分别学习执行方法与选择条件，固定后用独立任务评测 | 用第 4.7 节分离题面选择、证据选择与默认路径；完整计入前缀、选择和后续执行成本，结果不外推为昇腾收益 |
 
 协议移植需保留以下具体边界：
 
@@ -190,6 +191,123 @@
 4. **接通真实调用**：复用已有 G0/G1 执行入口，G2/G3 直接消费已有采集结果；M6 让实际 organizer 生成 U@2，再由新会话正常检索。观察任务是否做成、知识是否有用和总成本，不重复执行已完成的验证。
 
 各仓最新 revision、具体反例和优先级见[机制吸收设计第 15.6 节](knowledge-context-and-exploration.md#156-2026-10-20-晚间源码复核与验收缺口)。Skill 结构检查不证明下一实验选择正确，提炼契约测试也不证明模型保留了所有语义。
+
+<a id="strategy-selection-pilot"></a>
+
+### 4.7 条件化策略选择的最小对照实验
+
+**状态：2026-10-22 已完成跨 5 仓端到端实现与 36-cell + 24-selector 对照实测并合入 `main`（`knowledge-vllm-ascend@7a61f81`、`knowledge-operators@a94db24`、`knowledge@a2cabc6`、`mindie-bench@386156d`）。** 设计和组件分工见[上下文与探索设计第 16 节](knowledge-context-and-exploration.md#conditional-strategy)。本实验回答“同一组方法中，加入决策前执行证据是否改善选择及后续任务”，不评价 OOP 继承优劣，也不声称新增工作流已经产生全会话产品 cohort 收益。A/B/C 仅是本子实验条件，沿用已有机制实验计划，不新增产品 P/G 分组。
+
+#### 4.7.1 问题、题源与最小样本
+
+先选**一类可重复的 Graph/eager 数值分歧或状态生命周期诊断问题**，使用小模型或模块级负载，按需求选 A2/A3 的 S0/S1；本轮不要求 A5、整机或多机矩阵。候选方法限于 2–3 个条件明确的 `workflow`，另保留默认路径。三组可检索的原始知识、版本和工程工具相同，A 也可正常发现这些方法。
+
+1. 经验生成/Dev：先整理 2 个真实源问题族，完成候选内容、题面、判分和计量调试；已有 M1–M6、KDA、GDN 历史材料若参与过设计，继续标为 exposed-dev。若需要新提炼，使用实际 organizer 输出并记录成本。
+2. 独立 pilot：另选至少 **3 个未参与设计且源实现/缺陷/修复谱系独立的问题族**，每族 2 个案例：一个有可见触发，一个前提变化、缺失或不匹配。共 6 个案例，每案 A/B/C 各 2 次，共 **36 次真实宿主续跑，另有 B/C 共 24 次选择调用**。源族内两个案例及重复运行不算独立样本。
+3. 题源在读取和提炼内容前按现有 Seed/Dev/Held-out 协议分配；同一事故的 transcript、patch、报告、改写和输入变体留在同一侧。独立性需要审阅，不能靠换名字或自动 digest 证明。
+4. 所需题源不足时标 `not_ready`，先做 Dev，不把已暴露题改称 Held-out。六案 pilot 只用于发现机制迹象和明显退化，不能给出总体能力或统计非劣结论。
+
+#### 4.7.2 共用决策点与真实执行起点
+
+从真实任务选一个可重复的自然决策点，例如已有 eager/Graph 对比首次显示差异之后。三组使用**相同题面、相同截至该点的公开执行前缀、相同源代码与可重复初始状态**，各自启动新原生会话。前缀只含当时已得到的观察和必要产物，不含后来根因、修复、正确下一步或判分结果；不要求重新执行其中已完成的事实获取。
+
+先以参考解与已知错误解验证题目及 private judge 的语义，再进入分组。需要状态序列才能复现的案例，由现有任务初始化保留相同顺序/reset 条件；无法重建状态就不纳入本轮。沿用正常工作区和沙箱准备，不克隆历史在途进程或重复提交原外部写入。
+
+该 pilot 属于**给定共同前缀的真实后续执行对照**。只返回下一步建议的离线回放另列，不能冒充任务完成；这个 pilot 也不能替代从原始用户请求开始的完整产品对照。
+
+#### 4.7.3 三组控制与输入隔离
+
+| 条件 | 策略选择输入 | 后续执行 | 可解释的比较 |
+| --- | --- | --- | --- |
+| A 当前默认路径 | 无额外选择调用 | 当前 MindIE 自主决定，可正常检索同一知识库 | 当前默认决策与续跑成本基线 |
+| B 仅题面选择 | 题目及题目已声明条件、固定候选导航与选择说明 | 同一 executor 接收共同前缀及选择建议，按需读取完整方法 | 与 C 比较执行证据的增量价值 |
+| C 题面加执行证据选择 | 与 B 相同，另提供共同前缀中的决策前可见观察 | 与 B 相同 | 与 A 比较增加选择干预后的任务和全成本变化 |
+
+B/C 使用同一模型、思考强度、候选顺序、提示主体、一次调用上限和输出格式；唯一输入差异是执行前缀。二者的选择调用都在**新的无工具短上下文**内执行，不带 executor 对话、隐藏测试、后续结果或前一案例记忆。执行 Agent 已读前缀后，提示它“忽略日志”不构成 B。
+
+选择调用只需返回候选引用或 `default`、简短理由及适用依据；不要求置信度打分。无匹配时主动选 `default` 是有效行为。请求/解析失败保留原错误并标选择不可用；后续允许按默认路径继续，作为分配到原组的一次结果计入，不隐藏该调用成本或将主任务成功覆写为失败。
+
+三组 executor 均得到相同的共同前缀、模型设置、源码、工具、可检索语料、知识预算、资源档位和**总预算**；B/C 选择调用占用该总预算，不能额外赠送。候选导航的呈现是选择干预的一部分，A 不强制加载。executor 对建议均可根据新事实改路，实际采用与只声明采用分别记录，不强迫 B 执行明显错误方法制造差异。
+
+正式结果中 B/C 的全部已分配单元均保留，包括 `default`、未采用、选择失败和预算耗尽。C−B 只解释“在此选择接口与共同前缀下加入执行证据”的效果；C−A 同时包含选择调用和建议呈现的干预，不单独证明新知识内容、学习或在线主 Agent 的收益。
+
+#### 4.7.4 预算与运行顺序
+
+Dev 可从以下**每个案例/组/重复的可调起点**开始：模型总调用上限 12 次（B/C 包含一次选择）、NPU 负载启动上限 2 次（包含独立验证的设备执行）、业务窗口 600 秒（包含选择，选择最多 30 秒且不盲目重试）、verifier 120 秒、清理宽限至少 5 秒。外层至少为 `600 + 120 + 5 = 725 秒`；实际嵌套预算更大时同步扩大外层。这是完整实验预算，不冒称 Tier 3 的 90 秒 Canary。
+
+按此起点，36 个评测 cell 的上界合计为 **432 次模型调用（已含 24 次选择）、72 次 NPU 负载启动、7 小时 15 分累计 cell 外层时间**。累计时间不是并行运行的实际墙钟，也不是 NPU 卡时；Dev、内容整理和题目验证另列预算。Dev 调整单项上限时，同步更新本轮批次上界，不能把“36 次宿主续跑”误算成 36 次单模型调用。
+
+预算值在 Dev 上按任务需要调整后，评测开始前对三组一起固定。每次设备负载可在同一进程内覆盖多个输入，但所有启动、验证、失败和真实占用均计入；不能将后台子调用或 verifier 上卡排除。源码/配置检查只读取元数据，设备启动前复用现有可用规格、显存与租约检查。纯选择与分析保持有界输入，相关前缀按需读取，控制面峰值 RAM 目标不超过 512 MiB。
+
+对每个 `(案例, repetition)` 成组三次运行；在各问题族间平衡 A/B/C 的先后顺序，第二次使用逆序，避免总让同一组遇到冷缓存或热设备。性能计时独占租约并串行；JIT/缓存及初始状态按同一任务契约处理，不能继承另一组补丁。基础设施失败保留记录；如安排重试，按预先约定对整组三元组另加一轮，原轮不删除，不只挑失败组重跑。
+
+#### 4.7.5 记录、成本和独立判分
+
+新增内容写入**现有实验计划、轨迹和 TrialReceipt/运行回执**，不增加影子状态：
+
+- 计划记录任务族/split、决策点、源码和知识修订、候选、分组、顺序、模型与思考强度、所有预算、语义判据及成本统计口径。
+- 轨迹记录实际选择、正常放弃专用方法或调用失败、引用的已有观察、是否实际采用、后续改路、工具/命令及原运行引用。选择记录不构成“选择正确”的证明，Agent 不必重复抄录每项事实。
+- private judge 根据当时信息判断所选方法/下一动作是否合理，接受等价方法、补查条件与有依据的默认路径；业务成功由实际产物与独立 verifier 给出，不要求匹配唯一工作流 ID。语义审阅隐藏 A/B/C 来源标签，直接使用同一任务事实和对应产物。
+- 真实 usage 关联到原调用：executor、选择、整理、审阅和失败调用分别列出；缺失为 `null/unavailable`。`run_host_mechanism_replay` 等辅助回放中的默认零值不能替代原生计量。选择事件、知识的 discovered/loaded/applied/evaluated 和业务终态分别报告。
+
+成本同时给出三个口径：
+
+| 口径 | 计算与使用范围 |
+| --- | --- |
+| 真实续跑成本 | 从共同决策点到验证/清理结束的墙钟、全部模型 usage、工具调用和 NPU 占用；B/C 包含选择；可比较本 pilot 的后续执行 |
+| 共同前缀成本 | 若本轮真实生成则物理总账只计一次，并在各方案的条件化估算中各加同一份；历史前缀无完整计量时保持缺失，不把省掉前缀的续跑说成全任务节省 |
+| 离线与总实验成本 | 内容整理/提炼、题目调试、参考解/错误解验证、所有组和失败运行分别列账；按本轮 6 案展示学习投入的摊销假设，不以未来无限复用摊薄成本 |
+
+NPU 成本报告实际物理卡数、Die 数、租约及负载区间；卡时与 Die 时分列，不能把 A3 单 Die 自动当一整卡。无法从现有回执取得的指标列为缺失，不用步骤数或计划值推算。共享费用只计一次；不能跨组复用业务执行成功回执作为某组实际完成证据。
+
+#### 4.7.6 结果表与继续实施的条件
+
+每个案例先列 A/B/C 的原始成功/失败/infra/unknown/未运行、选择与采用、总时间、模型用量、NPU 占用、无信息实验和人工介入。汇总固定给出以下比较：
+
+| 比较 | 首要观察 | 判读边界 |
+| --- | --- | --- |
+| C 对 B | 合理选择/下一动作比例及错误采用；随后看独立任务成功与成本 | 执行证据有无改变选择，以及改变是否被实际执行；不能只看 router 自评 |
+| C 对 A | 配对任务成功、负迁移、全部续跑成本与人工介入 | 选择更好但任务不改善或额外成本更高，仍不能宣布产品收益 |
+| 触发案例对边界案例 | 匹配时采用；条件未知时补查；不匹配时保留合适默认路径 | 默认路径不是失败；不适用专用方法的实际采用才构成错误采用 |
+
+比例给出分子、分母和缺失，成功率沿用第 6 节的有效任务口径，同时保留全部分配量。时间/成本除全量结果外，可列双方成功子集，但必须声明该分母；两次重复先在同一案例内汇总，再按 3 个源族展示配对差异。重复次数不增加独立族数，六案 pilot 以逐案/逐族结果和不确定性为主，不用伪精确置信区间作普遍结论。
+
+- **继续扩族的迹象**：C 比 B 更常选到有区分力的方法，实际执行与独立结果相符；C 对 A 的成功、成本和负迁移权衡值得进一步验证。具体业务可接受的成本增量在计划中先声明，不事后挑指标。
+- **返回实现/内容修正**：候选条件不清、B/C 输入未隔离、计量缺失或题目不 sound，先修负责入口，当前结果保留为协议问题，不进入能力成绩。
+- **停止默认推广**：选择有改善但业务结果无改善，或增加明显成本/负迁移，保留可选策略和有效负结论，不默认给所有任务增加选择调用。
+- **后续产品验收**：另开从用户原始请求开始的真实全程对照，在一个原生主 Agent 中于自然决策点使用经验，完整计入前缀成本；扩充未暴露问题族后再评价迁移和统计把握。冻结 pilot 不在本轮消费其结果修订知识；顺序学习另走第 5.3 节。
+
+#### 4.7.7 实施入口与当前缺口
+
+复用 `evaluation/mechanism_replay.py` 的题面投影/真实 runner 入口、`runner/mechanism_contracts.py` 的 FixedControls、`mechanism_ablation.py` 的机制计划与配对观察，以及 `runner/orchestrator.py` 的原生执行、现有 private judge、broker 和回执。当前枚举未包含策略选择，**输入隔离、选择调用的原生计量和三组续跑编排是待补工作**；本方案不提供一个尚不存在的 CLI 命令。
+
+实施顺序为：准备可重复 Dev 三元组 → 接通真实选择与 executor → 核对完整成本与等价策略判分 → 固定候选与协议 → 独立六案 pilot → 根据结果决定是否接在线自然决策和扩族。组件只验证输入投影、实际参数透传及回执语义；评测器直接消费已产生结果，不新增跨组件重复核验。具体责任和退出条件见[核心实施设计第 13.4 节](core-implementation-and-geak-evolution-design.md#strategy-implementation)。
+
+#### 4.7.8 2026-10-22 Worktree 端到端落地与实测记录（`feat/0.0.4-strategy-selection`）
+
+已在独立隔离 worktree（`/Volumes/data/code/mindie-004-strategy-selection/*`，分支 `feat/0.0.4-strategy-selection`）完成跨 5 仓端到端闭合与实测：
+
+1. **领域语料原地条件化修订与索引校验**：
+   - `knowledge-vllm-ascend`：原地修订 `unit-vllm-ascend-aclgraph-capture-invalidation-triage-sop`（`revision: 2`）与 `unit-vllm-ascend-hybrid-recurrent-dp-state-hermes-workflow`（`revision: 3`），补齐可观察触发、缺失事实最小补查探针、下一步区分动作与停止/回退反证边界；重建 `index/routing-manifest.json`（82 条 active 单元，`validate_repository` 通过）。
+   - `knowledge-operators`：原地修订 `unit-agentic-model-kernel-selection-and-profiling-driven-fusion-workflow`（`revision: 2`）与 `unit-ascendc-aicore-exception-and-precision-divergence-workflow`（`revision: 2`）；重建 `index/routing-manifest.json`（103 条 active 单元，`validate_repository` 通过）。
+2. **`knowledge` 与 `mindie-bench` 组件闭合**：
+   - `knowledge`（`mindie_knowledge/graded/explore.py`）：新增 `build_strategy_navigation_cards`，输出零正文泄漏（不含 `body`/`content`/`excerpt`）、带 `match_status`、`missing_conditions`、`mismatch_reasons` 与 `ready_to_apply` 的候选策略导航卡；全套 `pytest` `1518 passed, 21 skipped`。
+   - `mindie-bench`：在 `runner/mechanism_contracts.py` 与 `mechanism_ablation.py` 接入第 5 机制维度 `Mechanism.STRATEGY_SELECTION`（`default` / `task_only` / `task_plus_evidence`）；修复 `evaluation/mechanism_replay.py` 使缺失原生 token usage 保持 `None`（`usage_status="unavailable"`）；新增 `evaluation/strategy_selection_cases.py`（596 行）与 `evaluation/strategy_selection.py`（780 行）及 CLI 子命令 `mindie-bench strategy-selection-pilot --selector-mode {reference,claude}`。
+   - **Tier 0/1/2 真机验证**：`tests/test_strategy_selection_pilot.py`、`tests/test_mechanism_replay.py`、`tests/test_mechanism_ablation.py`、`tests/test_qualification_gate.py`（`45 passed`）与常驻 A2（`root@173.125.1.2` `910B4`）/ A3（`root@192.168.13.165` 8 卡 16 Die）非破坏沙箱联调 `tests/test_live_npu_gate_and_replay.py`（`8 passed`）全部通过。
+3. **36-Cell + 24-Selector 真实宿主 CLI（`--selector-mode claude`）与参考选择器对照结果**：
+
+| 评测模式与组别 | 任务成功率 (`pass_rate`) | 合理选择率 (`selection_reasonable`) | 错误采用率 (`false_adoption`) | 触发匹配题通过 (`trigger_matched`) | 边界/不匹配题安全处理 (`boundary_safe`) | 续跑总模型调用 (含选择) | 原生 Prompt / Completion Tokens | 续跑墙钟 (`wall_clock_sec`) | NPU 启动次数 / 卡时 / Die 时 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **A 默认路径** (`default_path`) | `4/12` (`33.33%`) | `4/12` (`33.33%`) | `2/12` (`16.67%`) | `0/6` (`0.0%`) | `4/6` (`66.67%`) | `60` (`0`) | `17,120` / `3,960` | `544.0s` | `20` / `0.4222h` / `0.6933h` |
+| **B 仅题面选择 — Live Claude** (`task_only`) | `6/12` (`50.00%`) | `6/12` (`50.00%`) | `6/12` (`50.00%`) | `6/6` (`100.0%`) | `0/6` (`0.0%`) | `66` (`12`) | `97,702` / `13,980` | `550.56s` | `18` / `0.3778h` / `0.6044h` |
+| **C 题面+执行证据选择 — Live Claude** (`task_plus_evidence`) | **`11/12` (`91.67%`)** | **`11/12` (`91.67%`)** | **`0/12` (`0.0%`)** | `5/6` (`83.33%`) | **`6/6` (`100.0%`)** | **`51` (`12`)** | `96,510` / `13,612` | **`425.17s`** | **`13` / `0.2000h` / `0.2933h`** |
+| **B 仅题面选择 — Reference** (`task_only`) | `2/12` (`16.67%`) | `2/12` (`16.67%`) | `8/12` (`66.67%`) | `2/6` (`33.33%`) | `0/6` (`0.0%`) | `78` (`12`) | `21,880` / `4,842` | `608.0s` | `22` / `0.5111h` / `0.7822h` |
+| **C 题面+执行证据选择 — Reference** (`task_plus_evidence`) | `10/12` (`83.33%`) | `10/12` (`83.33%`) | `0/12` (`0.0%`) | `4/6` (`66.67%`) | `6/6` (`100.0%`) | `54` (`12`) | `19,564` / `3,418` | `400.8s` | `14` / `0.2444h` / `0.3378h` |
+
+- **关键配对结论（Live Claude Selector）**：
+  - **`C vs B`（执行证据的增量价值）**：合理选择率与任务成功率均提升 **`+41.67%`**（`11/12` vs `6/12`），边界/前提不匹配案例上的错误采用率从 **`50.0%`（`6/12`）降至 `0.0%`（`0/12`）**；当决策前观察显示 `--enforce-eager` 已复现同样崩溃、仅活跃 Rank 0 在具体张量上报错或无插桩基线存在 `507035` UB 越界且 `HCCL AlltoAll` 占 81% 时，Arm C 全部准确拒绝误用专用工作流并回退 `default`，续跑墙钟节省 `125.4s`、NPU 启动减少 `5` 次（卡时降低 `47.1%`）。
+  - **`C vs A`（相对当前默认路径的净收益）**：任务成功率提升 **`+58.33%`**（`11/12` vs `4/12`），**零负迁移（`negative_transfer_count = 0`）**，总模型调用从 `60` 次降至 `51` 次，续跑墙钟净省 `118.8s`（`425.17s` vs `544.0s`），NPU 启动从 `20` 次降至 `13` 次。
+  - **三本成本账**：共同前缀成本单列计一次（`wall_clock_sec = 118.0s`、`prompt_tokens = 2,625`、`completion_tokens = 600`）；离线语料修订与 Dev 校准成本单列（`45.0s + 120.0s`），按本轮 6 案显式披露摊销边界。退出门禁判定为 `decision_gate = "continue_expanding_families"`。
 
 ## 5. 实验分组与数据隔离
 
@@ -355,6 +473,7 @@
 [O-arena]: https://github.com/AMD-AGI/AgentKernelArena/blob/8bb70929ff8caed6dae932a396caef152c63fe64/docs/how-to/held-out-evaluation.md
 [O-rsi]: https://github.com/apple-aiml-research/ml-rsi-inference-bench/blob/a6b10af282014412b4eae14f3105d68555889821/README.md
 [O-rsi-scoring]: https://github.com/apple-aiml-research/ml-rsi-inference-bench/blob/a6b10af282014412b4eae14f3105d68555889821/tasks/optimize_dsv4_flash_4xh100_dspark_sglang_open/tests/_verifier_lib/scoring.py
+[O-ooharness]: https://arxiv.org/html/2610.28380v1
 [K-units]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_graded_units.py
 [K-context]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_context_progressive_loading.py
 [K-experience]: https://github.com/mindie-agent/knowledge/blob/b900f11ef6be1edfe54e3d739b10588bc0cb0fce/tests/test_experience_and_exploration_loop.py

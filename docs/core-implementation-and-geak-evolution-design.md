@@ -639,6 +639,22 @@ P0 的插件接通与核心修复可以独立推进，但不能先发布一个�
 
 本次只复核并更新设计，没有修改运行时、推送或更新安装。定向测试为 **170 passed、18 skipped**：knowledge 53，bench 27，sim 57，profiler 33；profiler 另有 18 项依赖外部 provider/source/采集输入的跳过。测试使用当前多仓源码路径，不证明独立安装；真实宿主、NPU 和迁移未在本次运行。具体文件、反例与证据边界见[详细设计第 15.6 节](knowledge-context-and-exploration.md#156-2026-10-20-晚间源码复核与验收缺口)。
 
+<a id="strategy-implementation"></a>
+
+### 13.4 2026-10-22 条件化策略复用与最小对照工作包
+
+**状态：设计待实施，未运行三组策略选择实验。** 从 OO-Harness 吸收的目标行为以[上下文与探索设计第 16 节](knowledge-context-and-exploration.md#conditional-strategy)为准，实验唯一协议以[分级测试方案第 4.7 节](knowledge-tiered-testing-plan.md#strategy-selection-pilot)为准。沿用本节 P1/P2/P4 的任务，不增加独立路由运行时或大规模知识建设阶段。
+
+| 顺序 | 主责与实施入口 | 本轮修改及退出条件 |
+| --- | --- | --- |
+| 1 | 领域仓 + bench 的现有 task/source split | 选一类 Graph/eager 或状态生命周期问题，整理 2–3 个既有 `workflow`，同时写清执行方法与选择依据；Dev 与独立题源谱系分开。候选和题目均有真实来源，未就绪题不凑数 |
+| 2 | `knowledge/graded` + 一个原生插件 | 通过已有条件过滤、完整闭包和按需诊断参考消费内容；实际读取并执行一次。只补阻断使用的接口缺口，方法/选择经验沿用同一单元修订；不新增强制 Schema 或通用分类器 |
+| 3 | bench 的 `evaluation/mechanism_replay.py`、`runner/mechanism_contracts.py` / `mechanism_ablation.py`、原生 `run_trial` | 补策略选择机制项、B/C 独立无工具选择上下文、同前缀续跑与原生调用计量；Dev 跑通 A/B/C 三元组。固定 payload 或默认零 usage 不计作真实模型完成 |
+| 4 | bench + `remote-dev/coordinator` + private judge | 固定方案后做第 4.7 节六案 pilot，复用原有沙箱、租约、运行结果和终态；输出选择、采用、业务成功及完整成本，保留所有失败和负迁移。样本不足仍只报 pilot |
+| 5 | 原生插件 + bench，依据 pilot 决定 | 若值得继续，在主 Agent 的自然决策点使用经验，并另做原始用户请求起步的全程实验；各宿主和设备单独验收。无收益时保留可选策略与负结论，不增加默认常驻模型调用 |
+
+实施首轮优先改内容和真实调用接线。公共解析/测量/恢复仍由原组件维护一次；策略选择只调整当前子问题，继续跟踪已有 `run_id`。本次文档补充不修改运行时、不启动 NPU 实验，也不更新此前各节的历史测试或交付状态。
+
 ## 14. 核心完成的判定
 
 只有以下链路经过真实调用，才应称核心闭环已经形成：
