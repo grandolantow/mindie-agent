@@ -28,17 +28,21 @@ Shared runtime components live in `knowledge`, `remote-dev`, `diagnostics`, `pro
   1. **Module Size & Context-Window Friendliness**: Keep core modules concise and cohesive (target `< 800` lines per file so a single `view_file` call loads the full module); ban 5–6 layer subprocess trampolines and pass-through wrappers.
   2. **Mandatory Module-Top Agent Invariant Header**: Every core module must declare `[Role]`, `[Invariants]`, `[Timeouts & Locks]`, and `[Side-Effect Policy]` within its first 30 lines.
   3. **Why & Invariants over Defensive Excuses**: Comments must explain business invariants, protocol boundaries, and non-obvious hardware behaviors (e.g., Ascend A3 dual-Die `Phy-ID` `0..15` mapping or Linux `/proc` container PID draining)—never restate literal code or rationalize imaginary-enemy defensive checks.
+- **Performance, Bounded Memory/VRAM & Spec-Driven Local/Remote Placement (Principle 18)**:
+  1. **Bounded Working Set ($O(\text{Active State})$) & `1 GiB` Redline**: Main loops in `sim`/`profiler`/`diagnostics` must never accumulate unbounded history across iterations/tokens or load `>50 MB` files via `json.load()`/`read()`. Routine control/analysis calls must stay `<= 512 MiB` peak (`> 1 GiB` single-process RAM outside LLM weights/C++ linking is a code bug). Cap workers by $\min(\text{CPU}, \lfloor\text{usable RAM}/\text{worker RAM}\rfloor)$.
+  2. **Zero-Weight Control Plane & Pre-Flight VRAM Sizing**: Never load model weights or initialize `torch_npu`/CUDA/CANN contexts just to inspect metadata (`config.json`/`safetensors` headers only). Verify `vram_free_mb >= Expected VRAM` before launching device workloads.
+  3. **Cross-Platform Spec Placement (Windows / macOS / Linux)**: Never hardcode `sys.platform == "darwin"` or `os.name == "nt"` to gate execution. Match workload expectations (`cpu_cores`, `memory_mb`, `vram_mb`) against real usable local and remote (`fleet_probe.py`) hardware specs—run locally when local specs are sufficient (including high-spec workstations), and route to matching remote servers when local specs are insufficient.
 
 ## 2. Progressive Disclosure Map (Read Only When Triggered)
 
 Do not preload all documentation into context. Read only the document matching your current task:
 
 - **Architecture & Domain Boundaries** → [`docs/architecture.md`](docs/architecture.md)
-- **Product, Engineering & Testing Principles** → [`docs/design-principles.md`](docs/design-principles.md) & [`docs/testing-architecture.md`](docs/testing-architecture.md)
+- **Product, Engineering & Testing Principles** → [`docs/design-principles.md`](docs/design-principles.md), [`docs/testing-architecture.md`](docs/testing-architecture.md) & [`docs/execution-resource-budget-design.md`](docs/execution-resource-budget-design.md)
 - **Harness Plugin Boundary, Hooks & Lifecycle** → [`docs/harness-boundary-and-lifecycle.md`](docs/harness-boundary-and-lifecycle.md) & [`docs/native-runtime-reuse.md`](docs/native-runtime-reuse.md)
 - **Knowledge Flywheel & Privacy Redaction** → [`docs/knowledge-system.md`](docs/knowledge-system.md)
 - **Diagnostics, Profiling & Simulation** → [`docs/diagnostics-and-reporting.md`](docs/diagnostics-and-reporting.md), [`docs/profiler-system.md`](docs/profiler-system.md) & [`docs/simulation-system.md`](docs/simulation-system.md)
 - **Gate — Submitting or Updating a Development PR**:
-  - Read and complete [`docs/design-principles.md#三开发-pr-提交前自查清单pre-pr-review`](docs/design-principles.md#三开发-pr-提交前自查清单pre-pr-review) before creating/updating any PR (including drafts), and include the concise review summary in the PR description.
+  - Read and complete [`docs/design-principles.md#三开发-pr-提交前自查清单pre-pr-review`](docs/design-principles.md#三开发-pr-提交前自查清单pre-pr-review) and [`.github/pull_request_template.md`](.github/pull_request_template.md) (including Item 14 on bounded memory/VRAM & cross-platform spec placement) before creating/updating any PR (including drafts), and include the concise review summary in the PR description.
 - **Gate — Publishing a Formal Component or Plugin Release**:
   - Read and execute [`docs/release-compatibility-and-update.md#组件与插件配套发布`](docs/release-compatibility-and-update.md#组件与插件配套发布) only when publishing or auditing a formal GitHub Release.
