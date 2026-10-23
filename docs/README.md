@@ -9,6 +9,7 @@
 | 文档 | English | 核心内容 |
 |---|---|---|
 | [工程设计原则与演进准则](design-principles.md) | [Engineering Design Principles](design-principles.en.md) | 指导 MindIE Agent 工具边界、用户体验、机制复用与容错语义的工程准则 |
+| [参与贡献指南（Agent-First 贡献规范）](../CONTRIBUTING.md) | [Contributing Guide](../CONTRIBUTING.en.md) | 面向 Agent 的两阶段贡献门禁：开发前先读设计原则、提交 PR 后完成 Pre-PR Checklist 自检 |
 | [系统架构与模块分工](architecture.md) | [Architecture & Module Boundaries](architecture.en.md) | 宿主插件、知识引擎、远端执行、集群观测与诊断组件如何协同工作 |
 | [知识与经验闭环设计](knowledge-system.md) | [Knowledge & Experience System](knowledge-system.en.md) | 本地实战经验如何脱敏沉淀、生成检索导航，并与社区公共知识库双向流转 |
 | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | 后续设计：Token 预算、渐进加载、经验修订与探索回流；含 OO-Harness 条件化策略复用、组件分工与实施步骤 |
