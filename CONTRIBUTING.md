@@ -33,7 +33,7 @@
 > #### 第二步：遵循核心红线直接演进代码
 > 1. **内环效率优先（Principle 1）**：直接在当前检出工作区修改并验证受影响范围，严禁发明中间冻结目录或无意义的审计仪式文件。
 > 2. **错误可见与状态诚实（Principle 9 & 14）**：严格区分 `completed`、`failed` 与不可逆外部写 `unknown`；严禁 `except Exception:` 静默返回 `{}` / `"active"` / `exit 0` 假成功，严禁 `except OSError:` 误吞 `TimeoutError`。
-> 3. **超时算术与 `v0.0.2` 四大铁律（Principle 10 & 15）**：满足 `outer_timeout >= sum(inner_budgets) + cleanup_grace`；SQLite 连接统一开启 WAL + `busy_timeout=5000` 且零热路径 `.owner`/Schema 反射；零本地永久自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；零巨型内嵌 Python 字符串（远端 worker 必须为独立 `.py` 模块）。
+> 3. **超时算术与反过度防御四大铁律（Principle 10 & 15）**：满足 `outer_timeout >= sum(inner_budgets) + cleanup_grace`；SQLite 连接统一开启 WAL + `busy_timeout=5000` 且零热路径 `.owner`/Schema 反射；零本地永久自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；零巨型内嵌 Python 字符串（远端 worker 必须为独立 `.py` 模块）。
 > 4. **Agent-Native 模块与注释规范（Principle 17）**：核心模块控制在 `< 800` 行，文件前 30 行必须声明 `[Role]`、`[Invariants]`、`[Timeouts & Locks]`、`[Side-Effect Policy]` 四段式契约头；注释聚焦业务不变量与硬件/协议边界。
 > 5. **有界内存/显存与规格分流（Principle 18）**：主循环内存严格保持 $O(\text{活跃状态})$，大文件（`> 50 MB`）流式读取，控制/分析组件单进程峰值 `<= 512 MiB`（`> 1 GiB` 即视为缺陷）；控制面零权重/零设备上下文，重计算或上卡任务按本机与远端真实规格自动分流（严禁硬编码 `sys.platform`）。
 >
@@ -70,7 +70,7 @@ flowchart LR
 | 核心设计维度 | 写代码前必须对齐的设计准则 |
 | --- | --- |
 | **🎯 总成本与边界（原则 1–8）** | 以降低完成任务的**端到端总成本**为唯一衡量标准；封闭确定性问题做成工具，开放判断留给 Skill 引导；优先复用宿主/OS/成熟组件能力，升级替代旧实现时**直接删掉重写**，不留双轨兼容包袱。 |
-| **🔍 错误可见与超时算术（原则 9–15）** | 失败必须对调用方诚实可见，绝不用 `except Exception:` 返回 `{}` / `"active"` / `exit 0` 掩盖错误；超时必须满足 `outer_timeout >= sum(inner_budgets) + cleanup_grace`；严格遵守 `v0.0.2` 反过度防御四大铁律。 |
+| **🔍 错误可见与超时算术（原则 9–15）** | 失败必须对调用方诚实可见，绝不用 `except Exception:` 返回 `{}` / `"active"` / `exit 0` 掩盖错误；超时必须满足 `outer_timeout >= sum(inner_budgets) + cleanup_grace`；严格遵守反过度防御四大铁律。 |
 | **🧪 分级测试与宿主机零污染（原则 16）** | 拒绝凑数测试与文本 grep 测试；按 Tier 0（`<5s` 纯内存）~ Tier 3（常备 A2/A3 昇腾真机）分层验证；测试必须严格隔离 `$HOME` 与 `MINDIE_DIAGNOSTICS_ROOT`，严禁污染开发机个人目录或后台服务。 |
 | **🤖 Agent-Native 模块与注释规范（原则 17）** | 核心模块保持 `< 800` 行（单次 `view_file` 可完整加载），文件顶部前 30 行声明 `[Role]` / `[Invariants]` / `[Timeouts & Locks]` / `[Side-Effect Policy]` 契约头；注释写清业务不变量与硬件/协议边界，不为防御性代码写借口。 |
 | **⚡ 有界内存/显存与规格分流（原则 18）** | 主循环常驻内存保持 $O(\text{当前活跃状态})$，常规组件单进程峰值 `<= 512 MiB`（`> 1 GiB` 视为算法 Bug）；控制面保持零权重/零设备上下文；重任务按本机与远端真实硬件规格自动分流，不写死 `sys.platform`。 |

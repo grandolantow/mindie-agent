@@ -5,7 +5,7 @@
 本文说明 MindIE Agent 各宿主插件（Claude Code、Codex、Kimi Code、DeepSeek Harness）与底层共享组件之间的职责划分，以及任务身份识别、用户授权、长任务执行与本地数据恢复的生命周期规则。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md) · [系统架构与模块分工](architecture.md)
-- 版本发布记录：[`0.0.3` 版本发布记录](releases/0.0.3.md) · [`0.0.2` 版本发布记录](releases/0.0.2.md) · [`0.0.1` 版本发布记录](releases/0.0.1.md)
+- 版本与实测记录：[版本发布记录](README.md#版本记录与路线图)
 
 ---
 
@@ -59,7 +59,7 @@ MindIE Agent 不另建一套封闭的“大一统对话平台”，而是直接�
    - **不设武断的全局业务超时**：耗时的远端编译或长算子测试只要连接与进程健康就继续运行，只有调用方显式传入的超时参数才会终止操作。
 2. **精准取消，不误杀持久作业**：
    - 用户按取消（Interrupt）时，仅清理当前调用所拥有的进程树；独立运行的后台知识服务和通过 `remote-dev` 显式启动的远端持久作业不会因为一次短命令退出而被误杀。
-   - *已知宿主限制说明*：在 `0.0.1` 版本中，OpenAI Codex CLI 在中断子代理（Subagent）时存在上游信号缺口，可能未向待处理的工具调用发送取消通知。MindIE Agent 如实记录该限制，不在插件内塞入高侵入性的私有杀进程轮询器；远端持久作业仍可通过 `remote-dev` 的 `job_cancel` 显式停止。
+   - *已知上游宿主限制说明*：OpenAI Codex CLI 在中断子代理（Subagent）时存在上游信号缺口，可能未向待处理的工具调用发送取消通知。MindIE Agent 如实记录该限制，不在插件内塞入高侵入性的私有杀进程轮询器；远端持久作业仍可通过 `remote-dev` 的 `job_cancel` 显式停止。
 3. **跨平台进程树可靠回收**：
    - 后台摘要索引操作的进程树由平台原生原语兜底管理：Windows 使用命名 Job Object（`KILL_ON_JOB_CLOSE`），WSL 使用 `systemd` 临时用户服务（`KillMode=control-group`），macOS 使用轻量 `owner-pipe` 守护辅助进程，确保即使主控进程被强制 `SIGKILL` 也能干净回收所有子孙进程。详见[原生能力与系统机制复用](native-runtime-reuse.md)。
 

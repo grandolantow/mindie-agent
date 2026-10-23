@@ -27,7 +27,7 @@
 |---|---|---|
 | [宿主边界与任务生命周期](harness-boundary-and-lifecycle.md) | [Harness Boundary & Lifecycle](harness-boundary-and-lifecycle.en.md) | 任务身份识别、持久授权设置、操作生命周期管理与本地状态保护机制 |
 | [执行资源预期、代码有界性与规格匹配设计](execution-resource-budget-design.md) | — | 代码层内存/显存有界性红线（Principle 18）、工作负载资源预期声明，以及 Windows/macOS/Linux 本机与远端 `fleet_probe` 硬件规格自动匹配分流 |
-| [版本兼容与无感更新](release-compatibility-and-update.md) | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | 组件与插件配套发布规范、宿主版本兼容匹配及后台静默更新流程 |
+| [版本兼容与无感更新](release-compatibility-and-update.md) | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | 双层版本演进与发布通道清单（`channels/0.1.json`）、单组件独立热修、宿主兼容匹配及三层极速无感更新 |
 | [诊断日志与故障上报](diagnostics-and-reporting.md) | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | 本地结构化诊断日志、隐私脱敏红线与可选的 GitHub Issue 自动故障上报 |
 | [原生能力与系统机制复用](native-runtime-reuse.md) | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | 为什么及如何复用宿主插件市场、`uv` 锁定环境与操作系统原生进程树管理 |
 | [企业网络下的配置与传输](enterprise-network.md) | [Enterprise Network Transport](enterprise-network.en.md) | 代理与系统证书、安装更新、后台上传及本机接口直连 |
@@ -38,9 +38,10 @@
 
 | 文档 | English | 核心内容 |
 |---|---|---|
+| [`0.1.0` 里程碑与通道架构记录](releases/0.1.0.md) | [`0.1.0` Milestone & Channel Record](releases/0.1.0.en.md) | `channels/0.1.json` 通道清单、`0.1.x` 单组件独立热修（`< 500ms` 切换）与三层极速更新触达 |
 | [`0.0.3` 版本发布记录](releases/0.0.3.md) | [`0.0.3` Release Record](releases/0.0.3.en.md) | L1–L4 渐进式知识披露、`profiler` 与 `sim` 组件发布、CANN 确定性故障分诊及十二仓正式 benchmark |
 | [`0.0.2` 版本发布记录](releases/0.0.2.md) | [`0.0.2` Release Record](releases/0.0.2.en.md) | 插件统一版本、精确组件源码、实机验收范围与常态化十仓 benchmark |
-| [`0.0.1` 版本发布记录](releases/0.0.1.md) | [`0.0.1` Release Record](releases/0.0.1.en.md) | `0.0.1` 支持客户端矩阵、配套组件版本映射、实机验证范围与已知限制 |
+| [`0.0.1` 版本发布记录](releases/0.0.1.md) | [`0.0.1` Release Record](releases/0.0.1.en.md) | 支持客户端矩阵、配套组件版本映射、实机验证范围与已知限制 |
 | [后续演进路线图](next-steps.md) | [Roadmap & Next Steps](next-steps.en.md) | 下一阶段重点推进的业务基准评测、更多宿主支持与体验优化计划 |
 
 ## 质量审计

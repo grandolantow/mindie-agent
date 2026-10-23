@@ -16,7 +16,7 @@
 | **NPU 物理拓扑规模 `S0–S3`** | `S0` 单 Die 算子微基准、`S1` 2–4 Dies 子集群、`S2` 8–16 Dies 整机/同机 PD 分离、`S3` 双机 RoCE 跨节点 | 决定真实多卡/分布式评测的硬件拓扑层级 |
 | **任务族 `B1–B4`** | 物理诊断、SOP 与过期经验处理、多步骤收敛、长周期探索 | 保留既有任务族分层；一个任务可同时涉及多个知识类别与架构层级 |
 | **bench `environment.l1/l2/l3`** | 现有 `TaskSpec` 的执行环境档位 | 历史字段名，不新增 `environment.l4` |
-| **产品组 `P0–P3`** | 原生宿主、0.0.2 基线、0.0.3 完整产品、带经验谱系的产品 | 沿用 `mindie-value-suite/2`；不把历史 G0–G3 结果改名为 P 系列 |
+| **产品组 `P0–P3`** | `P0` 原生宿主、`P1` 工具基线、`P2` 完整产品（含知识库）、`P3` 带跨任务经验谱系的产品 | 沿用 `mindie-value-suite/2`；不把历史 G0–G3 结果改名为 P 系列 |
 | **宿主执行控制** | DSH 固定标准模式（`preset=standard` / `tools.mode="native"`）与默认思考强度 `reasoningEffort="max"` | 所有对照分组保持同一宿主模式与思考强度；bench 的 `build_dsh_profile` 显式声明 `reasoningEfforts` 与 `tools.mode="native"` |
 | **机制消融** | 角色、账本、检索、并行探索的单因素比较 | 固定其余输入与总预算；本方案的加载、检索和更新条件是独立子实验 |
 

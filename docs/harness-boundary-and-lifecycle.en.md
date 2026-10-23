@@ -5,7 +5,7 @@
 This document explains how responsibilities are divided between MindIE Agent's native Harness plugins (**Claude Code**, **OpenAI Codex CLI**, **Kimi Code**, **DeepSeek Harness**) and its shared runtime components, as well as how task identity, user consent, long-running jobs, and local data recovery work in practice.
 
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
-- Release Records: [`0.0.3` Release Record](releases/0.0.3.en.md) · [`0.0.2` Release Record](releases/0.0.2.en.md) · [`0.0.1` Release Record](releases/0.0.1.en.md)
+- Release Records: [Release Records & Roadmap](README.en.md#release-records--roadmap)
 
 ---
 
@@ -59,7 +59,7 @@ In everyday workflows:
    - **No arbitrary global business timeout**: Long remote builds or NPU benchmarks continue running as long as the process and transport are healthy; only caller-requested timeouts end execution.
 2. **Targeted cancellation without collateral damage**:
    - Cancelling an in-flight tool call terminates only the process tree owned by that call; background services and explicitly launched persistent remote jobs are never killed just because a short launcher exits.
-   - *Documented host limitation in `0.0.1`*: When OpenAI Codex CLI interrupts a child agent (`spawn_agent`), Codex may not deliver a cancellation signal to an in-flight MCP tool call. MindIE Agent documents this upstream limitation transparently without adding intrusive process-hunting workarounds; persistent remote jobs remain explicitly controllable via `remote-dev` (`job_cancel`).
+   - *Documented upstream host limitation*: When OpenAI Codex CLI interrupts a child agent (`spawn_agent`), Codex may not deliver a cancellation signal to an in-flight MCP tool call. MindIE Agent documents this upstream limitation transparently without adding intrusive process-hunting workarounds; persistent remote jobs remain explicitly controllable via `remote-dev` (`job_cancel`).
 3. **Reliable cross-platform process-tree cleanup**:
    - Background indexing process trees are governed by OS-native primitives: Windows uses a named Job Object (`KILL_ON_JOB_CLOSE`), WSL uses transient `systemd` user units (`KillMode=control-group`), and macOS uses a lightweight `owner-pipe` helper so that even a sudden `SIGKILL` of the parent worker cleanly reclaims all descendant processes. See [Native Runtime & Process Reuse](native-runtime-reuse.en.md).
 

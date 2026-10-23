@@ -84,7 +84,7 @@ MindIE Agent 的目标是**让通用编程 Agent 在昇腾（Ascend）NPU 与大
    - **消灭两极化超时（告别毫秒级误杀与 `timeout=None` 无限裸奔）**：
      - **禁止热路径亚秒级（`< 1s`）SQLite 锁超时**：多线程/跨进程 SQLite 写锁严禁设 `100ms~250ms` 微超时（会在正常索引/分块写入时误杀请求或永久丢弃 Stop 会话），统一开启 WAL 模式并设置 `3.0s~5.0s` 合理等待；
      - **禁止外部子进程与网络握手 `timeout=None`**：所有外部子进程（`gitleaks`、摘要模型、候选版本验证、全局 `flock` 内的 `docker inspect/top`）必须设置显式有界超时；RPC 握手等待（如 `ready.wait`）必须在函数入口即纳入 `deadline` 约束。
-2. **`v0.0.2` 四大反过度防御性编程铁律（保留 `gpt6-astra` 核心设计，剥离防御性假想敌累赘）**：
+2. **反过度防御性编程四大铁律（以核心业务逻辑为基准，剥离防御性假想敌累赘）**：
    - **铁律一：本地状态轻量建连，禁止每条 SQL 热路径 `.owner`/Schema 反射自检**：SQLite 仅在 `open_database` 时执行 `PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;` 与表结构初始化，严禁在每次 `SELECT` 上拦截跑 `lstat(.owner)` 或 `:memory:` 全表反射。
    - **铁律二：严守外部副作用与本地状态边界，废除本地单向自锁死（Self-Bricking）**：仅对不可逆外部写操作（计费 LLM、GitHub PR/Issue、远端破坏性写）保留 `unknown` 回执对账；本地幂等状态（虚拟环境升级、`consent.json` 迁移、容器 `task_environment` 准备）遇到异常必须透明报错并支持下次无锁时幂等自愈，严禁写入 `suppressed` / 永久 `fault` / `TaskRootBusy` 自锁死墓碑。
    - **铁律三：禁止跨仓复制粘贴 `*_fallback.py` / `*_bootstrap.py` 影子状态机与 `ctypes` Win32 ACL 繁文缛节**：宿主插件直接依赖由 `uv.lock` 锁定的共享组件，文件原子替换统一使用标准库 `os.replace()`。
@@ -103,7 +103,7 @@ MindIE Agent 的目标是**让通用编程 Agent 在昇腾（Ascend）NPU 与大
    - **Tier 3（端到端宿主 CLI 与 `mindie-bench` 实机基准验收，`< 90s`）**：驱动真实宿主 CLI 与 `mindie-bench` Canary 任务完成闭环验证。
 
 ### 17. Agent-Native 代码与注释规范（100% Agent 维护代码库）
-MindIE Agent 全系 11 个仓库均为 **100% 由编程 Agent 阅读、演进与维护的代码库**。代码结构与注释必须针对 Agent 的注意力机制与工具窗口（如单次 `view_file` 800 行上限）做原生优化：
+MindIE Agent 旗下全部代码与知识仓库均为 **100% 由编程 Agent 阅读、演进与维护的代码库**。代码结构与注释必须针对 Agent 的注意力机制与工具窗口（如单次 `view_file` 800 行上限）做原生优化：
 1. **模块体量与上下文窗口友好性（Context-Window Friendliness）**：
    - 核心业务模块应保持高内聚、精炼紧凑，原则上单文件控制在 **800 行以内**（单次 `view_file` 即可完整加载全貌），避免因防御性样板代码膨胀导致 Agent 被迫多次翻页切片阅读；
    - **严禁 5~6 层子进程蹦床（Subprocess Trampolines）与多层透传包装**：调用链必须扁平直观，确保 Agent 在 1~2 次文件读取内即可看清从入口到核心执行的完整闭环。
@@ -151,7 +151,7 @@ MindIE Agent 旗下所有仓库的代码、配置、依赖、CI 与文档改动�
 | **8. 机制复用与配套** | 是否优先复用了宿主/系统/成熟组件能力？替代后旧代码是否已直接删掉重写？用户数据、授权与外部副作用 `unknown` 回执是否完好保留？ |
 | **9. 错误可见性与反静默回退** | 失败路径是否真实、清晰地报错？是否存在 `except Exception:` 静默吞错返回 `{}` / `"active"` / `exit 0` 假成功、Python `except OSError:` 误吞 `TimeoutError`、对 `unknown` 写操作盲目重试，或因本地记账/清理超时反杀已成功的远端主结果？ |
 | **10. 超时预算与算术一致性** | 新增或修改的超时是否满足**“外层预算 ≥ 内层步骤总和 + 收尾排水宽限期（如 `SIGTERM->SIGKILL` / `inventory`）”**？是否消除了热路径亚秒级（`<1s`）SQLite 锁误杀、外部子进程 `timeout=None` 无限等待、握手脱离 `deadline` 以及 `timeout N cmd \|\| cmd` 超时二次裸跑？ |
-| **11. 反过度防御性编程（`v0.0.2` 四大铁律）** | 是否严格遵守 `v0.0.2` 四大铁律：（1）零热路径 SQL `.owner`/Schema 反射自检；（2）仅不可逆外部写用 `unknown`，本地状态零单向自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；（3）零跨仓复制 `*_fallback.py`/`*_bootstrap.py` 与 Win32 ACL 繁文缛节（统一 `os.replace()`）；（4）零 `inspect.signature` 内部签名锁死与巨型内嵌 Python 字符串（远端 worker 独立 `.py` 模块）？ |
+| **11. 反过度防御性编程（四大铁律）** | 是否严格遵守反过度防御四大铁律：（1）零热路径 SQL `.owner`/Schema 反射自检；（2）仅不可逆外部写用 `unknown`，本地状态零单向自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；（3）零跨仓复制 `*_fallback.py`/`*_bootstrap.py` 与 Win32 ACL 繁文缛节（统一 `os.replace()`）；（4）零 `inspect.signature` 内部签名锁死与巨型内嵌 Python 字符串（远端 worker 独立 `.py` 模块）？ |
 | **12. 分级测试有效性** | 新增测试是否验证真实核心业务与领域质量，而非测防御性 `chmod`/`symlink`/`ValueError` 假想敌、替静默吞错背书、覆写生产脚本或 grep 文档？测试是否通过 `conftest.py` / 临时目录严格隔离 `MINDIE_DIAGNOSTICS_ROOT`、`MINDIE_DIAGNOSTICS_CONFIG` 与 `$HOME`（零污染宿主机 `~/.local`、`~/.config` 或系统级 LaunchAgent/systemd 服务）？是否符合 Tier 0 (`<5s`) ~ Tier 3 耗时预算与常备 A2/A3 真机无损验证要求？ |
 | **13. Agent-Native 代码与注释规范** | 核心模块是否保持精炼（单次 `view_file` 800 行友好、无多层子进程蹦床）并在顶部前 30 行声明 `[Role]`/`[Invariants]`/`[Timeouts & Locks]`/`[Side-Effect Policy]` 契约头？注释是否聚焦业务不变量与硬件/协议边界（如 A3 双 Die `Phy-ID`），而非替防御性假想敌代码写借口？ |
 | **14. 性能、内存/显存有界性与规格分流** | 内存工作集是否严格保持 $O(\text{活跃状态})$ 而非无界累加全量历史或一次性展开 `>50MB` 大文件（控制/分析组件单进程常规峰值 `<= 512 MiB`，严禁 `> 1 GiB` 膨胀）？热循环内是否消除了 `deepcopy`/起子进程/逐行 Commit？并发 Worker 数是否同时受可用内存与核数约束？控制面是否保持零权重/零设备上下文，且重计算或显存（HBM/VRAM）操作在启动前按 Windows/macOS/Linux 本机与远端的真实规格自动分流（无 `sys.platform` 硬编码特判）？ |
