@@ -298,9 +298,9 @@
       "package": "mindie-bench",
       "version": "0.4.2",
       "tag": "v0.4.2",
-      "commit": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
-      "revision": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
-      "runner_revision": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
+      "commit": "d630aa5374598fcefee709042d8798787dbdc162",
+      "revision": "d630aa5374598fcefee709042d8798787dbdc162",
+      "runner_revision": "d630aa5374598fcefee709042d8798787dbdc162",
       "component_gate_runner_revision": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
       "independent_update_allowed": true,
       "hotfix_trigger_on_error": true,
@@ -342,7 +342,7 @@
         "mindie-bench"
       ],
       "plugin_republish_required": false,
-      "summary": "Bump mindie-bench to v0.4.2 (f1928fcdf296734e0acc8d546e2903bda8c35ecb) with tasks/zh-vague/, test_four_harness_g1_g4.py, matrix CLI alias, portable Python resolution, and hardened independent G4 RSI verifiers; pin 7 synced knowledge corpora commits (450 graded units)."
+      "summary": "Bump mindie-bench to v0.4.2 (d630aa5374598fcefee709042d8798787dbdc162) with tasks/zh-vague/, test_four_harness_g1_g4.py, matrix CLI alias, portable Python resolution, and hardened independent G4 RSI verifiers; pin 7 synced knowledge corpora commits (450 graded units)."
     }
   ]
 }

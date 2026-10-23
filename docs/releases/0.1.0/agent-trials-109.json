@@ -2,7 +2,7 @@
   "schema_version": "mindie-agent-trials-manifest/1.0",
   "product_version": "0.1.0",
   "benchmark_runner_version": "0.4.2",
-  "benchmark_runner_commit": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
+  "benchmark_runner_commit": "d630aa5374598fcefee709042d8798787dbdc162",
   "component_gate_runner_version": "0.4.1",
   "component_gate_runner_commit": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
   "evaluation_scope": {
