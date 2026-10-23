@@ -20,7 +20,7 @@
   <rect x="1" y="1" width="958" height="56" rx="12" fill="#F8FAFC"/>
   <line x1="1" y1="57" x2="959" y2="57" stroke="#E2E8F0" stroke-width="1"/>
   <text x="24" y="35" class="font title">MindIE Agent 开源仓库与下载统计</text>
-  <text x="936" y="35" text-anchor="end" class="font sync">每 12 小时自动更新 · 2026-10-23 00:13 (UTC+8)</text>
+  <text x="936" y="35" text-anchor="end" class="font sync">每 12 小时自动更新 · 2026-10-23 10:23 (UTC+8)</text>
   <rect x="24" y="72" width="216" height="86" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <rect x="24" y="72" width="4" height="86" rx="2" fill="#7045F5"/>
   <text x="38" y="95" class="font kpi-label">Stars / Forks</text>
@@ -39,8 +39,8 @@
   <rect x="720" y="72" width="216" height="86" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <rect x="720" y="72" width="4" height="86" rx="2" fill="#0F766E"/>
   <text x="734" y="95" class="font kpi-label">Release 下载量</text>
-  <text x="734" y="124" class="font kpi-val">1,375</text>
-  <text x="734" y="144" class="font kpi-sub">含全部附件共 1,552 次</text>
+  <text x="734" y="124" class="font kpi-val">2,078</text>
+  <text x="734" y="144" class="font kpi-sub">含全部附件共 2,337 次</text>
   <rect x="24" y="174" width="912" height="124" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
   <text x="40" y="198" class="font sec-title">客户端插件拉取分布</text>
   <rect x="40" y="210" width="880" height="12" rx="6" fill="#E2E8F0"/>
@@ -77,7 +77,7 @@
   <circle cx="44" cy="369" r="3.5" fill="#7045F5"/>
   <text x="54" y="373" class="mono td-repo">mindie-agent</text>
   <text x="240" y="373" class="font td-cat">产品入口</text>
-  <text x="355" y="373" class="mono td-sub">-</text>
+  <text x="355" y="373" class="mono td-sub">v0.0.3</text>
   <text x="540" y="373" text-anchor="end" class="mono td-num">54 / 50</text>
   <text x="665" y="373" text-anchor="end" class="mono td-bold">1,265</text>
   <text x="815" y="373" text-anchor="end" class="mono td-num">1,159 (397)</text>
@@ -106,20 +106,20 @@
   <circle cx="44" cy="468" r="3.5" fill="#D97757"/>
   <text x="54" y="472" class="mono td-repo">mindie-agent-cc</text>
   <text x="240" y="472" class="font td-cat">客户端插件</text>
-  <text x="355" y="472" class="mono td-sub">-</text>
+  <text x="355" y="472" class="mono td-sub">v0.0.3</text>
   <text x="540" y="472" text-anchor="end" class="mono td-num">0 / 0</text>
   <text x="665" y="472" text-anchor="end" class="mono td-bold">1,265</text>
   <text x="815" y="472" text-anchor="end" class="mono td-num">1,244 (227)</text>
-  <text x="920" y="472" text-anchor="end" class="mono td-num">-</text>
+  <text x="920" y="472" text-anchor="end" class="mono td-num">21</text>
   <line x1="24" y1="484" x2="936" y2="484" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="501" r="3.5" fill="#2563EB"/>
   <text x="54" y="505" class="mono td-repo">mindie-agent-kimi</text>
   <text x="240" y="505" class="font td-cat">客户端插件</text>
-  <text x="355" y="505" class="mono td-sub">-</text>
+  <text x="355" y="505" class="mono td-sub">v0.0.3</text>
   <text x="540" y="505" text-anchor="end" class="mono td-num">0 / 0</text>
   <text x="665" y="505" text-anchor="end" class="mono td-bold">1,359</text>
   <text x="815" y="505" text-anchor="end" class="mono td-num">1,317 (237)</text>
-  <text x="920" y="505" text-anchor="end" class="mono td-num">-</text>
+  <text x="920" y="505" text-anchor="end" class="mono td-num">652</text>
   <rect x="25" y="517" width="910" height="33" fill="#F8FAFC"/>
   <line x1="24" y1="517" x2="936" y2="517" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="534" r="3.5" fill="#0EA5E9"/>
@@ -163,11 +163,11 @@
   <circle cx="44" cy="666" r="3.5" fill="#475569"/>
   <text x="54" y="670" class="mono td-repo">coordinator</text>
   <text x="240" y="670" class="font td-cat">运行时组件</text>
-  <text x="355" y="670" class="mono td-sub">-</text>
+  <text x="355" y="670" class="mono td-sub">v0.6.2</text>
   <text x="540" y="670" text-anchor="end" class="mono td-num">0 / 1</text>
   <text x="665" y="670" text-anchor="end" class="mono td-bold">801</text>
   <text x="815" y="670" text-anchor="end" class="mono td-num">733 (176)</text>
-  <text x="920" y="670" text-anchor="end" class="mono td-num">-</text>
+  <text x="920" y="670" text-anchor="end" class="mono td-num">18</text>
   <line x1="24" y1="682" x2="936" y2="682" stroke="#F1F5F9" stroke-width="1"/>
   <circle cx="44" cy="699" r="3.5" fill="#D97706"/>
   <text x="54" y="703" class="mono td-repo">npu-top</text>
@@ -191,10 +191,10 @@
   <circle cx="44" cy="765" r="3.5" fill="#64748B"/>
   <text x="54" y="769" class="mono td-repo">mindie-bench</text>
   <text x="240" y="769" class="font td-cat">评测工具</text>
-  <text x="355" y="769" class="mono td-sub">-</text>
+  <text x="355" y="769" class="mono td-sub">v0.4.1</text>
   <text x="540" y="769" text-anchor="end" class="mono td-num">0 / 0</text>
   <text x="665" y="769" text-anchor="end" class="mono td-bold">845</text>
   <text x="815" y="769" text-anchor="end" class="mono td-num">845 (202)</text>
-  <text x="920" y="769" text-anchor="end" class="mono td-num">-</text>
+  <text x="920" y="769" text-anchor="end" class="mono td-num">12</text>
   <text x="24" y="808" class="font footer">数据来源：GitHub REST API · Star / Fork 与 Release 下载为历史累计值，Git Clone 按日自动归档累加（括号内为近 14 天去重数）</text>
 </svg>
