@@ -6,7 +6,7 @@
 1. **`codex + gpt-6.1-sol (xhigh)`**：OpenAI Codex CLI（`0.153.4`）+ `home/codex/gpt-6.1-sol`（`reasoning_effort = "xhigh"`，C6 蒸馏模型 `home/codex/gpt-5.6-luna`）；
 2. **`dsh + deepseek-flash (max)`**：DeepSeek Harness（`dsh`）+ `deepseek-flash`（`reasoning_effort = "max"`）。
 
-评测覆盖 **18 个真实工程任务（含 L2 本地源码仓任务与 L3 实机昇腾 NPU 容器任务，共 109 场端到端 Trial）**、**全部 7 大共享组件（`remote-dev`、`knowledge`、`profiler`、`sim`、`diagnostics`、`coordinator`、`npu-top`）**、**`G0 → G1 → G2 → G3 → G4` 五级消融梯度**，以及 **macOS / 4090 WSL (Linux x86_64) / Lenovo Windows 11 PowerShell 三大硬件平台**的全量回归验证。
+评测覆盖 **18 个真实工程任务（含 L2 本地源码仓任务与 L3 实机昇腾 NPU 容器任务，共 109 场端到端 Trial）**、**全部 7 大共享组件（`remote-dev`、`knowledge`、`profiler`、`sim`、`diagnostics`、`coordinator`、`npu-top`）**、**`G0 → G1 → G2 → G3 → G4` 五级消融梯度**，以及 **macOS / Windows WSL2 (Linux x86_64) / Windows 11 PowerShell 三大平台**的全量回归验证。
 
 ---
 
@@ -140,11 +140,11 @@
 
 ---
 
-## 四、三平台（macOS · 4090 WSL · Lenovo Windows PowerShell）与四大宿主插件全链路验证矩阵
+## 四、三平台（macOS · Windows WSL2 · Windows 11 PowerShell）与四大宿主插件全链路验证矩阵
 
 除真实大模型任务收益外，`0.1.0` 对四个原生宿主插件（`mindie-agent-cc`、`mindie-agent-codex`、`mindie-agent-kimi`、`mindie-agent-dsh`）、核心共享组件（`knowledge`、`diagnostics`、`remote-dev`）及 `mindie-bench`（含全部 4 插件 `G1–G4` 门禁测试 `test_four_harness_g1_g4.py`）在三大操作系统/硬件平台上完成了 **14,000+ 项自动化与端到端产品流验证（0 失败）**：
 
-| 仓库 / 验证项 | macOS (Apple Silicon) | 4090 WSL2 (Linux Ubuntu 24.04 x86_64) | Lenovo Windows 11 PowerShell (Native x86_64) | 五大核心产品流覆盖状态 |
+| 仓库 / 验证项 | macOS (Apple Silicon) | Windows WSL2 (Linux Ubuntu 24.04 x86_64) | Windows 11 PowerShell (Native x86_64) | 五大核心产品流覆盖状态 |
 | :--- | :---: | :---: | :---: | :--- |
 | **`mindie-agent-cc`** | `390 passed, 0 failed` | `388 passed, 0 failed` | `378 passed, 13 skipped, 0 failed` | 安装引导 · 自动更新 · 故障上报(开/关) · 知识检索(开/关) · 经验上报(开/关) **全通过** |
 | **`mindie-agent-codex`** | `500 passed, 0 failed` | `501 passed, 0 failed` | `507 passed, 18 skipped, 0 failed` | 安装引导 · 自动更新 · 故障上报(开/关) · 知识检索(开/关) · 经验上报(开/关) **全通过** |

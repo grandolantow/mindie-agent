@@ -368,7 +368,7 @@ The current official release is **[`v0.1.0`](./docs/releases/0.1.0.en.md)** ([�
 | **📊 `npu-top` & 🛡️ `diagnostics` Observability & Triage** | `v0.2.1` / `v0.5.1` | Accelerates real Agent 8-rank cascading `plog` triage by **`1.31x – 1.82x`** with **`-34.2% to -37.6%` fewer output tokens**, **100% pinpointing root-cause `Rank 3` (`aicore_memory_or_tiling`) and separating cascading `Rank 7` timeouts**; `npu-top` verifies `24/24` physical NPUs and live container attribution |
 | **🧠 `knowledge` Progressive Disclosure & Closed-Loop Flywheel** | `v0.13.0` | All 7 public Ascend corpora (`450` graded `L1–L4` units) ready; bounds single-task reading at **`4,814–5,599` tokens (`< 8,000` ceiling)** and powers `100%` solve rates on `G3` black-box transfer and `G4` `mode="explore"` fusion tasks |
 
-3. **3-Platform (`macOS` / `4090 WSL2` / `Lenovo Windows 11 PowerShell`) × 4-Plugin Full-Matrix Verification**:
+3. **3-Platform (`macOS` / `Windows WSL2` / `Windows 11 PowerShell`) × 4-Plugin Full-Matrix Verification**:
    - Completed end-to-end onboarding and full regression suites across all 3 OS hardware platforms and all 4 native host plugins (Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness), passing **`15,595+` tests (`0 failed`)**.
 
 ---

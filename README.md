@@ -368,7 +368,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 | **📊 `npu-top` & 🛡️ `diagnostics` 可观测与确定性分诊** | `v0.2.1` / `v0.5.1` | 真实 Agent 8 卡级联 `plog` 分诊任务交付提速 **`1.31x – 1.82x`**、输出 Token 减少 **`-34.2% ~ -37.6%`**，**100% 锁定根因 `Rank 3`（`aicore_memory_or_tiling`）并分离衍生超时 `Rank 7`**；`npu-top` 24 张物理卡与容器归属全部通过 |
 | **🧠 `knowledge` 渐进式披露、Token 预算与闭环飞轮** | `v0.13.0` | 7 大昇腾公共知识库（`450` 个 `L1–L4` 单元）全量就绪；单任务知识读取开销严格受控于 **`4,814–5,599` tokens（`< 8,000` 上限）**，配合 `G3` 蒸馏飞轮与 `G4` `mode="explore"` 将黑盒与融合难题解出率推升至 **`100%`** |
 
-3. **三端（`macOS` / `4090 WSL2` / `Lenovo Windows 11 PowerShell`）× 四插件全流程验收**：
+3. **三端（`macOS` / `Windows WSL2` / `Windows 11 PowerShell`）× 四插件全流程验收**：
    - 在三大操作系统硬件平台与四个原生宿主插件（Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness）上完成全量回归与安装闭环验收，累计通过 **`15,595+` 项测试（`0 failed`）**。
 
 ---
