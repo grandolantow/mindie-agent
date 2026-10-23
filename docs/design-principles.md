@@ -116,9 +116,6 @@ MindIE Agent 全系 11 个仓库均为 **100% 由编程 Agent 阅读、演进与
 3. **注释原则：写清“业务不变量与硬件/协议边界（Why & Invariants）”，严禁为过度防御写借口**：
    - **必须写注释的地方**：非显而易见的昇腾硬件行为（如 A3 910C 双 Die 拓扑下 `8 NPU × 2 Die = Phy-ID 0..15` 映射规则）、跨进程/容器协议边界（如 Linux `/proc` 跨容器 PID 命名空间排空、`SIGTERM -> SIGKILL` 排水宽限期算术）、以及核心领域不变量；
    - **严禁写注释的地方**：严禁复述代码字面意思，严禁编写长篇大论替“假想敌防御分支”“冗余兜底状态”找合理化借口（遇到需要靠大段注释辩解的防御性累赘代码，应直接连代码带注释一并删掉重写）。
-4. **全仓强制 LF（`\n`）换行格式，严禁 Windows CRLF（`\r\n`）**：
-   - MindIE Agent 同时在 Windows、WSL、macOS 与 Linux 容器/远端昇腾宿主机间流转文件，Windows 的 `CRLF`（`\r\n`）会导致 Shell/Python 脚本在 Linux/WSL 下报 `\r: command not found` / `bad interpreter: ^M`、破坏补丁上下文与跨平台字节哈希；
-   - 所有仓库必须通过 `.gitattributes`（`* text=auto eol=lf`）、`.editorconfig`（`end_of_line = lf`）与 CI 门禁（`.github/scripts/check_lf_eol.py`）三重锁定全仓文本文件统一为 **`LF`（`\n`）**；Python 跨平台落盘生成脚本、配置或文本产物时必须显式指定 `newline="\n"`，严禁在 Windows 下默认写出 `\r\n`。
 
 ### 18. 编码性能、内存/显存有界性与本地/远端规格分流准则（Bounded Memory/VRAM & Spec-Driven Placement）
 详见[执行资源预期与本地/远端规格匹配设计](execution-resource-budget-design.md)。所有组件代码在设计阶段即必须对计算耗时（影响超时）、内存（影响本机死机）与显存（影响炸卡）负责，严禁编写一出问题就靠堆砌大机器掩盖的粗放实现：
@@ -156,7 +153,7 @@ MindIE Agent 旗下所有仓库的代码、配置、依赖、CI 与文档改动�
 | **10. 超时预算与算术一致性** | 新增或修改的超时是否满足**“外层预算 ≥ 内层步骤总和 + 收尾排水宽限期（如 `SIGTERM->SIGKILL` / `inventory`）”**？是否消除了热路径亚秒级（`<1s`）SQLite 锁误杀、外部子进程 `timeout=None` 无限等待、握手脱离 `deadline` 以及 `timeout N cmd \|\| cmd` 超时二次裸跑？ |
 | **11. 反过度防御性编程（`v0.0.2` 四大铁律）** | 是否严格遵守 `v0.0.2` 四大铁律：（1）零热路径 SQL `.owner`/Schema 反射自检；（2）仅不可逆外部写用 `unknown`，本地状态零单向自锁死（无永久 `fault`/`suppressed`/`TaskRootBusy`）；（3）零跨仓复制 `*_fallback.py`/`*_bootstrap.py` 与 Win32 ACL 繁文缛节（统一 `os.replace()`）；（4）零 `inspect.signature` 内部签名锁死与巨型内嵌 Python 字符串（远端 worker 独立 `.py` 模块）？ |
 | **12. 分级测试有效性** | 新增测试是否验证真实核心业务与领域质量，而非测防御性 `chmod`/`symlink`/`ValueError` 假想敌、替静默吞错背书、覆写生产脚本或 grep 文档？测试是否通过 `conftest.py` / 临时目录严格隔离 `MINDIE_DIAGNOSTICS_ROOT`、`MINDIE_DIAGNOSTICS_CONFIG` 与 `$HOME`（零污染宿主机 `~/.local`、`~/.config` 或系统级 LaunchAgent/systemd 服务）？是否符合 Tier 0 (`<5s`) ~ Tier 3 耗时预算与常备 A2/A3 真机无损验证要求？ |
-| **13. Agent-Native 代码与注释规范** | 核心模块是否保持精炼（单次 `view_file` 800 行友好、无多层子进程蹦床）并在顶部前 30 行声明 `[Role]`/`[Invariants]`/`[Timeouts & Locks]`/`[Side-Effect Policy]` 契约头？注释是否聚焦业务不变量与硬件/协议边界（如 A3 双 Die `Phy-ID`），而非替防御性假想敌代码写借口？全仓文本文件是否严格保持 `LF`（`\n`）换行（严禁 Windows `CRLF` `\r\n`）并通过 `check_lf_eol.py` 门禁？ |
+| **13. Agent-Native 代码与注释规范** | 核心模块是否保持精炼（单次 `view_file` 800 行友好、无多层子进程蹦床）并在顶部前 30 行声明 `[Role]`/`[Invariants]`/`[Timeouts & Locks]`/`[Side-Effect Policy]` 契约头？注释是否聚焦业务不变量与硬件/协议边界（如 A3 双 Die `Phy-ID`），而非替防御性假想敌代码写借口？ |
 | **14. 性能、内存/显存有界性与规格分流** | 内存工作集是否严格保持 $O(\text{活跃状态})$ 而非无界累加全量历史或一次性展开 `>50MB` 大文件（控制/分析组件单进程常规峰值 `<= 512 MiB`，严禁 `> 1 GiB` 膨胀）？热循环内是否消除了 `deepcopy`/起子进程/逐行 Commit？并发 Worker 数是否同时受可用内存与核数约束？控制面是否保持零权重/零设备上下文，且重计算或显存（HBM/VRAM）操作在启动前按 Windows/macOS/Linux 本机与远端的真实规格自动分流（无 `sys.platform` 硬编码特判）？ |
 
 提交开发 PR 时，必须在 PR 描述中完整勾选并填写 [`.github/pull_request_template.md`](../.github/pull_request_template.md)（包含 `## 变更摘要 (Summary)`、全部勾选的 `## 设计原则 Review (Pre-PR Checklist)` + 具体 `自查结论与证据`、以及 `## 验证结果 (Verification)`）。CI 门禁工作流（`.github/workflows/pr-checklist.yml` + `.github/scripts/check_pr_checklist.py`）会在每次 PR 创建/编辑/同步时自动核验，未完成勾选或未填写实质自查与验证证据的 PR 将被 CI 拦截禁止合入。

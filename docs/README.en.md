@@ -9,6 +9,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 | Document (English) | 中文 | What It Covers |
 |---|---|---|
 | [Engineering Design Principles](design-principles.en.md) | [工程设计原则与演进准则](design-principles.md) | The core product and engineering principles governing tool boundaries, developer experience, mechanism reuse, and error visibility |
+| [Contributing Guide (Agent-First Workflow)](../CONTRIBUTING.en.md) | [参与贡献指南（Agent-First 贡献规范）](../CONTRIBUTING.md) | Two-gate Agent contributing workflow: read design principles before coding, and complete the Pre-PR Checklist self-review after PR submission |
 | [Architecture & Module Boundaries](architecture.en.md) | [系统架构与模块分工](architecture.md) | How native Harness plugins, the knowledge engine, remote execution, NPU observability, and diagnostics fit together |
 | [Knowledge & Experience System](knowledge-system.en.md) | [知识与经验闭环设计](knowledge-system.md) | How troubleshooting sessions are redacted, indexed into lightweight Markdown packages, and shared with the community |
 | [Context, Experience & Exploration Design](knowledge-context-and-exploration.en.md) | [上下文分层、经验演化与开放探索详细设计](knowledge-context-and-exploration.md) | Proposed token budgets, progressive loading, `workflow` decision experience, knowledge growth control, and `L4` exploration feedback, with source comparisons and acceptance criteria |
