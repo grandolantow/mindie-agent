@@ -4,7 +4,7 @@
 
 This document defines the unified **Test Validity Redlines** and **Four-Tier Testing Pyramid (Tier 0 – Tier 3)** across all MindIE Agent repositories (`knowledge`, `remote-dev`, `coordinator`, `profiler`, `sim`, `npu-top`, `diagnostics`, native Harness plugins, and `mindie-bench`).
 
-> **Note**: The four tiers and time budgets below are engineering design targets; the exact source SHAs, test scopes, environments, wall times, and known boundaries for each release are recorded in the corresponding [Release Notes](releases/0.0.3.en.md).
+> **Note**: The four tiers and time budgets below are engineering design targets; the exact source SHAs, test scopes, environments, wall times, and known boundaries for each release are recorded in the corresponding [Release Records](README.en.md#release-records--roadmap).
 
 - Governed by: [Engineering Design Principles](design-principles.en.md) · [Architecture & Module Boundaries](architecture.en.md)
 
@@ -83,7 +83,7 @@ flowchart TB
    - Standard PR checks, branch CI, and pre-release local contract stages run `pytest -m "not live_npu"`, avoiding automatic connections to standing NPU clusters or paid host model calls.
    - All live NPU cases carry the `@pytest.mark.live_npu` marker. Direct calls to `mcp_server.handle()` in tests validate Tier 1 component contracts, whereas Tier 3 host acceptance drives the actual host CLI binary.
 2. **Release Benchmark Verification**:
-   - On formal product releases, a pinned `mindie-bench` runner verifies exact component source revisions alongside end-to-end engineering task comparisons, cross-task experience reuse, and component scenario benchmarks (see [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release) and the [`0.0.3` Release Notes](releases/0.0.3.en.md#3-component-value-verification--measured-evidence)).
+   - On formal product releases, a pinned `mindie-bench` runner verifies exact component source revisions alongside end-to-end engineering task comparisons, cross-task experience reuse, and component scenario benchmarks (see [Benchmark Evidence on Every Release](release-compatibility-and-update.en.md#benchmark-evidence-on-every-release) and [Release Records & Roadmap](README.en.md#release-records--roadmap)).
 3. **Scope of Each Verification Layer**:
 
 | Verification Layer | What It Establishes | Scope Boundary |

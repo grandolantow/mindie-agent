@@ -6,7 +6,7 @@ This document explains how MindIE Agent records bounded local diagnostic logs, h
 
 - Governed by: [Engineering Design Principles](design-principles.en.md)
 - Core Component Repository: [`mindie-agent/diagnostics`](https://github.com/mindie-agent/diagnostics)
-- Current Verification Details: [`0.0.3` Release Notes](releases/0.0.3.en.md) (previous releases: [`0.0.2`](releases/0.0.2.en.md), [`0.0.1`](releases/0.0.1.en.md))
+- Release & Verification Records: [Release Records & Roadmap](README.en.md#release-records--roadmap)
 
 ---
 

@@ -68,16 +68,16 @@ MindIE Agent 将可复用的昇腾研发经验组织为带适用条件、代码�
 `GradedRepository.query` 为每条命中生成精确引用（`ref`、`unit_ref`、`feedback_ref`），并通过 `feedback.observe` 记录本次实际返回的 `unit_id` 与 `revision`。调用 `explain` 时按精确版本读取完整内容；执行任务后可通过 `feedback.record_vote` 提交 `helpful` / `not_helpful` 反馈，为后续修订提供依据。
 
 为兼顾精确 API 匹配与跨概念召回，检索引擎吸收了 [CANNBot Knowledge](https://gitcode.com/cann/cannbot-knowledge) 与 `vllm-ascend` 生态的**昇腾标识符子词切分（Subword Tokenization）与声明式检索评测**机制：
-- **复合符号与子词双轨索引**：针对 `DataCopyPad`、`PipeBarrier`、`SetFlag`/`WaitFlag`、`GatedDeltaNet`、`Ascend910B4`、`npu_fused_infer_attention_score` 以及 `npugraph_ex`、`torchair`、`msmodelslim`、`dspark`、`dflash`、`xlite`、`eplb`、`hixl`、`lmcache`、`mooncake`、`sfa_v1`、`dsa_v1`、`mla_v1`、`fa3_v1`、`quarot`、`teacache`、`msmemscope`、`msprof`、`msprobe`、`serving_cast`、`tensor_cast` 等复合标识符，在保留完整复合符号精确加权的同时自动拆分 constituent 子词，避免因大小写或复合词形态差异漏检；
+- **复合符号与子词双轨索引**：针对 `DataCopyPad`、`PipeBarrier`、`SetFlag`/`WaitFlag`、`GatedDeltaNet`、`Ascend910B4`、`npu_fused_infer_attention_score` 以及 `npugraph_ex`、`torchair`、`msmodelslim`、`dspark`、`dflash`、`xlite`、`eplb`、`hixl`、`lmcache`、`mooncake`、`sfa_v1`、`dsa_v1`、`mla_v1`、`fa3_v1`、`quarot`、`teacache`、`mindiesd`、`vllm_omni`、`rainfusion`、`rf_v2`、`rf_v3`、`ada_bsa`、`eagleqbsa`、`ditcache`、`cache_dit`、`taylorseer`、`code2wav`、`token2wav`、`llm2tts`、`flashgen`、`taehv`、`yuanrong`、`msmemscope`、`msprof`、`msprobe`、`serving_cast`、`tensor_cast` 等复合标识符，在保留完整复合符号精确加权的同时自动拆分 constituent 子词，避免因大小写或复合词形态差异漏检；
 - **声明式检索评测套件（`evaluate_retrieval_suite`）**：支持按声明式用例（查询词、环境 `conditions`、`mode="standard"|"explore"`、期望命中 `expected_unit_ids`、禁出条目 `forbidden_unit_ids`）确定性度量 **`Recall@K`**、**`MRR`（平均倒数排名）**、**`_common` 基础约束挂载率（`foundation_baseline_rate`）** 以及探索模式下 `L3` 常规工作流的剥离完备率。
-- **七大领域知识库覆盖规模（430 个结构化分级知识单元）**：
-  - `knowledge-vllm-ascend`（`82` 单元）：覆盖 `vllm-ascend` 15 篇架构设计、30 篇特性指南、45+ 官方模型教程、30+ 源码子系统及 46 个 0-day 模型分支家族；
-  - `knowledge-infer-core`（`105` 单元）：覆盖 `cann-recipes-infer` 26 个模型家族优化 Recipe、16 个 `model-infer-*` Skill、公共加速模块及 `Ascend/msagent` 量化/精度诊断工作流；
-  - `knowledge-operators`（`103` 单元，含 `15` 个带消融回执的 `L4` Mutator）：覆盖 AscendC / Triton-Ascend / TileLang / PyPTO / Catlass 算子开发、`cann/ops-transformer` 融合算子契约与模型专属自定义算子；
-  - `knowledge-infer-distributed`（`37` 单元）：覆盖 `Mooncake`、`dynamo`、HCCL 多机集合通信、SHMEM 对称内存及 PD/EPD 分离传输；
-  - `knowledge-infer-observability`（`38` 单元）：覆盖 `msmodeling`、`msprof-analyze`、`msmemscope`、`mskpp`、`ops-test-kit`（TTK）与服务级 Profiling；
-  - `knowledge-infer-ops-compat`（`33` 单元）：覆盖 AutoFuse、GE/TorchAir 图编译、SuperKernel、多流/预取、容器驱动安装与 Volcano/MindIE Motor 部署；
-  - `knowledge-agent-engineering`（`32` 单元）：覆盖多智能体模型调优编排、SOTA 探索循环、`ais_bench` 核心集压缩、Git Bisect 自动修 Bug 与安全审计。
+- **七大领域知识库覆盖规模（450 个结构化分级知识单元）**：
+  - `knowledge-vllm-ascend`（`91` 单元）：覆盖 `vllm-ascend` 15 篇架构设计、30 篇特性指南、45+ 官方模型教程、30+ 源码子系统、46 个 0-day 模型分支家族、PD 分离交接与精度验证（`L1–L3`），以及 `vllm-project/vllm-omni` 多阶段全模态流水线（`AsyncOmni` / `Thinker -> Talker -> Code2Wav`、`NPUARModelRunner`、TTS/Audio/Duplex 与 DiT 融合推理）；
+  - `knowledge-infer-core`（`109` 单元）：覆盖 `cann-recipes-infer` 26 个模型家族优化 Recipe、16 个 `model-infer-*` Skill、公共加速模块、`Ascend/msagent` 量化/精度诊断工作流，以及 `Ascend/MindIE-SD`（`mindiesd`）扩散模型稀疏注意力（`RainFusion` / `Ada-BSA` / `EagleQBSA`）、跨步缓存（`DiTCache` / `CustomCache`）、3D 因果 VAE/TAEHV 状态切片解码与动态时步量化契约；
+  - `knowledge-operators`（`105` 单元，含 `15` 个带消融回执的 `L4` Mutator）：覆盖 AscendC / Triton-Ascend / TileLang / PyPTO / Catlass 算子开发、`cann/ops-transformer` 融合算子契约、模型专属自定义算子，以及 `MindIE-SD` 自定义稀疏注意力/Catlass `matmul_add`/Triton 算子与子图融合流水收益分析；
+  - `knowledge-infer-distributed`（`39` 单元）：覆盖 `Mooncake`、`dynamo`、HCCL 多机集合通信、SHMEM 对称内存、PD/EPD 分离传输，以及 `MindIE-SD` / `vllm-omni` 混合序列并行（Ulysses + Ring + CFG）、FlashAttention + AllToAll 功耗降频治理、动态剪枝 EPLB、$c/f$ 通信掩盖评估与 `YuanrongConnector`；
+  - `knowledge-infer-observability`（`39` 单元）：覆盖 `msmodeling`、`msprof-analyze`、`msmemscope`、`mskpp`、`ops-test-kit`（TTK）、服务级 Profiling，以及 `MindIE-SD` 窗口化交错 A/B/A 性能门禁（`perf-gate`）与三级图像/视频生成精度门禁（`accuracy-gate`）；
+  - `knowledge-infer-ops-compat`（`34` 单元）：覆盖 AutoFuse、GE/TorchAir 图编译、SuperKernel、多流/预取、容器驱动安装、Volcano/MindIE Motor 部署，以及 `MindIE-SD` `torch_npu._inductor` Pattern Pass 开发与“先 API 替换、后入图编译”两阶段集成规程；
+  - `knowledge-agent-engineering`（`33` 单元）：覆盖多智能体模型调优编排、SOTA 探索循环、`ais_bench` 核心集压缩、Git Bisect 自动修 Bug、安全审计，以及 `MindIE-SD` S0–S6 扩散模型端到端自动优化闭环与知识库自检（`kb-lint`）。
 
 ## 4. 经验提炼与跨任务复用闭环
 
@@ -158,7 +158,7 @@ flowchart LR
 
 本系统的知识组织与长程探索机制吸纳了以下成熟的社区工程实践：
 - [CANNBot 仓群（`cannbot` / `cannbot-knowledge` / `cannbot-skills` / `cannbot-dsl` / `cannbot-sentry` / `cann-bench`）](https://gitcode.com/cann/cannbot)：昇腾算子与推理优化领域的知识卡治理（OKF v0.2 Profile、昇腾 API 子词分词、声明式检索评测）、Ascend C 同步审计（`ascendc-sync-audit`）、复杂算子 DSL 范式、Agent 轨迹双重审计（`sift` 过程合规 + 结果一致性）与硬件锚定性能评分（`HAP`）。
-- [`vllm-project/vllm-ascend`](https://github.com/vllm-project/vllm-ascend) 与 [`cann/cann-recipes-infer`](https://gitcode.com/cann/cann-recipes-infer)：昇腾大模型推理引擎架构（`ModelRunner V1/V2`、`ACLGraph`/`npugraph_ex`、MLA/DSA/SFA 注意力后端、ModelSlim 量化、MTP/DSpark 投机采样、动态 EPLB、PD/EPD 分离）及 45+ 模型家族与 Agentic 调优配方。
+- [`vllm-project/vllm-ascend`](https://github.com/vllm-project/vllm-ascend)、[`vllm-project/vllm-omni`](https://github.com/vllm-project/vllm-omni)、[`Ascend/MindIE-SD`](https://gitcode.com/Ascend/MindIE-SD) 与 [`cann/cann-recipes-infer`](https://gitcode.com/cann/cann-recipes-infer)：昇腾大模型推理引擎架构（`ModelRunner V1/V2`、`ACLGraph`/`npugraph_ex`、MLA/DSA/SFA 注意力后端、ModelSlim 量化、MTP/DSpark 投机采样、动态 EPLB、PD/EPD 分离）、多阶段全模态（`Thinker -> Talker -> Code2Wav` 与 AR+DiT）流式推理、扩散模型加速（`RainFusion`/`Ada-BSA`/`EagleQBSA` 稀疏注意力、`DiTCache`/`Cache-DiT`/`TaylorSeer` 缓存、`torch_npu._inductor` 图模式与 S0–S6 自动调优门禁）及 45+ 模型家族与 Agentic 调优配方。
 - [昇腾性能与诊断工具链（`Ascend/msmodeling`、`Ascend/msprof-analyze`、`Ascend/msmemscope`、`Ascend/mskpp`、`Ascend/msagent`、`Ascend/agent-skills`）](https://gitcode.com/Ascend)：解析性能与容量规划（`tensor_cast` / `serving_cast`）、15 类 Advisor 规则与集群快慢卡/慢链路归因、内存低效分配与单调泄漏取证、以及量化/精度/算子多智能体编排规程。
 - [`kvcache-ai/Mooncake`](https://github.com/kvcache-ai/Mooncake) 与 [`ai-dynamo/dynamo`](https://github.com/ai-dynamo/dynamo)：以 KVCache 为中心的 PD 分离式服务架构、RDMA/HIXL 零拷贝传输引擎与前缀感知路由。
 - [Hermes Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)：按需加载领域操作规程，并在成功排障或纠偏后原地演进已有技能文档。

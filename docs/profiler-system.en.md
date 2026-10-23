@@ -45,7 +45,8 @@ flowchart LR
 
 | Component | Core Responsibility | Explicit Non-Goals (Boundaries) |
 | --- | --- | --- |
-| **`mindie_profiler`** (standalone package in `diagnostics`) | Artifact discovery, schema verification, nanosecond interval accounting, variant-aware aggregation, Host-to-Device correlation, cross-run factual comparison, memory attribution, online profile window control | Never tracks cross-turn LLM session state (`known_refs` or context compaction), never estimates host LLM token bills, never imports `torch_npu` on the CPU analysis path, and never makes open-ended bottleneck judgments on behalf of the Agent |
+| **`mindie_profiler`** (standalone repository [`profiler`](https://github.com/mindie-agent/profiler)) | Artifact discovery, schema verification, nanosecond interval accounting, variant-aware aggregation, Host-to-Device correlation, cross-run factual comparison, memory attribution, online profile window control | Never tracks cross-turn LLM session state (`known_refs` or context compaction), never estimates host LLM token bills, never imports `torch_npu` on the CPU analysis path, and never embeds multi-pipe cycle solving or subgraph fusion simulation (delegated to standalone [`mindie_sim`](simulation-system.md)) |
+| **`mindie_sim` (`mindie-sim`)** | Hardware spec & thermal frequency bounds, intra-operator micro-stage dependency cycle solving, Phase 0 subgraph fusion traffic/critical-path simulation, and whole-network parallelism projection (bridging `msmodeling` / `cannsim` / `npusim`) | Never parses raw Profiling DB/CSV/Trace event tables; consumes only structured graph/config inputs and `mindie_profiler` measured summaries |
 | **Host Agent + Skill** | Understand user targets (TTFT/TPOT/throughput/operator latency), invoke `mindie-profiler` subcommands progressively, formulate hypotheses, and run minimal verification experiments | Never hardcodes rigid troubleshooting pipelines into tool code; never pulls multi-GB raw traces to the local machine |
 | **`remote-dev` + `coordinator`** | Execute `mindie-profiler` and managed offline export jobs (`torch_npu.profiler.analyse`) in place on the remote container; manage NPU and port leases | Never creates a separate performance job scheduler or duplicate run identity (reuses `run_id`) |
 | **`npu-top`** | Provide time-aligned device temperature, power, AICore frequency, and HBM sampling series | Never declares thermal throttling from a temperature threshold alone (e.g., `>= 85°C`) without explicit hardware throttling signal bits |
@@ -99,7 +100,7 @@ A single profiling directory often contains `ascend_pytorch_profiler_*.db`, `ker
 
 ### 4.2 Ascend DB Table Joins and `ACLGraph` Duplicate-ID Protection
 
-`sources_db.py` and `correlate.py` join verified CANN/PyTorch tables defined in [`db_source_mapping.json`](https://github.com/mindie-agent/diagnostics):
+`sources_db.py` and `correlate.py` join verified CANN/PyTorch tables defined in [`db_source_mapping.json`](https://github.com/mindie-agent/profiler):
 
 ```mermaid
 flowchart TB

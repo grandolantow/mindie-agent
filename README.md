@@ -144,7 +144,7 @@
 
 ## ✨ 为什么选择 MindIE Agent？
 
-MindIE Agent 在你已有的 Claude Code、Codex、Kimi Code 或 DSH 会话中提供领域知识和远端开发工具。`0.0.3` 的建设范围聚焦 **vLLM-Ascend 与算子两个领域**，覆盖模型 0day 开发、固定 case 的模型或算子性能优化、问题定位三个场景。实现与验收进展见[系统架构](./docs/architecture.md)和下方发布记录。
+MindIE Agent 在你已有的 Claude Code、Codex、Kimi Code 或 DSH 会话中提供领域知识和远端开发工具，覆盖 `vLLM-Ascend` / `vLLM-Omni`、`MindIE-SD`、昇腾算子与分布式推理等核心领域，支撑模型 0day 开发、固定 case 的模型或算子性能优化、问题定位三个核心场景。实现与验收进展见[系统架构](./docs/architecture.md)和下方发布记录。
 
 | 能力 | 帮你完成的工作 |
 | --- | --- |
@@ -306,13 +306,13 @@ MindIE Agent 的核心交互理念是**极简易用与渐进式披露（Progress
 
 | 仓库 | 领域标识 (`domain`) | 定位与覆盖范围 |
 | --- | --- | --- |
-| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | `vllm-ascend` | `vLLM-Ascend` 领域工程知识库：覆盖新模型 0day 接入、PD 分离、MoE EP/MC2、量化与投机解码、ACLGraph/TorchAir 及插件架构调优 |
-| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | `operators` | 昇腾算子工程知识库：覆盖 910B / 910C (A3) / 950 (A5) 硬件约束、`AscendC`、`Triton-Ascend`、TBE/AKG 编译排障、FlashAttention/MLA 与 Matmul/MoE 融合调优 |
-| **[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)** | `infer-core` | 昇腾推理服务与引擎核心知识库：覆盖 MindIE Server / Service / LLM / Motor 部署配置、Batch 调度、KV Cache 管理、采样后处理与多模态推理服务 |
-| **[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)** | `infer-distributed` | 分布式推理与集合通信知识库：覆盖 HCCL 通信排障、RoCE/HCCS 拓扑与 Ranktable 校验、SHMEM 共享内存及多机 DP/TP/EP/PP/CP 并行策略 |
-| **[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)** | `infer-observability` | 推理可观测性、诊断与评测知识库：覆盖 CANN/`plog`/Device 报错根因定位、`msprof` 性能采集与拆解、精度对齐校验及吞吐/时延基准测量规程 |
-| **[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat)** | `infer-ops-compat` | 图编译、算子注册与迁移兼容知识库：覆盖 TorchAir/ACLGraph 图捕获与重编译排障、自定义算子注册接入、CUDA 至昇腾迁移适配及运行时兼容 |
-| **[`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering)** | `agent-engineering` | Agent 工程与治理知识库：覆盖多 Agent 协同编排、知识提炼与质量治理、双层隐私脱敏门禁、CI 发布校验与真机基准评测方法 |
+| **[`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)** | `vllm-ascend` | `vLLM-Ascend` 与 `vLLM-Omni` 领域工程知识库（`91` 单元）：覆盖新模型 0day 接入、PD 分离、MoE EP/MC2、量化与投机解码、ACLGraph/TorchAir，以及 `vllm-omni` 多阶段全模态（`Thinker -> Talker -> Code2Wav` / AR+DiT / TTS / Duplex）流水线调优 |
+| **[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)** | `operators` | 昇腾算子工程知识库（`105` 单元）：覆盖 910B / 910C (A3) / 950 (A5) 硬件约束、`AscendC`、`Triton-Ascend`、Catlass、FlashAttention/MLA、Matmul/MoE 融合，以及 `MindIE-SD` 稀疏注意力自定义算子与子图融合流水分析 |
+| **[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)** | `infer-core` | 昇腾推理服务与引擎核心知识库（`109` 单元）：覆盖 `cann-recipes-infer` 模型优化 Recipe、`Ascend/MindIE-SD`（`mindiesd`）扩散模型稀疏注意力（`RainFusion`/`Ada-BSA`/`EagleQBSA`）、跨步缓存（`DiTCache`）、3D VAE 状态切片解码与动态时步量化契约 |
+| **[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)** | `infer-distributed` | 分布式推理与集合通信知识库（`39` 单元）：覆盖 HCCL 通信排障、RoCE/HCCS 拓扑、SHMEM、Mooncake/Yuanrong 传输，以及多机 DP/TP/EP/PP/CP 与 DiT Ulysses/Ring/CFG 混合并行及功耗降频治理 |
+| **[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)** | `infer-observability` | 推理可观测性、诊断与评测知识库（`39` 单元）：覆盖 CANN/`plog`/Device 报错定位、`msprof` 性能拆解、容量/性能仿真，以及窗口化交错 A/B/A 性能门禁（`perf-gate`）与三级图像/视频生成精度门禁（`accuracy-gate`） |
+| **[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat)** | `infer-ops-compat` | 图编译、算子注册与迁移兼容知识库（`34` 单元）：覆盖 TorchAir/ACLGraph 图捕获、`torch_npu._inductor` Pattern Pass 开发、两阶段（API 优先→图编译）框架集成、CUDA 至昇腾迁移与容器/集群部署 |
+| **[`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering)** | `agent-engineering` | Agent 工程与治理知识库（`33` 单元）：覆盖多 Agent 协同编排、`MindIE-SD` S0–S6 自动调优闭环、知识库质量门禁（`kb-lint`）、双层隐私脱敏与真机基准评测方法 |
 
 ---
 
@@ -334,7 +334,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 为了保证多仓库演进不写出过度防御的冗余代码、不污染宿主机环境，我们为参与贡献的 Agent 设定了**两道硬性门禁**（完整说明见 **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** · **[English](./CONTRIBUTING.en.md)**）：
 
-1. **📖 开发特性前：先读设计原则** —— 动手写代码前，Agent 必须先阅读 [`AGENTS.md`](./AGENTS.md) 与 [`docs/design-principles.md`](./docs/design-principles.md)，对齐单一职责边界、反静默回退、超时算术、`v0.0.2` 四大铁律、`< 800` 行与顶部契约头以及有界内存/显存规格分流等架构与设计准则。
+1. **📖 开发特性前：先读设计原则** —— 动手写代码前，Agent 必须先阅读 [`AGENTS.md`](./AGENTS.md) 与 [`docs/design-principles.md`](./docs/design-principles.md)，对齐单一职责边界、反静默回退、超时算术、反过度防御四大铁律、`< 800` 行与顶部契约头以及有界内存/显存规格分流等架构与设计准则。
 2. **✅ 提交 PR 后：完成 Checklist 逐项自检（含开发格式规范）** —— PR 提交后，Agent 必须对照 [`.github/pull_request_template.md`](./.github/pull_request_template.md) 逐项复核最终 `git diff`（勾选 `1–8` ~ `15` 全部检查项，包含全仓强制 Unix `LF` `\n` 换行格式等开发规范，如实填写具体的**`自查结论与证据`**与**`验证结果`**），并通过 CI 自动门禁（[`check_lf_eol.py`](./.github/scripts/check_lf_eol.py) + [`check_pr_checklist.py`](./.github/scripts/check_pr_checklist.py)）核验后合入。
 
 想贡献改动时，直接复制下面这段话发给你的 Agent 即可：
@@ -369,6 +369,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 | 文档主题 | 中文 | English |
 | --- | --- | --- |
+| **`v0.1.0` 里程碑与 `0.1` 通道热修规范（[`channels/0.1.json`](./channels/0.1.json)）** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) |
 | **`v0.0.3` 版本发布与实测基准报告（当前版本）** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
 | **`v0.0.2` 版本发布与实测基准报告** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
 | **系统架构与组件边界** | [docs/architecture.md](./docs/architecture.md) | [docs/architecture.en.md](./docs/architecture.en.md) |
