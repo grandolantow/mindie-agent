@@ -6,7 +6,10 @@
 1. **`codex + gpt-6.1-sol (xhigh)`**：OpenAI Codex CLI（`0.153.4`）+ `home/codex/gpt-6.1-sol`（`reasoning_effort = "xhigh"`，C6 蒸馏模型 `home/codex/gpt-5.6-luna`）；
 2. **`dsh + deepseek-flash (max)`**：DeepSeek Harness（`dsh`）+ `deepseek-flash`（`reasoning_effort = "max"`）。
 
-评测覆盖 **18 个真实工程任务（含 L2 本地源码仓任务与 L3 实机昇腾 NPU 容器任务，共 109 场端到端 Trial）**、**全部 7 大共享组件（`remote-dev`、`knowledge`、`profiler`、`sim`、`diagnostics`、`coordinator`、`npu-top`）**、**`G0 → G1 → G2 → G3 → G4` 五级消融梯度**，以及 **macOS / Windows WSL2 (Linux x86_64) / Windows 11 PowerShell 三大平台**的全量回归验证。
+评测覆盖 **18 个真实工程任务（对应 `tasks/zh-vague/` 下 20 个 `task.toml` 定义，含 3 组 `Seed -> Eval` 配对任务、L2 本地源码仓任务与 L3 实机昇腾 NPU 容器任务，共 109 场主评测端到端 Trial 及 55 场附加/重试记录）**、**全部 7 大共享组件（`remote-dev`、`knowledge`、`profiler`、`sim`、`diagnostics`、`coordinator`、`npu-top`）**、**`G0 → G1 → G2 → G3 → G4` 五级消融梯度**，以及 **macOS / Windows WSL2 (Linux x86_64) / Windows 11 PowerShell 三大平台**的全量回归验证。
+
+- 📦 **机器可读逐 Trial 审计清单（109 场主评测 Trial + 55 场附加/重试原始记录）**：[`docs/releases/0.1.0/agent-trials-109.json`](./agent-trials-109.json)
+- 📦 **组件微基准与全量评测汇总清单**：[`docs/releases/0.1.0/value-results.json`](./value-results.json)
 
 ---
 
@@ -29,9 +32,30 @@
 | 评测维度 | 任务规模与层级 | `codex + gpt-6.1-sol (xhigh)` 核心实测收益 | `dsh + deepseek-flash (max)` 核心实测收益 |
 | :--- | :--- | :--- | :--- |
 | **① 专项组件真实 Agent 任务**<br>（`profiler` · `sim` · `diagnostics` · `npu-top` + `coordinator`） | 4 个真实工程任务 × `G0/G2`<br>（共 `16` 场 Trial） | • **解出率从 `75% (3/4)` 提升至 `100% (4/4)`**（`profiler` 任务从 `0.0 -> 1.0`）<br>• **4 任务总交付耗时缩短 `-17.1%`**（`1,389.7s -> 1,151.7s`），末次编辑缩短 **`-19.5%`**<br>• **输出 Token 减少 `-25.2%`**（`57,538 -> 43,046`），组件真实调用率 **`100% (4/4)`** | • **解出率从 `75% (3/4)` 提升至 `100% (4/4)`**（`profiler` 任务从 `0.0 -> 1.0`）<br>• **4 任务总交付耗时缩短 `-33.8%`**（`1,165.3s -> 772.0s`，节省 `393.3s`），末次编辑缩短 **`-39.9%`**<br>• **输出 Token 减少 `-34.1%`**（`196,486 -> 129,536`），最高单任务提速 **`2.08x`** |
-| **② 远端开发与渐进式检索 (`G0 -> G1 -> G2`)**<br>（`remote-dev` + `knowledge` + L3 实机 NPU） | 6 个 L2 任务 + 3 个 L3 实机昇腾 NPU 任务 | • **L2 复杂排障**：`dspark-mrv2` 从 `G0` `552.1s`（22 轮）降至 `G1` **`267.6s`（15 轮，提速 `2.06x`）**；`sfa-mtp` 从 `G0` `146.8s` 降至 `G1` **`74.4s`（`1.97x`）** 再降至 `G2` **`63.4s`（`2.32x`）**<br>• **L3 实机 NPU（`Ascend950DT`）**：`l3-dspark-mrv2` 从 `G0` `515.8s` 降至 `G2` **`465.6s`（-9.7%）**；`l3-mrv2-dsa` 从 `G0` `574.7s`（25 轮）降至 `G2` **`548.0s`（21 轮，轮次减少 `-16.0%`）** | • **L2 复杂排障**：`mrv2-dsa` 实现阶梯式跃升 **`G0` `318.5s` $\to$ `G1` `226.4s`（`1.41x`） $\to$ `G2` `114.9s`（提速 `2.77x`）**；`k3-idle-dp` 在 `G2` 降至 **`264.4s`**<br>• **L3 实机 NPU**：`l3-dspark-mrv2` 从 `G0` `655.7s` 降至 `G1` **`341.7s`（提速 `1.92x`）**；`l3-mrv2-dsa` 从 `G0` `457.5s` 降至 `G1` **`294.6s`（提速 `1.55x`）** |
-| **③ 跨任务经验沉淀飞轮 (`G3`)**<br>（`Seed -> Capture -> C6 Distill -> Eval`） | 3 组配对迁移任务（2 组 L2 + 1 组 L3 实机 NPU 黑盒 `.so` 任务） | • **L2 `cpu-rope` 黑盒任务**：`G0`/`G1`/`G2` **全部失败（`0/3`）**；接入 `G3` 飞轮后，Eval 命中前置 Seed 沉淀的 `unit-rope-cache-explicit-rotary-dimension@1`，**仅用 `8` 轮（`211.8s`）一次通过（`0% -> 100%`）**<br>• **L3 实机 NPU `rope-rotary-dim-32`（剥离 `.cpp` 源码的黑盒 `.so`）**：`G0`/`G1`/`G2` **全部失败（`0/3`）**；`G3` Eval 命中 Seed 蒸馏入库的 `unit-rotary-dim-cache-selection@1`，**在实机 NPU 上 `14` 轮（`270.8s`）一次通过（`0% -> 100%`）**<br>• **L2 `sfa-mtp`**：`G3` Eval 前台耗时 **`68.4s`**，较 `G0`（`146.8s`）**缩短 `-53.4%`（提速 `2.15x`）** | • **L2 `cpu-rope-32`**：`G3` Eval 命中前置 Seed 沉淀的知识单元，交付耗时从 `G0` `214.0s`（46 轮）降至 **`191.4s`（首轮实验仅 `111.5s` / 19 轮，提速 `1.92x`）**<br>• **L2 `sfa-mtp`**：Seed（`152.2s`）与 Eval（`148.7s`）`100%` 闭环通过<br>• **L3 实机 NPU `rope-rotary-dim-32`**：`G3` Eval 耗时 **`383.2s`**，较 `G0`（`432.9s`）缩短 **`-11.5%`**、较 `G2`（`492.3s`）缩短 **`-22.2%`** |
-| **④ 开放式算子/模型融合探索 (`G4` RSI)**<br>（`mode="reuse" -> mode="explore"` + 留一法消融） | 4 个高难融合任务（2 个 L2 + 2 个 L3 实机 NPU）× `G0/G2/G4`<br>（共 `24` 场 Trial） | • **`G0` 解出率 `0/4`（`0%`）**<br>• **`G2` 解出率 `0/4`（`0%`）**<br>• **`G4` 解出率 `4/4`（`100%`）**：4 个任务全部完成 `reuse (1..2 次) -> explore (1 次)` 精准状态切换与留一法消融验证 | • **`G0` 解出率 `0/4`（`0%`）**<br>• **`G2` 解出率 `0/4`（`0%`）**<br>• **`G4` 解出率 `4/4`（`100%`）**：4 个任务全部完成 `reuse (2..3 次) -> explore (1..2 次)` 精准切换并一次通过实机 NPU 与留一法门禁 |
+| **② 远端开发与渐进式检索 (`G0 -> G1 -> G2`)**<br>（`remote-dev` + `knowledge` + L3 实机 NPU） | 6 个 L2 任务 + 3 个 L3 实机昇腾 NPU 任务 | • **L2 复杂排障**：`dspark-mrv2` 从 `G0` `552.1s`（22 轮）降至 `G1` **`267.6s`（15 轮，提速 `2.06x`）**；`sfa-mtp` 从 `G0` `146.8s` 降至 `G1` **`74.4s`（`1.97x`）** 再降至 `G2` **`63.4s`（`2.32x`）**<br>• **L3 实机 NPU（`Ascend950DT`）**：`l3-dspark-mrv2` 从 `G0` `515.8s` 降至 `G2` **`465.6s`（-9.7%）**；`l3-mrv2-dsa` 从 `G0` `574.7s`（25 轮）降至 `G2` **`548.0s`（21 轮，轮次减少 `-16.0%`）** | • **L2 复杂排障**：`mrv2-dsa` 实现阶梯式提速 **`G0` `318.5s` $\to$ `G1` `281.2s` $\to$ `G2` `214.2s`（交付提速 `1.49x`，首次修改 `247.3s -> 113.6s` 提速 `2.18x`，末次修改 `287.7s -> 136.4s` 提速 `2.11x`）**；`k3-idle-dp` 在 `G2` 降至 **`264.4s`**<br>• **L3 实机 NPU**：`l3-dspark-mrv2` 从 `G0` `655.7s` 降至 `G1` **`341.7s`（提速 `1.92x`）**；`l3-mrv2-dsa` 从 `G0` `457.5s` 降至 `G1` **`294.6s`（提速 `1.55x`）** |
+| **③ 跨任务经验沉淀飞轮 (`G3`)**<br>（`Seed -> Capture -> C6 Distill -> Eval`） | 3 组同族配对迁移任务（2 组 L2 + 1 组 L3 实机 NPU 黑盒 `.so` 任务） | • **L2 `cpu-rope-32` 同族迁移任务**：`G0`/`G1`/`G2` 各 1 轮均未通过（合计 `0/3`）；接入 `G3` 飞轮后，Eval 命中前置 Seed（`rotary_dim=64`）沉淀的 `unit-rope-cache-explicit-rotary-dimension`，**仅用 `9` 次调用（`211.8s`）一次通过（`0/3 -> 1/1`）**<br>• **L3 实机 NPU `rope-rotary-dim-32`（剥离 `.cpp` 源码的黑盒 `.so`）**：`G0`/`G1`/`G2` 各 1 轮均未通过（合计 `0/3`）；`G3` Eval 命中 Seed 蒸馏入库的 `unit-rotary-dim-cache-selection`，**在实机 NPU 上 `15` 次调用（`270.8s`）一次通过（`0/3 -> 1/1`）**<br>• **L2 `sfa-mtp`**：`G3` Eval 前台耗时 **`68.4s`**（含后台采集总耗时 `82.4s`），较 `G0`（`146.8s`）**前台提速 `2.15x`（总交付提速 `1.78x`）** | • **L2 `cpu-rope-32`**：DSH 在 `G0`/`G1`/`G2`/`G3` 均通过；`G3` Eval 命中前置 Seed 沉淀的知识单元后，交付耗时从 `G0` `214.0s`（46 轮）降至 **`191.4s`（v1 净室批次仅 `111.5s` / 19 轮，提速 `1.92x`）**<br>• **L2 `sfa-mtp`**：Seed（`152.2s`）与 Eval（`148.7s`）`100%` 闭环通过<br>• **L3 实机 NPU `rope-rotary-dim-32`**：`G3` Eval 耗时 **`383.2s`**，较 `G0`（`432.9s`）缩短 **`-11.5%`**、较 `G2`（`492.3s`）缩短 **`-22.2%`** |
+| **④ 受控因子图谱引导的算子/模型融合探索 (`G4` RSI)**<br>（`mode="reuse" -> mode="explore"` + 留一法消融） | 2 类问题族 × L2/L3（4 个任务）× `G0/G2/G4`<br>（共 `24` 场 Trial，`knowledge_gradient="near_exact"`） | • **`G0` 解出率 `0/4`（`0%`）**<br>• **`G2` 解出率 `0/4`（`0%`）**<br>• **`G4` 解出率 `4/4`（`100%`）**：4 个任务全部完成 `reuse (1..2 次) -> explore (1 次)` 状态切换与留一法消融台账验证 | • **`G0` 解出率 `0/4`（`0%`）**<br>• **`G2` 解出率 `0/4`（`0%`）**<br>• **`G4` 解出率 `4/4`（`100%`）**：4 个任务全部完成 `reuse (2..3 次) -> explore (1..2 次)` 状态切换并一次通过实机 NPU 与留一法门禁 |
+
+### 2. 评测边界、模型网关映射与统计说明（Evaluation Scope, Model Relay Mapping & Statistical Caveats）
+
+为严格遵循**设计原则 9（实现进展、目标设计与实测证据透明区分）**与**设计原则 14（诚实可观测）**，避免外部读者将内部消融实验误读为第三方盲测通用基准，特对本次评测的实验边界、模型网关映射与统计口径做如下完整说明：
+
+1. **内部模型网关别名映射（Model Relay Aliases: `home/codex/gpt-6.1-sol` & `deepseek-flash`）**：
+   - 在作者的内部评测环境中，所有模型请求均通过本地统一鉴权与 Token 计量网关（`http://127.0.0.1:3425/v1`）转发。配置中的 `home/codex/gpt-6.1-sol`（`reasoning_effort = "xhigh"`，配套 C6 蒸馏模型 `home/codex/gpt-5.6-luna`）与 `deepseek-flash`（`reasoning_effort = "max"`）均为**内部评测网关的路由模型别名（Relay Model Aliases）**，而非公开商业 API 的标准模型名。
+   - 外部开发者或评测人员通过 `mindie-bench` 的 `experiment.toml` 复现本套件时，无需依赖内部网关，可直接将 `[harness]` 中的 `provider_url` 与 `model` 绑定至任意公开的 OpenAI Responses / Chat Completions 兼容端点或原生模型服务（例如 `gpt-5`、`o3`、`claude-sonnet-4-5`、`deepseek-reasoner` 或 `deepseek-chat`）。
+2. **作者受控消融基准 vs. 第三方盲测基准（Controlled Author Ablation vs. Third-Party Blind Benchmark，`repetitions = 1`）**：
+   - 本报告中的 18 个工程任务（对应 `tasks/zh-vague/` 下 20 个 `task.toml`，其中 3 组 `G3` 任务各含独立的 `Seed` 与 `Eval` 定义）、Oracle 补丁及验证器（Verifier）均由项目作者基于 `vllm-ascend` 真实历史 PR、线上故障与性能瓶颈构建；受限于实机昇腾 NPU 独占窗口与高推理强度（`xhigh` / `max`）Token 成本，绝大多数 `(task, model, group)` 单元格采用 **`repetitions = 1`（单次端到端运行）**。
+   - 因此，文中报告的解出率跃升与提速倍数应被严格视为**受控消融条件下各工程机制（`remote-dev` 远端工具、`knowledge` 渐进式披露、`C6` 经验蒸馏、`mode="explore"` 去先验锚定）有效性的作者自测实证参考**，而非大样本、多重复的第三方独立盲测基准。全部 `109` 场主评测 Trial 与另外 `55` 场批次预跑/基础设施重试的完整脱敏机器可读记录已全量公开于 [`docs/releases/0.1.0/agent-trials-109.json`](./agent-trials-109.json)。
+   - **关于 `G3`（`0/3 -> 1/1`）的统计口径说明**：在 `cpu-rope-rotary-dim-32-zh-vague`（L2）与 `rope-rotary-dim-32-zh-vague`（L3 实机黑盒 `.so`）上，`0/3 -> 1/1` 指 **OpenAI Codex CLI** 在未接入前置任务蒸馏经验的三个基线组（`G0`、`G1`、`G2` 各运行 1 次，合计 `0/3`）均因缺失 `partial_rotary_factor > rotary_dim > head_size` 分支优先级契约而失败，而在 `G3`（`1/1`）中通过检索同族前置任务（`rotary_dim=64` $\to$ `rotary_dim=32` 参数变体）自动蒸馏的 L2 SOP 一次通过。相比之下，**DeepSeek Harness (`dsh`)** 在 `G0`/`G1`/`G2`/`G3` 上均解出了该任务（`100%`），`G3` 在 `dsh` 上的核心收益体现为交付耗时缩短（L2 从 `214.0s` 降至 `191.4s` / 净室首轮 `111.5s`，L3 从 `432.9s`/`492.3s` 降至 `383.2s`）。
+   - **关于 `G4`（`0/8 -> 8/8`）的受控探索边界与裁判独立性加固说明（`mindie-bench v0.4.2`）**：`G4` 评测覆盖 **2 类算子/模型融合问题族**（`DeepSeek-V4 SparseMLA QLI 三因子融合` 与 `Triton SpatialNorm 4D 规约融合`）× **2 个执行层级**（L2 本地仓 + L3 实机 NPU）× **2 套模型**（共 8 组配对、24 场 Trial）。实验任务元数据的 `knowledge_gradient` 设为 `"near_exact"`——即当 Agent 从 `mode="reuse"` 切换至 `mode="explore"` 时，知识库过滤掉容易造成局部修补锚定的常规卡片，同时提供针对该瓶颈族的结构化变异因子图谱（`factor_graph`）与留一法消融规范（`leave_one_out_plan`）。因此，`0/8 -> 8/8` 证明的是**“去先验锚定 + 结构化因子图谱引导 + 留一法消融门禁”受控机制**相比裸宿主（`G0`）和常规复用检索（`G2`）的显著增益，而非无任何领域线索输入的完全开放世界算法发明。此外，针对早期公开裁判仅校验 `run_ablation_suite()` 返回字典字段的漏洞，我们在 **[`mindie-bench v0.4.2`](https://github.com/mindie-agent/mindie-bench/releases/tag/v0.4.2)（`f1928fcdf296734e0acc8d546e2903bda8c35ecb`）** 中对全部 4 个 `G4` 任务的 `verifier/test.sh` 实施了独立算子/张量 Spy 与多尺寸非固定随机输入 `torch.allclose` 数值真值门禁加固：常量返回伪实现负对照 `100%` 被拦截（`reward = 0.0`），而 `codex` 与 `dsh` 在 `G4` 真实 Trial 中产出的全部 8 份候选补丁（`final_patch.diff` / `remote_final.patch`）经新裁判独立重验均 **`8 / 8` 真实执行底层算子并通过数值与消融校验（`reward = 1.0`）**。
+3. **`G2` 知识检索负向延迟回归分析（Negative Latency Delta Cases in `G2`）**：
+   - 对比逐任务数据可以观察到，**`G2`（启用知识检索）并非在所有任务上都快于 `G1`（仅 `remote-dev`）或 `G0`（裸宿主）**。当用户 Prompt 或报错堆栈已经直接给出了明确的文件名、函数名与断言不变量时，额外调用 `knowledge_query` / `knowledge_explain` 会引入工具往返与长上下文推理开销，导致部分任务出现**负向耗时回归（Negative Delta）**：
+     - **`codex xhigh` L2 `dspark-mrv2-drafter-crash-zh-vague`**：`G0` (`552.1s`) $\to$ `G1` (`267.6s`, 15 轮) $\to$ `G2` (`440.2s`, 17 轮，增加 `1 query + 2 explain`)；
+     - **`codex xhigh` L2 `k3-idle-dp-gdn-state-zh-vague`**：`G0` (`353.4s`, 17 轮) $\to$ `G1` (`333.8s`, 15 轮) $\to$ `G2` (`445.9s`, 17 轮，增加 `1 query + 3 explain`)；
+     - **`codex xhigh` L2 `mrv2-dsa-prefill-metadata-zh-vague`**：尽管 `G2` 的末次代码修改时间（`185.9s`，14 轮）显著快于 `G0`（`288.8s`，16 轮），但因检索与测试长尾使得总交付耗时（`390.8s`）高于 `G0`（`314.9s`）与 `G1`（`323.6s`）；
+     - **`dsh max` L3 `l3-dspark-mrv2-drafter-crash-zh-vague` & `l3-mrv2-dsa-prefill-metadata-zh-vague`**：`G1` 凭借 `remote-dev` 结构化远端执行分别取得 `341.7s` 与 `294.6s` 的全组最快成绩，而 `G2` 因叠加知识检索与远端重跑分别耗时 `550.0s` 与 `542.3s`；
+     - **`sim-a3-ub-fusion-and-pipeline-dispatch-zh`**：`G0` 已通过的任务在 `G2` 中因调用 `query/explain` 核对公式，耗时从 `254.7s -> 301.7s`（Codex）和 `189.5s -> 215.3s`（DSH）。
+   - **归因与演进方向**：这印证了领域知识检索的收益高度依赖于任务的“先验盲区度”——在存在未知领域陷阱（如 `profiler` `msprof` 多表时间窗对齐、黑盒 `.so` `rope` 优先级契约、`G4` 多因子融合消融、`diagnostics` 8 卡级联分诊、`sfa-mtp` 投机步缓冲区隔离）的任务中，`G2/G3/G4` 能逆转失败或大幅提速；而在报错信息已高度自包含的常规局部修补任务中，无差别执行多轮 `explain` 会拖慢交付。我们在后续 `0.1.x` 中已将**自适应检索门控与早停策略（Adaptive Retrieval Gating：当本地堆栈已精确定位单点语法/签名错误且 `query` 摘要无新增约束时跳过 `explain`）**列为 P1 重点优化项。
 
 ---
 
@@ -39,7 +63,7 @@
 
 ### 维度一：五大专业组件（`profiler` · `sim` · `diagnostics` · `npu-top` · `coordinator`）在真实 Agent 任务中的收益
 
-为回答“除了 `remote-dev` 与 `knowledge`，其余 5 个专业组件在真实 Agent 编程排障中究竟解决什么问题”，我们构建了 4 个基于 `vllm-ascend` 真实工程场景的评测任务（均通过 `mindie-bench soundness` 零奖励/满奖励门禁校验：`before_reward = 0.0, after_reward = 1.0`），并在 `codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 上执行了 `G0`（无组件/无知识库）与 `G2`（启用组件 + 知识库）严格配对实验（原始报告见 `/Volumes/data/Projects/DevelopmentData/mindie-bench/reports/0.1.0-component-value-20261023/`）：
+为回答“除了 `remote-dev` 与 `knowledge`，其余 5 个专业组件在真实 Agent 编程排障中究竟解决什么问题”，我们构建了 4 个基于 `vllm-ascend` 真实工程场景的评测任务（均通过 `mindie-bench soundness` 零奖励/满奖励门禁校验：`before_reward = 0.0, after_reward = 1.0`），并在 `codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 上执行了 `G0`（无组件/无知识库）与 `G2`（启用组件 + 知识库）严格配对实验（机器可读逐 Trial 记录见 [`agent-trials-109.json`](./agent-trials-109.json) 中 `dimension = "dim1_dedicated_components"`，组件微基准见 [`value-results.json`](./value-results.json)）：
 
 #### 1. `codex + gpt-6.1-sol (xhigh)` 专项组件实测对比表
 
@@ -81,62 +105,62 @@
 
 ### 维度二：`remote-dev` (`G1`) 与 `knowledge` (`G2`) 在 L2 本地仓与 L3 实机昇腾 NPU 上的表现
 
-原始报告目录：
-- `codex + gpt-6.1-sol (xhigh)` L2：`/Volumes/data/Projects/DevelopmentData/mindie-bench/reports/codex-010-l2-g3-20261023/`
-- `codex + gpt-6.1-sol (xhigh)` L3 实机 NPU：`/Volumes/data/Projects/DevelopmentData/mindie-bench/reports/codex-010-l3-20261023/`
-- `dsh + deepseek-flash (max)` L2 & L3：`/Volumes/data/Projects/DevelopmentData/mindie-bench/reports/dsh-003-zh-vague-v2-20261022/` & `dsh-003-zh-vague-20261022/`
+机器可读原始记录索引（均收录于 [`docs/releases/0.1.0/agent-trials-109.json`](./agent-trials-109.json) 中 `dimension = "dim2_remote_dev_and_knowledge"`）：
+- `codex + gpt-6.1-sol (xhigh)` L2：批次 `codex-010-l2-g3-20261023`
+- `codex + gpt-6.1-sol (xhigh)` L3 实机 NPU：批次 `codex-010-l3-20261023`
+- `dsh + deepseek-flash (max)` L2 & L3：批次 `dsh-003-zh-vague-v2-20261022` & `dsh-003-zh-vague-20261022`
 
-| 层级 | 任务 ID | 参测模型 | `G0` 耗时 (轮次) | `G1` (`remote-dev`) 耗时 (轮次) | `G2` (`+knowledge`) 耗时 (轮次) | 关键收益说明 |
+| 层级 | 任务 ID | 参测模型 | `G0` 耗时 (轮次) | `G1` (`remote-dev`) 耗时 (轮次) | `G2` (`+knowledge`) 耗时 (轮次) | 关键收益与负向回归说明 |
 | :---: | :--- | :--- | :---: | :---: | :---: | :--- |
-| **L2** | `dspark-mrv2-drafter-crash-zh-vague` | `codex xhigh` | `552.1s` (`22`) | **`267.6s` (`15`)** | `440.2s` (`17`) | `G1` 较 `G0` **提速 `2.06x`（耗时 `-51.5%`，轮次 `-31.8%`）** |
+| **L2** | `dspark-mrv2-drafter-crash-zh-vague` | `codex xhigh` | `552.1s` (`22`) | **`267.6s` (`15`)** | `440.2s` (`17`) | `G1` 较 `G0` **提速 `2.06x`（`-51.5%`）**；`G2` 因 `1 query + 2 explain` 产生负向延迟回归 |
 | **L2** | `dspark-mrv2-drafter-crash-zh-vague` | `dsh max` | `200.1s` (`39`) | `261.5s` (`60`) | **`197.8s` (`60`)** | `G2` 实现最快交付 |
-| **L2** | `k3-idle-dp-gdn-state-zh-vague` | `codex xhigh` | `353.4s` (`17`) | **`333.8s` (`15`)** | `445.9s` (`17`) | `G1` 较 `G0` 缩短耗时与轮次 |
+| **L2** | `k3-idle-dp-gdn-state-zh-vague` | `codex xhigh` | `353.4s` (`17`) | **`333.8s` (`15`)** | `445.9s` (`17`) | `G1` 较 `G0` 缩短耗时与轮次；`G2` 因 `1 query + 3 explain` 产生负向延迟回归 |
 | **L2** | `k3-idle-dp-gdn-state-zh-vague` | `dsh max` | `282.6s` (`60`) | `287.2s` (`60`) | **`264.4s` (`60`)** | `G2` 较 `G0`/`G1` 缩短 `-6.4%` |
-| **L2** | `mrv2-dsa-prefill-metadata-zh-vague` | `codex xhigh` | `314.9s` (`16`) | `323.6s` (`13`) | `390.8s` (`14`) | `G1`/`G2` 轮次较 `G0` 减少 `12.5%–18.8%` |
-| **L2** | `mrv2-dsa-prefill-metadata-zh-vague` | `dsh max` | `318.5s` (`51`) | `226.4s` (`60`) | **`114.9s` (`60`)** | **`G0 -> G1` 提速 `1.41x`，`G0 -> G2` 提速 `2.77x`（耗时 `-63.9%`）** |
+| **L2** | `mrv2-dsa-prefill-metadata-zh-vague` | `codex xhigh` | `314.9s` (`16`) | `323.6s` (`13`) | `390.8s` (`14`) | `G1`/`G2` 轮次较 `G0` 减少 `12.5%–18.8%`；`G2` 末次修改更快（`185.9s` vs `288.8s`）但测试长尾拉长总耗时 |
+| **L2** | `mrv2-dsa-prefill-metadata-zh-vague` | `dsh max` | `318.5s` (`51`) | `281.2s` (`60`) | **`214.2s` (`60`)** | **交付耗时 `G0 -> G1 -> G2` 阶梯下降（提速 `1.49x`，`-32.7%`）；首次修改 `247.3s -> 113.6s`（提速 `2.18x`），末次修改 `287.7s -> 136.4s`（提速 `2.11x`）** |
 | **L2** | `mtp-draft-slot-mapping-capacity-zh-vague` | `codex xhigh` | `273.6s` (`11`) | `434.7s` (`13`) | `416.2s` (`15`) | 三组均一次 `completed_pass` |
 | **L2** | `mtp-draft-slot-mapping-capacity-zh-vague` | `dsh max` | `184.9s` (`55`) | **`163.7s` (`47`)** | `210.4s` (`60`) | `G1` 较 `G0` 耗时缩短 `-11.5%`、轮次减少 `-14.5%` |
 | **L2** | `sfa-mtp-seq-lens-eval-zh-vague` | `codex xhigh` | `146.8s` (`7`) | `74.4s` (`6`) | **`63.4s` (`6`)** | **`G1` 提速 `1.97x`，`G2` 提速 `2.32x`（耗时 `-56.8%`）** |
 | **L3 (实机 NPU)** | `l3-dspark-mrv2-drafter-crash-zh-vague` | `codex xhigh` | `515.8s` (`23`) | `498.1s` (`29`) | **`465.6s` (`25`)** | 实机 `Ascend950DT` NPU 5：**`G0 -> G1 -> G2` 阶梯提速（`-9.7%`）** |
-| **L3 (实机 NPU)** | `l3-dspark-mrv2-drafter-crash-zh-vague` | `dsh max` | `655.7s` (`67`) | **`341.7s` (`80`)** | `550.0s` (`60`) | 实机 NPU：**`G1` 较 `G0` 提速 `1.92x`（节省 `314.0s`）** |
+| **L3 (实机 NPU)** | `l3-dspark-mrv2-drafter-crash-zh-vague` | `dsh max` | `655.7s` (`67`) | **`341.7s` (`80`)** | `550.0s` (`60`) | 实机 NPU：**`G1` 较 `G0` 提速 `1.92x`（节省 `314.0s`）**；`G2` 快于 `G0` 但慢于 `G1` |
 | **L3 (实机 NPU)** | `l3-mrv2-dsa-prefill-metadata-zh-vague` | `codex xhigh` | `574.7s` (`25`) | `570.2s` (`30`) | **`548.0s` (`21`)** | 实机 `Ascend950DT` NPU 4：**`G2` 最快且轮次减少 `-16.0%`** |
-| **L3 (实机 NPU)** | `l3-mrv2-dsa-prefill-metadata-zh-vague` | `dsh max` | `457.5s` (`60`) | **`294.6s` (`60`)** | `542.3s` (`78`) | 实机 NPU：**`G1` 较 `G0` 提速 `1.55x`（节省 `162.9s`）** |
+| **L3 (实机 NPU)** | `l3-mrv2-dsa-prefill-metadata-zh-vague` | `dsh max` | `457.5s` (`60`) | **`294.6s` (`60`)** | `542.3s` (`78`) | 实机 NPU：**`G1` 较 `G0` 提速 `1.55x`（节省 `162.9s`）**；`G2` 叠加检索轮次产生负向回归 |
 
 ---
 
-### 维度三：`G3` 跨任务经验飞轮（`Seed -> Capture -> C6 Distill -> Eval`）在黑盒与复杂排障中的决定性收益
+### 维度三：`G3` 跨任务经验飞轮（`Seed -> Capture -> C6 Distill -> Eval`）在同族黑盒与复杂排障中的收益
 
-在工程实践中，当团队遇到上游公共知识库尚未收录的新型 Bug（尤其是剥离了 C++ `.cpp` 源码、仅剩编译后 `.so` 扩展的线上黑盒环境）时，单靠 `G0`/`G1`/`G2` 往往因缺少特定算子分支优先级契约而反复失败。`G3` 验证了 MindIE Agent **“一人排障成功，全团队/后续任务自动受益”** 的自演进飞轮：
+在工程实践中，当团队遇到上游公共知识库尚未收录的新型 Bug（尤其是剥离了 C++ `.cpp` 源码、仅剩编译后 `.so` 扩展的线上黑盒环境）时，单靠 `G0`/`G1`/`G2` 往往因缺少特定算子分支优先级契约而失败或耗时增加。`G3` 在 3 组同族配对迁移任务（如 `rotary_dim=64` Seed $\to$ `rotary_dim=32` Eval 参数变体）上验证了 MindIE Agent 的经验自演进飞轮（逐 Trial 记录见 [`agent-trials-109.json`](./agent-trials-109.json) 中 `dimension = "dim3_g3_experience_flywheel"`）：
 
-| 层级与任务对（`Seed -> Eval`） | 参测模型 | `G0` Eval | `G1` Eval | `G2` Eval | `G3` Seed（含 C6 蒸馏） | **`G3` Eval（命中 Seed 蒸馏知识）** | 飞轮核心收益 |
+| 层级与任务对（`Seed -> Eval`） | 参测模型 | `G0` Eval (`n=1`) | `G1` Eval (`n=1`) | `G2` Eval (`n=1`) | `G3` Seed（含 C6 蒸馏） | **`G3` Eval（命中 Seed 蒸馏知识）** | 飞轮核心收益（区分 Codex 逆转与 DSH 提速） |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **L2：`cpu-rope-64` $\to$ `cpu-rope-32`** | `codex xhigh` | **`FAIL`** (`225.1s`) | **`FAIL`** (`262.0s`) | **`FAIL`** (`382.3s`) | **`PASS`** (`298.3s`，C6 蒸馏 `51.5s`，生成 `unit-rope-cache-explicit-rotary-dimension`) | **`PASS` (`211.8s`，仅 `8` 轮，`query/explain = 1/1`)** | **将 `0/3`（`G0/G1/G2` 全败）逆转为 `100%` 一次通过** |
-| **L3 实机 NPU：`rope-64` $\to$ `rope-32`（黑盒 `.so`）** | `codex xhigh` | **`FAIL`** (`268.3s` / 首轮裸 `ssh` `unknown`) | **`FAIL`** (`463.4s`) | **`FAIL`** (`391.1s`) | **`PASS`** (`324.2s`，C6 蒸馏 `19.7s`，生成 `unit-rotary-dim-cache-selection`) | **`PASS` (`270.8s`，`14` 轮，`query/explain = 1/1`)** | **在实机 NPU 黑盒 `.so` 任务上将 `0/3` 全败逆转为一次通过** |
-| **L2：`sfa-mtp-seed` $\to$ `sfa-mtp-eval`** | `codex xhigh` | `PASS` (`146.8s`, `7` 轮) | `PASS` (`74.4s`, `6` 轮) | `PASS` (`63.4s`, `6` 轮) | **`PASS`** (`50.4s` 前台 + `61.1s` C6 蒸馏，生成 `unit-review-addition-isolate-sfa-sequence-len`) | **`PASS` (`68.4s` 前台，`6` 轮，`query/explain = 1/1`)** | **较 `G0` 前台耗时缩短 `-53.4%`（提速 `2.15x`）** |
-| **L2：`cpu-rope-64` $\to$ `cpu-rope-32`** | `dsh max` | `PASS` (`214.0s`, `46` 轮) | `PASS` (`264.7s`, `43` 轮) | `PASS` (`241.8s`, `50` 轮) | **`PASS`** (`239.6s`) | **`PASS` (`191.4s`；首轮 `111.5s` / `19` 轮)** | **`G3` 交付耗时显著低于 `G0`/`G1`/`G2`** |
-| **L3 实机 NPU：`rope-64` $\to$ `rope-32`** | `dsh max` | `PASS` (`432.9s`, `47` 轮) | `PASS` (`311.1s`, `65` 轮) | `PASS` (`492.3s`, `44` 轮) | **`PASS`** (`445.9s`, `43` 轮) | **`PASS` (`383.2s`, `44` 轮)** | **较 `G0` 缩短 `-11.5%`，较 `G2` 缩短 `-22.2%`** |
-| **L2：`sfa-mtp-seed` $\to$ `sfa-mtp-eval`** | `dsh max` | `PASS` (`91.6s`, `27` 轮) | `PASS` (`112.2s`, `32` 轮) | `PASS` (`159.7s`, `41` 轮) | **`PASS`** (`152.2s`, `27` 轮) | **`PASS` (`148.7s`, `40` 轮)** | Seed 与 Eval 全链路 `100%` 闭环通过 |
+| **L2：`cpu-rope-64` $\to$ `cpu-rope-32`** | `codex xhigh` | **`FAIL`** (`225.1s`) | **`FAIL`** (`262.0s`) | **`FAIL`** (`382.3s`) | **`PASS`** (`298.3s`，C6 蒸馏 `51.5s`，生成 `unit-rope-cache-explicit-rotary-dimension`) | **`PASS` (`211.8s`，`9` 次调用，`query/explain = 1/1`)** | **Codex 基线三组（`G0/G1/G2`）合计 `0/3` 未过，`G3` 检索同族 Seed 知识后 `1/1` 一次通过** |
+| **L3 实机 NPU：`rope-64` $\to$ `rope-32`（黑盒 `.so`）** | `codex xhigh` | **`FAIL`** (`268.3s` / 首轮裸 `ssh` `unknown` `230.3s`) | **`FAIL`** (`463.4s`) | **`FAIL`** (`391.1s`) | **`PASS`** (`324.2s`，C6 蒸馏 `19.2s`，生成 `unit-rotary-dim-cache-selection`) | **`PASS` (`270.8s`，`15` 次调用，`query/explain = 1/1`)** | **实机 NPU 黑盒 `.so` 任务上 Codex 基线三组 `0/3` 未过，`G3` 命中同族 Seed 知识后 `1/1` 一次通过** |
+| **L2：`sfa-mtp-seed` $\to$ `sfa-mtp-eval`** | `codex xhigh` | `PASS` (`146.8s`, `7` 轮) | `PASS` (`74.4s`, `6` 轮) | `PASS` (`63.4s`, `6` 轮) | **`PASS`** (`50.4s` 前台 + `61.1s` C6 蒸馏，生成 `unit-review-addition-isolate-sfa-sequence-len-cb782172-0`) | **`PASS` (`68.4s` 前台 / `82.4s` 含采集，`7` 次调用，`query/explain = 1/1`)** | **较 `G0` 前台耗时缩短 `-53.4%`（提速 `2.15x`），含采集总交付缩短 `-43.9%`（`1.78x`）** |
+| **L2：`cpu-rope-64` $\to$ `cpu-rope-32`** | `dsh max` | `PASS` (`214.0s`, `46` 轮) | `PASS` (`264.7s`, `43` 轮) | `PASS` (`241.8s`, `50` 轮) | **`PASS`** (`239.6s` / v1 净室 `147.9s`) | **`PASS` (`191.4s`；v1 净室 `111.5s` / `19` 轮)** | **DSH 在 `G0–G3` 均通过；`G3` 交付耗时显著低于 `G0`/`G1`/`G2`（最高提速 `1.92x`）** |
+| **L3 实机 NPU：`rope-64` $\to$ `rope-32`** | `dsh max` | `PASS` (`432.9s`, `47` 轮) | `PASS` (`311.1s`, `65` 轮) | `PASS` (`492.3s`, `44` 轮) | **`PASS`** (`445.9s`, `43` 轮) | **`PASS` (`383.2s`, `44` 轮)** | **DSH 在 `G0–G3` 均通过；`G3` 较 `G0` 缩短 `-11.5%`，较 `G2` 缩短 `-22.2%`** |
+| **L2：`sfa-mtp-seed` $\to$ `sfa-mtp-eval`** | `dsh max` | `PASS` (`91.6s`, `27` 轮) | `PASS` (`112.2s`, `32` 轮) | `PASS` (`159.7s`, `41` 轮) | **`PASS`** (`152.2s`, `27` 轮) | **`PASS` (`148.7s`, `40` 轮)** | Seed 与 Eval 全链路 `100%` 闭环通过（较 `G2` 缩短 `-6.9%`） |
 
 ---
 
-### 维度四：`G4` 开放式探索（`mode="explore"`）在算子/模型多因子融合创新任务上的 `0% -> 100%` 突破
+### 维度四：`G4` 受控因子图谱探索（`mode="explore"`）在算子/模型多因子融合任务上的消融收益
 
-在 DeepSeek-V4.1 Sparse MLA Query 反量化与 Lightning Indexer 三因子融合（`dsv4-sparse-mla-qli-fusion-rsi-zh`）以及 Triton Ascend SpatialNorm 维度合并与 UB 多缓冲矢量化（`triton-spatial-norm-dim-merge-rsi-zh`）两类高难任务（覆盖 L2 本地仓与 L3 实机昇腾 NPU，共 4 个任务）中：
-- **`G0`（裸宿主）**：因缺乏昇腾 UB 容量边界、算子融合不变量及留一法消融规范，在双模型上 **`0 / 8` 全部失败（`0%`）**；
-- **`G2`（常规检索 `mode="reuse"`）**：仅暴露常规 L1/L2 排障卡片而缺乏 `mode="explore"` 的 L3/L4 变异因子图谱（`factor_graph`）与留一法消融计划（`leave_one_out_plan`），Agent 陷入局部修补或重复无效检索，在双模型上同样 **`0 / 8` 全部失败（`0%`）**；
-- **`G4`（`mode="reuse" -> mode="explore"` 开放探索）**：Agent 先通过 `1–3` 次 `mode="reuse"` 识别常规检索边界，随后精准切换至 `mode="explore"` 获取去先验锚定的 L1–L3 硬件刚性约束、三因子变异图谱与留一法实验计划，在 **`codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 上实现 `8 / 8`（`100%`）全部通过**！
+在 DeepSeek-V4.1 Sparse MLA Query 反量化与 Lightning Indexer 三因子融合（`dsv4-sparse-mla-qli-fusion-rsi-zh`）以及 Triton Ascend SpatialNorm 维度合并与 UB 多缓冲矢量化（`triton-spatial-norm-dim-merge-rsi-zh`）两类问题族（覆盖 L2 本地仓与 L3 实机昇腾 NPU，共 4 个任务，`knowledge_gradient = "near_exact"`，逐 Trial 记录见 [`agent-trials-109.json`](./agent-trials-109.json) 中 `dimension = "dim4_g4_open_exploration"`）中：
+- **`G0`（裸宿主）**：因缺乏昇腾 UB 容量边界、算子融合不变量及留一法消融规范，在双模型上 **`0 / 8` 全部未通过（`0%`）**；
+- **`G2`（常规检索 `mode="reuse"`）**：仅暴露常规 L1/L2 排障卡片而未挂载 `mode="explore"` 的 L3/L4 变异因子图谱（`factor_graph`）与留一法消融计划（`leave_one_out_plan`），Agent 陷入局部修补或重复检索，在双模型上同样 **`0 / 8` 全部未通过（`0%`）**；
+- **`G4`（`mode="reuse" -> mode="explore"` 因子图谱引导探索）**：Agent 先通过 `1–3` 次 `mode="reuse"` 识别常规检索边界，随后切换至 `mode="explore"` 获取去先验锚定的 L1–L3 硬件刚性约束、结构化三因子变异图谱与留一法实验计划，在 **`codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 上实现 `8 / 8`（`100%`）全部通过**。
 
-| 层级 | 任务 ID | 参测模型 | `G0` 结果 | `G2` 结果 | **`G4` (`mode="explore"`) 结果** | `G4` 交付耗时 | `G4` 模型调用 | `reuse` $\to$ `explore` 调用次数与状态切换 |
+| 层级 | 任务 ID | 参测模型 | `G0` 结果 (`n=1`) | `G2` 结果 (`n=1`) | **`G4` (`mode="explore"`) 结果 (`n=1`)** | `G4` 交付耗时 | `G4` 模型调用 | `reuse` $\to$ `explore` 调用次数与状态切换 |
 | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **L2** | `dsv4-sparse-mla-qli-fusion-rsi-zh` | `codex xhigh` | `FAIL` (`612.3s`) | `FAIL` (`778.3s`) | **`PASS` (`1.0`)** | `894.6s` | `23` | `reuse=1, explore=1` (`transitioned=True`) |
-| **L2** | `dsv4-sparse-mla-qli-fusion-rsi-zh` | `dsh max` | `FAIL` (`140.4s`) | `FAIL` (`298.9s`) | **`PASS` (`1.0`)** | `397.2s` | `60` | `reuse=2, explore=2` (`transitioned=True`) |
+| **L2** | `dsv4-sparse-mla-qli-fusion-rsi-zh` | `dsh max` | `FAIL` (`418.5s`) | `FAIL` (`298.9s`) | **`PASS` (`1.0`)** | `397.2s` | `60` | `reuse=2, explore=2` (`transitioned=True`) |
 | **L2** | `triton-spatial-norm-dim-merge-rsi-zh` | `codex xhigh` | `FAIL` (`765.3s`) | `FAIL` (`1089.8s`) | **`PASS` (`1.0`)** | `1177.9s` | `28` | `reuse=2, explore=1` (`transitioned=True`) |
-| **L2** | `triton-spatial-norm-dim-merge-rsi-zh` | `dsh max` | `FAIL` (`225.7s`) | `FAIL` (`409.3s`) | **`PASS` (`1.0`)** | `393.3s` | `60` | `reuse=2, explore=2` (`transitioned=True`) |
+| **L2** | `triton-spatial-norm-dim-merge-rsi-zh` | `dsh max` | `FAIL` (`484.6s`) | `FAIL` (`409.3s`) | **`PASS` (`1.0`)** | `393.3s` | `60` | `reuse=2, explore=2` (`transitioned=True`) |
 | **L3 (实机 NPU)** | `l3-dsv4-sparse-mla-qli-fusion-rsi-zh` | `codex xhigh` | `FAIL` (`621.9s`) | `FAIL` (`765.4s`) | **`PASS` (`1.0`)** | `751.9s` | `24` | `reuse=2, explore=1` (`transitioned=True`) |
-| **L3 (实机 NPU)** | `l3-dsv4-sparse-mla-qli-fusion-rsi-zh` | `dsh max` | `FAIL` (`140.4s`) | `FAIL` (`500.7s`) | **`PASS` (`1.0`)** | `323.8s` | `36` | `reuse=2, explore=1` (`transitioned=True`) |
+| **L3 (实机 NPU)** | `l3-dsv4-sparse-mla-qli-fusion-rsi-zh` | `dsh max` | `FAIL` (`347.6s`) | `FAIL` (`500.7s`) | **`PASS` (`1.0`)** | `323.8s` | `36` | `reuse=2, explore=1` (`transitioned=True`) |
 | **L3 (实机 NPU)** | `l3-triton-spatial-norm-dim-merge-rsi-zh` | `codex xhigh` | `FAIL` (`1236.8s`) | `UNKNOWN/FAIL` (`1270.7s`) | **`PASS` (`1.0`)** | `1079.8s` | `38` | `reuse=1, explore=1` (`transitioned=True`) |
-| **L3 (实机 NPU)** | `l3-triton-spatial-norm-dim-merge-rsi-zh` | `dsh max` | `FAIL` (`436.8s`) | `FAIL` (`623.4s`) | **`PASS` (`1.0`)** | `703.9s` | `60` | `reuse=3, explore=2` (`transitioned=True`) |
-| **总计 (8 组配对)** | **4 个 L2/L3 融合探索任务 × 双模型** | **双模型汇总** | **`0 / 8` (`0%`)** | **`0 / 8` (`0%`)** | **`8 / 8` (`100%`)** | — | — | **`8 / 8` (`100%` 完成 `reuse -> explore` 切换)** |
+| **L3 (实机 NPU)** | `l3-triton-spatial-norm-dim-merge-rsi-zh` | `dsh max` | `FAIL` (`327.1s`) | `FAIL` (`623.4s`) | **`PASS` (`1.0`)** | `703.9s` | `60` | `reuse=3, explore=2` (`transitioned=True`) |
+| **总计 (8 组配对)** | **2 类问题族 × L2/L3 × 双模型** | **双模型汇总** | **`0 / 8` (`0%`)** | **`0 / 8` (`0%`)** | **`8 / 8` (`100%`)** | — | — | **`8 / 8` (`100%` 完成 `reuse -> explore` 切换)** |
 
 ---
 
@@ -390,11 +414,11 @@ uv run pytest tests/test_four_harness_g1_g4.py tests/test_qualification_gate.py 
 
    [corpora.ascend]
    path = "/path/to/knowledge-vllm-ascend"
-   commit = "<git-rev-parse-HEAD>"
+   commit = "d3d5bf6320e171d4a0f131a6f746858700e0c4cc"
 
    [corpora.operators]
    path = "/path/to/knowledge-operators"
-   commit = "<git-rev-parse-HEAD>"
+   commit = "6f083f810c0d8eb77b9d7992ba96b19c51dfaf74"
 
    [groups.G0]
    knowledge_mode = "advisory"
@@ -424,6 +448,8 @@ uv run pytest tests/test_four_harness_g1_g4.py tests/test_qualification_gate.py 
    name = "codex"
    executable = "/opt/homebrew/bin/codex"
    expected_version = "codex-cli 0.153.4"
+   # 注：home/codex/gpt-6.1-sol 与 http://127.0.0.1:3425/v1 为作者内部计量网关路由别名；
+   # 外部复现时可直接改为公开端点（如 https://api.openai.com/v1）与公开模型名（如 gpt-5 / o3）
    model = "home/codex/gpt-6.1-sol"
    reasoning_effort = "xhigh"
    api_protocol = "openai-responses"
@@ -431,9 +457,9 @@ uv run pytest tests/test_four_harness_g1_g4.py tests/test_qualification_gate.py 
    api_key_env = "MINDIE_BENCH_RELAY_KEY"
    ```
 
-2. **执行 `run_matrix` 端到端评测并输出结构化战报**：
+2. **执行 `mindie-bench run` 端到端矩阵评测并输出结构化战报**（注：标准子命令为 `mindie-bench run`；`mindie-bench v0.4.2` 同时提供 `mindie-bench matrix` 兼容别名）：
    ```bash
-   uv run mindie-bench matrix \
+   uv run mindie-bench run \
      --config experiment.toml \
      --tasks tasks/zh-vague/profiler-msprof-straggler-and-hbm-fix-zh \
      --tasks tasks/zh-vague/sim-a3-ub-fusion-and-pipeline-dispatch-zh \
@@ -451,7 +477,7 @@ uv run pytest tests/test_four_harness_g1_g4.py tests/test_qualification_gate.py 
 
 ```bash
 # 复现 L3 实机 NPU 上的 G3 经验飞轮（Seed 蒸馏 -> Eval 检索命中）
-uv run mindie-bench matrix \
+uv run mindie-bench run \
   --config l3-experiment.toml \
   --tasks tasks/zh-vague/rope-rotary-dim-64-zh-vague \
   --tasks tasks/zh-vague/rope-rotary-dim-32-zh-vague \
@@ -459,8 +485,8 @@ uv run mindie-bench matrix \
   --groups G3,G2,G1,G0 \
   --output /tmp/mindie-bench-010-l3-g3
 
-# 复现 L3 实机 NPU 上的 G4 开放式三因子融合探索（mode="reuse" -> mode="explore"）
-uv run mindie-bench matrix \
+# 复现 L3 实机 NPU 上的 G4 受控因子图谱三因子融合探索（mode="reuse" -> mode="explore"）
+uv run mindie-bench run \
   --config l3-rsi-experiment.toml \
   --tasks tasks/zh-vague/l3-dsv4-sparse-mla-qli-fusion-rsi-zh \
   --tasks tasks/zh-vague/l3-triton-spatial-norm-dim-merge-rsi-zh \

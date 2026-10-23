@@ -16,7 +16,48 @@
     "etag_poll_interval_sec": 3600,
     "background_poll_interval_sec": 86400,
     "atomic_idle_cutover_max_ms": 500,
-    "require_plugin_republish_on_component_patch": false
+    "require_plugin_republish_on_component_patch": false,
+    "implementation_status": {
+      "v0_1_0_verified_mechanism": "Host plugins (v0.0.3) currently pin component Git commits in pyproject.toml / uv.lock and verify plugin-release auto-update via GitHub Releases API ETag polling + Staging Dir prebuild + atomic cutover (< 500ms).",
+      "v0_1_x_target_architecture": "Direct runtime consumption of channels/0.1.json for in-place single-component hotfixes without republishing host plugins is the 0.1.x release channel architecture target."
+    }
+  },
+  "corpora": {
+    "knowledge-infer-core": {
+      "repository": "mindie-agent/knowledge-infer-core",
+      "commit": "b319ab36f1b2d84c5d9c33b123ca2c24e6637f80",
+      "units": 109
+    },
+    "knowledge-operators": {
+      "repository": "mindie-agent/knowledge-operators",
+      "commit": "6f083f810c0d8eb77b9d7992ba96b19c51dfaf74",
+      "units": 105
+    },
+    "knowledge-vllm-ascend": {
+      "repository": "mindie-agent/knowledge-vllm-ascend",
+      "commit": "d3d5bf6320e171d4a0f131a6f746858700e0c4cc",
+      "units": 91
+    },
+    "knowledge-infer-distributed": {
+      "repository": "mindie-agent/knowledge-infer-distributed",
+      "commit": "a35f1a15c11bb8f0ddb717c3187a25a27262ca1c",
+      "units": 39
+    },
+    "knowledge-infer-observability": {
+      "repository": "mindie-agent/knowledge-infer-observability",
+      "commit": "195bc9e0b48588a5ca16d2bb9e47b9490cc7e62c",
+      "units": 39
+    },
+    "knowledge-infer-ops-compat": {
+      "repository": "mindie-agent/knowledge-infer-ops-compat",
+      "commit": "bc59494157f0bf000ac7d05f6719aa487d062260",
+      "units": 34
+    },
+    "knowledge-agent-engineering": {
+      "repository": "mindie-agent/knowledge-agent-engineering",
+      "commit": "6cf68034126486934bf96d96d809c3de1e608b5f",
+      "units": 33
+    }
   },
   "components": {
     "diagnostics": {
@@ -255,11 +296,12 @@
       "role": "evaluation_runner",
       "repository": "mindie-agent/mindie-bench",
       "package": "mindie-bench",
-      "version": "0.4.1",
-      "tag": "v0.4.1",
-      "commit": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
-      "revision": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
-      "runner_revision": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
+      "version": "0.4.2",
+      "tag": "v0.4.2",
+      "commit": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
+      "revision": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
+      "runner_revision": "f1928fcdf296734e0acc8d546e2903bda8c35ecb",
+      "component_gate_runner_revision": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
       "independent_update_allowed": true,
       "hotfix_trigger_on_error": true,
       "etag_poll_interval_sec": 3600,
@@ -291,7 +333,16 @@
         "mindie-bench"
       ],
       "plugin_republish_required": false,
-      "summary": "Initial 0.1.0 milestone baseline and Release Channel Manifest (channels/0.1.json) supporting independent 0.1.x single-component hotfixes."
+      "summary": "Initial 0.1.0 milestone baseline and Release Channel Manifest contract (channels/0.1.json). v0.0.3 host plugins verify locked plugin-release auto-updates; direct runtime consumption of channels/0.1.json for in-place 0.1.x single-component hotfixes is the 0.1.x target architecture."
+    },
+    {
+      "patch_version": "0.1.1",
+      "type": "hotfix",
+      "updated_components": [
+        "mindie-bench"
+      ],
+      "plugin_republish_required": false,
+      "summary": "Bump mindie-bench to v0.4.2 (f1928fcdf296734e0acc8d546e2903bda8c35ecb) with tasks/zh-vague/, test_four_harness_g1_g4.py, matrix CLI alias, portable Python resolution, and hardened independent G4 RSI verifiers; pin 7 synced knowledge corpora commits (450 graded units)."
     }
   ]
 }

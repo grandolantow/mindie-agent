@@ -1,4 +1,5 @@
 {
+  "agent_trials_manifest": "docs/releases/0.1.0/agent-trials-109.json",
   "blocking_reasons": [],
   "collector_source": {
     "dirty": false,
@@ -567,6 +568,130 @@
   ],
   "native_plugins": [],
   "product_version": "0.1.0",
+  "real_agent_evaluation_summary": {
+    "dimension_summary": {
+      "dim1_dedicated_components": {
+        "codex_pass_rate": {
+          "G0": "3/4 (75.0%)",
+          "G2": "4/4 (100.0%)"
+        },
+        "codex_total_delivery_wall_sec": {
+          "G0": 1389.7,
+          "G2": 1151.7,
+          "delta_pct": -17.1
+        },
+        "dsh_pass_rate": {
+          "G0": "3/4 (75.0%)",
+          "G2": "4/4 (100.0%)"
+        },
+        "dsh_total_delivery_wall_sec": {
+          "G0": 1165.3,
+          "G2": 772.0,
+          "delta_pct": -33.8
+        },
+        "groups": [
+          "G0",
+          "G2"
+        ],
+        "tasks_count": 4,
+        "trials_count": 16
+      },
+      "dim2_remote_dev_and_knowledge": {
+        "groups": [
+          "G0",
+          "G1",
+          "G2"
+        ],
+        "tasks_count": 6,
+        "tiers": [
+          "l2",
+          "l3"
+        ],
+        "trials_count": 36
+      },
+      "dim3_g3_experience_flywheel": {
+        "groups": [
+          "G0",
+          "G1",
+          "G2",
+          "G3"
+        ],
+        "task_definitions_count": 6,
+        "task_pairs_count": 3,
+        "tiers": [
+          "l2",
+          "l3"
+        ],
+        "trials_count": 33
+      },
+      "dim4_g4_open_exploration": {
+        "codex_pass_rate": {
+          "G0": "0/4 (0.0%)",
+          "G2": "0/4 (0.0%)",
+          "G4": "4/4 (100.0%)"
+        },
+        "dsh_pass_rate": {
+          "G0": "0/4 (0.0%)",
+          "G2": "0/4 (0.0%)",
+          "G4": "4/4 (100.0%)"
+        },
+        "groups": [
+          "G0",
+          "G2",
+          "G4"
+        ],
+        "problem_families_count": 2,
+        "tasks_count": 4,
+        "trials_count": 24
+      }
+    },
+    "human_interventions": 0,
+    "manifest_path": "docs/releases/0.1.0/agent-trials-109.json",
+    "model_gateway_mapping": {
+      "codex": {
+        "c6_distiller_model_alias": "home/codex/gpt-5.6-luna",
+        "harness": "OpenAI Codex CLI (0.153.4)",
+        "internal_relay_model_alias": "home/codex/gpt-6.1-sol",
+        "reasoning_effort": "xhigh",
+        "relay_note": "Evaluated via author's local authentication/metering gateway (127.0.0.1:3425/v1). External users can bind any OpenAI Responses-compatible model endpoint (e.g., gpt-5 / o3)."
+      },
+      "dsh": {
+        "harness": "DeepSeek Harness (dsh)",
+        "internal_relay_model_alias": "deepseek-flash",
+        "reasoning_effort": "max",
+        "relay_note": "Evaluated via internal DSH model endpoint. External users can bind any DeepSeek / OpenAI-compatible model endpoint."
+      }
+    },
+    "observed_delivery_wall_clock_sec_total": 42126.09,
+    "observed_foreground_wall_clock_sec_total": 38085.94,
+    "observed_tokens_total": {
+      "input_cached": 293398912,
+      "input_uncached": 9970041,
+      "output": 3282215
+    },
+    "repetitions_per_cell": 1,
+    "statistical_caveats": [
+      "All 18 engineering tasks (20 task.toml definitions including 3 Seed->Eval pairs) and their verifiers were constructed by the project authors from real vllm-ascend bugs and optimization bottlenecks.",
+      "Most (task, model, ablation_group) cells were evaluated with repetitions=1 due to live NPU and frontier reasoning token budgets; results represent controlled mechanism ablation evidence rather than a multi-repetition third-party blind benchmark.",
+      "In G3 (experience flywheel), 0/3 -> 1/1 on L2 cpu-rope-32 and L3 live NPU rope-32 refers to Codex CLI failing across G0, G1, and G2 (1 attempt each = 0/3) and passing on G3 (1/1) after retrieving the C6-distilled SOP from sibling seed task rope-64; on DSH, G0/G1/G2 also passed and G3 reduced delivery latency.",
+      "In G4 (open-ended exploration), 0/8 -> 8/8 covers 2 problem families (DeepSeek-V4 SparseMLA QLI fusion & Triton SpatialNorm 4D reduction) x 2 tiers (L2 local & L3 live NPU) x 2 models under knowledge_gradient='near_exact' factor-graph guidance and leave-one-out ablation gates.",
+      "In G2 (progressive disclosure), several tasks where the prompt/traceback already localized the fault showed higher wall-clock latency than G1 or G0 because extra knowledge_query/knowledge_explain calls added context and reasoning turns."
+    ],
+    "statuses": {
+      "completed_fail": 23,
+      "completed_pass": 84,
+      "unknown": 2
+    },
+    "study_type": "author_controlled_ablation_benchmark",
+    "supplementary_and_retry_attempts": 55,
+    "task_roles": {
+      "eval": 102,
+      "seed": 7
+    },
+    "total_task_toml_definitions": 20,
+    "total_tasks": 18,
+    "total_trials": 109
+  },
   "release_gate": true,
   "resources": {
     "attempts": 0,
