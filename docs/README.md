@@ -38,7 +38,9 @@
 
 | 文档 | English | 核心内容 |
 |---|---|---|
-| [`0.1.0` 里程碑与通道架构记录](releases/0.1.0.md) | [`0.1.0` Milestone & Channel Record](releases/0.1.0.en.md) | `channels/0.1.json` 通道清单、`0.1.x` 单组件独立热修（`< 500ms` 切换）与三层极速更新触达 |
+| [**`0.1.0` 正式版发布说明（当前版本）**](releases/0.1.0.md) | [**`0.1.0` Official Release Record (Current)**](releases/0.1.0.en.md) | `0.0.1 → 0.1.0` 完整能力演进、`mindie-bench` 双模型 18 任务 `G0–G4` 真机实测、三端 × 四插件全量验收与 [`channels/0.1.json`](../channels/0.1.json) 单组件热修通道 |
+| [`0.1.0` 作者自述：架构演进与工程哲学](releases/0.1.0/design-philosophy.md) | [`0.1.0` Author's Note: Architecture & Engineering Philosophy](releases/0.1.0/design-philosophy.en.md) | 为什么砍掉多 Skill、只做薄插件与双支柱（MCP 工具 + `L1–L4` 知识飞轮）、五大核心组件设计初衷与人机协同思考 |
+| [`0.1.0` 真实任务全组件价值实测报告](releases/0.1.0/value-results.md) | [`0.1.0` 18-Task Full Component Value Benchmark Report](releases/0.1.0/value-results.md) | `codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 在 18 个 L2/L3 真实任务（109 轮 Trial）与 7 大组件上的 `G0–G4` 消融数据 |
 | [`0.0.3` 版本发布记录](releases/0.0.3.md) | [`0.0.3` Release Record](releases/0.0.3.en.md) | L1–L4 渐进式知识披露、`profiler` 与 `sim` 组件发布、CANN 确定性故障分诊及十二仓正式 benchmark |
 | [`0.0.2` 版本发布记录](releases/0.0.2.md) | [`0.0.2` Release Record](releases/0.0.2.en.md) | 插件统一版本、精确组件源码、实机验收范围与常态化十仓 benchmark |
 | [`0.0.1` 版本发布记录](releases/0.0.1.md) | [`0.0.1` Release Record](releases/0.0.1.en.md) | 支持客户端矩阵、配套组件版本映射、实机验证范围与已知限制 |

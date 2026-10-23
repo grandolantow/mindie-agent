@@ -34,7 +34,9 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 
 | Document (English) | 中文 | What It Covers |
 |---|---|---|
-| [`0.1.0` Milestone & Channel Record](releases/0.1.0.en.md) | [`0.1.0` 里程碑与通道架构记录](releases/0.1.0.md) | `channels/0.1.json` Release Channel Manifest, `0.1.x` single-component hotfixes (`< 500ms` cutover), and three-tier rapid rollout |
+| [**`0.1.0` Official Release Record (Current)**](releases/0.1.0.en.md) | [**`0.1.0` 正式版发布说明（当前版本）**](releases/0.1.0.md) | Full `0.0.1 → 0.1.0` capability evolution, dual-model 18-task `mindie-bench` `G0–G4` evaluation, 3-platform × 4-plugin verification, and the [`channels/0.1.json`](../channels/0.1.json) hotfix channel |
+| [`0.1.0` Author's Note: Architecture & Engineering Philosophy](releases/0.1.0/design-philosophy.en.md) | [`0.1.0` 作者自述：架构演进与工程哲学](releases/0.1.0/design-philosophy.md) | Why we replaced sprawling multi-Skills with a thin plugin and two orthogonal pillars (MCP tools + `L1–L4` knowledge flywheel), the 5 core runtime components, and human-in-the-loop reflections |
+| [`0.1.0` 18-Task Full Component Value Benchmark Report](releases/0.1.0/value-results.md) | [`0.1.0` 真实任务全组件价值实测报告](releases/0.1.0/value-results.md) | End-to-end `G0–G4` ablation measurements across 18 real L2/L3 tasks (109 trials) and all 7 shared runtime components on `codex + gpt-6.1-sol (xhigh)` and `dsh + deepseek-flash (max)` |
 | [`0.0.3` Release Record](releases/0.0.3.en.md) | [`0.0.3` 版本发布记录](releases/0.0.3.md) | L1–L4 progressive disclosure, `profiler` and `sim` components, deterministic CANN fault triage, and 12-repository formal benchmarks |
 | [`0.0.2` Release Record](releases/0.0.2.en.md) | [`0.0.2` 版本发布记录](releases/0.0.2.md) | Aligned plugin versions, exact component sources, native acceptance, and recurring ten-repository benchmarks |
 | [`0.0.1` Release Record](releases/0.0.1.en.md) | [`0.0.1` 版本发布记录](releases/0.0.1.md) | Supported host matrix, paired component release mapping, verified capabilities, and known host limitations |

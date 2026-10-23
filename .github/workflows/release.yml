@@ -13,4 +13,4 @@ jobs:
     uses: mindie-agent/mindie-bench/.github/workflows/publish-product.yml@994b48e410f8dec989e26130b6e52fc5a6b569d2
     with:
       benchmark-ref: 994b48e410f8dec989e26130b6e52fc5a6b569d2
-      value-suite-path: docs/releases/0.0.3/value-suite.json
+      value-suite-path: docs/releases/0.1.0/value-suite.json

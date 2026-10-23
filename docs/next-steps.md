@@ -4,7 +4,7 @@
 
 系统整体架构与知识闭环设计请参阅 [系统架构与模块分工](architecture.md) 与 [知识与经验闭环设计](knowledge-system.md)，工程准则请参阅 [工程设计原则与演进准则](design-principles.md)。
 
-系统已完成主产品与四个原生宿主插件（Codex、Claude Code、Kimi Code、DSH）的统一版本演进与发布通道清单（[`channels/0.1.json`](../channels/0.1.json)）构建，落地 `knowledge` 的 L1–L4 渐进式披露、Token 预算门控与 `mode="explore"` 无偏探索，补齐 7 大昇腾公共知识库，发布 `profiler` 与 `sim` 两大性能分析与建模组件，支持 `diagnostics` CANN/`plog` 确定性故障分诊与 `coordinator` 昇腾 A5 拓扑预检，并建立十二个代码仓库的正式发布基准与组件价值验证闭环（各版本详情见[版本发布记录](README.md#版本记录与路线图)）。
+系统已完成首个正式里程碑版本 **[`v0.1.0`](releases/0.1.0.md)**（[实测报告](releases/0.1.0/value-results.md) · [作者自述](releases/0.1.0/design-philosophy.md)）与发布通道清单（[`channels/0.1.json`](../channels/0.1.json)）构建，落地 `knowledge` 的 L1–L4 渐进式披露、Token 预算门控、`G3` C6 经验蒸馏飞轮与 `G4` `mode="explore"` 无偏探索，补齐 7 大昇腾公共知识库（`450` 个结构化单元），发布 `profiler` 与 `sim` 两大性能分析与建模组件，支持 `diagnostics` CANN/`plog` 确定性故障分诊与 `coordinator` 昇腾 A5 拓扑预检，并完成双模型 18 任务（`109` 场 Trial）真机评测与三端 × 四插件全量验收（各版本详情见[版本发布记录](README.md#版本记录与路线图)）。
 
 ---
 

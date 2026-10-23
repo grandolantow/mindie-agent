@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.3.md"><img src="https://img.shields.io/badge/release-v0.0.3-7045F5.svg" alt="Release v0.0.3"></a>
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.1.0.md"><img src="https://img.shields.io/badge/release-v0.1.0-7045F5.svg" alt="Release v0.1.0"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-cc"><img src="https://img.shields.io/badge/Claude_Code-Plugin-D97757.svg" alt="Claude Code Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-codex"><img src="https://img.shields.io/badge/OpenAI_Codex-Plugin-10A37F.svg" alt="OpenAI Codex Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-kimi"><img src="https://img.shields.io/badge/Kimi_Code-Plugin-2563EB.svg" alt="Kimi Code Plugin"></a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <strong>中文</strong> · <a href="./README.en.md">English</a> · <a href="#-一句话无感安装仅接受-agent-安装-">⚡ 一句话安装</a> · <a href="#-为什么选择-mindie-agent">✨ 核心能力</a> · <a href="#️-架构全景与经验飞轮">🏗️ 架构全景</a> · <a href="#-装好之后怎么用">🔥 实战用法</a> · <a href="#-组件与仓库生态">📦 仓库生态</a> · <a href="#-如何参与贡献也是交给-agent">🤝 参与贡献</a> · <a href="#-当前版本与实测效果v003-release">🚀 v0.0.3 实测</a> · <a href="./docs/README.md">📚 文档中心</a>
+  <strong>中文</strong> · <a href="./README.en.md">English</a> · <a href="#-一句话无感安装仅接受-agent-安装-">⚡ 一句话安装</a> · <a href="#-为什么选择-mindie-agent">✨ 核心能力</a> · <a href="#️-架构全景与经验飞轮">🏗️ 架构全景</a> · <a href="#-装好之后怎么用">🔥 实战用法</a> · <a href="#-组件与仓库生态">📦 仓库生态</a> · <a href="#-如何参与贡献也是交给-agent">🤝 参与贡献</a> · <a href="#-当前版本与实测效果v010-release">🚀 v0.1.0 实测</a> · <a href="./docs/README.md">📚 文档中心</a>
 </p>
 
 ---
@@ -57,7 +57,7 @@
 > 社区贡献默认关闭。用户明确开启目标知识库 `<owner/repo>` 的贡献后，才创建或复用该知识库的个人 Fork，并绑定 `<GH_USER>/<repo>` 作为推送目标。不要因安装而 Fork 主仓、插件仓或所有领域仓库。
 >
 > #### 第三步：识别你所在的宿主客户端并安装对应插件
-> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`）：
+> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`；`v0.1.0` 正式版通过 [`channels/0.1.json`](./channels/0.1.json) 锁定四端插件发行标签 `v0.0.3` 及共享组件基线）：
 >
 > - **分支 A — 如果你是 Claude Code（或检测到 `CLAUDECODE` 环境变量 / 用户使用 `claude`）**：
 >   ```bash
@@ -348,18 +348,28 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 ---
 
-## 🚀 当前版本与实测效果（v0.0.3 Release）
+## 🚀 当前版本与实测效果（v0.1.0 Release）
 
-当前正式发布版本为 **[`v0.0.3`](./docs/releases/0.0.3.md)**（[English Release Notes](./docs/releases/0.0.3.en.md) · [组件价值报告](./docs/releases/0.0.3/component-value-results.md) · [十二仓发布基准](./docs/releases/0.0.3/benchmark-results.md)）。本版本完成主产品与四个原生宿主插件（Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness）的统一 `0.0.3` 发布，落地 L1–L4 渐进式披露与 Token 预算控制，新增 `profiler` 与 `sim` 两大性能分析与建模组件，并完成全部十二个代码仓库的正式 Benchmark 与组件价值验证：
+当前正式发布版本为 **[`v0.1.0`](./docs/releases/0.1.0.md)**（[English Release Notes](./docs/releases/0.1.0.en.md) · [18 任务全量基准报告](./docs/releases/0.1.0/value-results.md) · [作者自述与架构演进哲学](./docs/releases/0.1.0/design-philosophy.md) · [`channels/0.1.json`](./channels/0.1.json)）。`v0.1.0` 标志着 MindIE Agent 从 `0.0.1` 原型演进为具备双层发布通道（`channels/0.1.json` 单组件 `< 500ms` 独立热修）的生产级昇腾研发底座，并完成了双模型 18 个真实任务（`109` 轮端到端实测）、7 大共享组件真实 Agent 闭环以及三端 × 四插件的全量验收：
+
+1. **`mindie-bench` 双模型（`codex + gpt-6.1-sol (xhigh)` & `dsh + deepseek-flash (max)`）18 个真实任务、`109` 轮端到端实测收益（`G0 → G1 → G2 → G3 → G4`，含 `Ascend950DT` 真实 NPU）**：
+   - **`G0 → G1 → G2`（`remote-dev` + `knowledge` L1–L4 渐进式披露）**：L2/L3 模糊报障任务端到端交付提速 **`1.80x – 2.77x`**，Token 消耗降低 **`15% – 76%`**，单任务知识读取开销严格受控在 **`4,814–5,599` tokens（`< 8,000` 上限）**；
+   - **`G2 → G3`（`Stop` 采集 + `C6` 结构化经验蒸馏飞轮）**：在 L2 与 L3 真实 NPU 黑盒 `.so` 任务上，将同族新任务一次解出率从 **`0% (0/3) → 100% (1/1)`**（`codex xhigh` L3 真机提速 **`3.44x`**）；
+   - **`G2 → G4`（`mode="reuse" → mode="explore"` 开放探索 + 留一法消融）**：在 4 个 L2/L3 算子融合任务 × 2 套模型上实现 **`G0 (0/8, 0%) / G2 (0/8, 0%) → G4 (8/8, 100%)`**。
+2. **7 大共享组件真实 Agent 闭环与组件级实测（`profiler`、`sim`、`diagnostics`、`coordinator`、`npu-top`、`remote-dev`、`knowledge`）**：
+   - 在 4 个专属组件真实修复任务上，双模型成功率均从 **`75% (3/4) → 100% (4/4)`**，总耗时降低 **`-17.1% ~ -33.8%`**、输出 Token 节省 **`-25.2% ~ -34.1%`**：
 
 | 组件 / 评测场景 | 版本 | 实测核心收益与结论 |
 | --- | --- | --- |
-| **⚡ `remote-dev` 远端容器与长任务执行** | `v0.10.4` | 昇腾实机端到端评测中，`quarot` 量化修复任务 **`3/3` 全部解出**，3 轮累计交付耗时从 `747.31s` 缩短至 **`550.89s`**（提速 **`1.025x`**）；`v0.10.4` 补丁解析、工具协议与记录序列化基准全部通过 |
-| **🎯 `coordinator` 多 Agent 并发防撞车与 A5 预检** | `v0.6.2` | 3 轮双 Agent 并发抢占压测：有效监听从 `3` 个翻倍至 **`6` 个**，端口冲突 **`3 → 0`**、重复选卡 **`3 → 0`**，释放后平均 **`1.9 ms`** 完成接管；新增昇腾 A5 拓扑与 HCCL/RoCE 预检支持 |
-| **🔬 `profiler` 慢卡/慢链路定位与显存精准拆解** | `v0.5.0` | `msprof` 产物就地只读解析（`~7.6 ms`），**100% 准确区分慢链路（`Comm`）与慢卡（`Attention`）**；从 `10.0 GB` 峰值显存中归因 **`9.9 GB`（99%）已知桶**，残差收敛至 **`50 MB`（0.5% < 10% 门禁）**，原库零写污染 |
-| **📐 `sim` 算子流水排布、融合筛查与 A3 整网预测** | `v0.7.0` | 昇腾 A3 Qwen2.5-7B-Instruct `c=1` 整网 TPOT 预测 **`15.06 ms`** vs 实测 **`15.71 ms`**（误差 **`-4.14%`**，优于 `±15%` 门禁）；准确识别子图融合 **`2.0 MiB` GM 流量消除**与 **`5.0 μs` 关键路径收益**并拦截 UB 溢出候选 |
-| **📊 `npu-top` & 🛡️ `diagnostics` 可观测与确定性分诊** | `v0.2.1` / `v0.5.1` | `npu-top` 24 张物理卡识别、`16/16` 进程映射与 `3/3` 实机容器归属全部通过；`diagnostics` 新增 CANN/`plog` 确定性根因分诊，在多卡级联故障中 **100% 锁定根因 `Rank 3`（`aicore_memory_or_tiling`）并分离衍生超时 `Rank 7`**，双层隐私脱敏 **`3/3` 通过** |
-| **🧠 `knowledge` 渐进式披露、Token 预算与闭环飞轮** | `v0.13.0` | 7 大昇腾公共知识库全量就绪；P0–P4 渐进式披露验收（21/21）全部通过，单任务知识读取开销严格受控于 **`4,814–5,599` tokens（`< 8,000` 上限）**，在跨任务复用（`k=8`）下带来 **`+77,280` 至 `+89,120` tokens** 净收益 |
+| **⚡ `remote-dev` 远端容器与长任务执行** | `v0.10.4` | L2/L3 实机端到端评测中，`dspark-mrv2` / `l3-dspark-mrv2` 等任务较裸宿主提速 **`1.55x – 2.06x`**，`quarot` 量化修复 **`3/3` 全通**；补丁解析、工具协议与记录序列化基准全部通过 |
+| **🎯 `coordinator` 多 Agent 并发防撞车与 A5 预检** | `v0.6.2` | 真实 Agent 多 Die 租约修复任务交付提速 **`1.17x – 2.08x`**；双 Agent 并发抢占压测端口冲突 **`3 → 0`**、重复选卡 **`3 → 0`**，释放后平均 **`1.9 ms`** 完成接管；支持昇腾 A5 拓扑与 HCCL/RoCE 预检 |
+| **🔬 `profiler` 慢卡/慢链路定位与显存精准拆解** | `v0.5.0` | 在真实 Agent `msprof` 排障任务中将双模型解出率从 **`0% (G0) → 100% (G2)`**（耗时缩短 **`-29.7% ~ -34.6%`**）；就地只读解析（`~7.6 ms`）**100% 区分慢链路（`Comm`）与慢卡（`Attention`）**，峰值显存归因 **`99%`**（残差 **`0.5% < 10%` 门禁**） |
+| **📐 `sim` 算子流水排布、融合筛查与 A3 整网预测** | `v0.7.0` | 双模型 **100% 调用 `mindie_sim`** 完成昇腾 A3 Qwen2.5-7B-Instruct `c=1` 整网 TPOT 预测 **`15.06 ms`** vs 实测 **`15.71 ms`**（误差 **`-4.14%`**，优于 `±15%` 门禁），精准识别 **`2.0 MiB` GM 流量消除**并拦截 `192 KiB` UB 溢出候选 |
+| **📊 `npu-top` & 🛡️ `diagnostics` 可观测与确定性分诊** | `v0.2.1` / `v0.5.1` | 真实 Agent 8 卡级联 `plog` 分诊任务交付提速 **`1.31x – 1.82x`**、输出 Token 减少 **`-34.2% ~ -37.6%`**，**100% 锁定根因 `Rank 3`（`aicore_memory_or_tiling`）并分离衍生超时 `Rank 7`**；`npu-top` 24 张物理卡与容器归属全部通过 |
+| **🧠 `knowledge` 渐进式披露、Token 预算与闭环飞轮** | `v0.13.0` | 7 大昇腾公共知识库（`450` 个 `L1–L4` 单元）全量就绪；单任务知识读取开销严格受控于 **`4,814–5,599` tokens（`< 8,000` 上限）**，配合 `G3` 蒸馏飞轮与 `G4` `mode="explore"` 将黑盒与融合难题解出率推升至 **`100%`** |
+
+3. **三端（`macOS` / `4090 WSL2` / `Lenovo Windows 11 PowerShell`）× 四插件全流程验收**：
+   - 在三大操作系统硬件平台与四个原生宿主插件（Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness）上完成全量回归与安装闭环验收，累计通过 **`15,595+` 项测试（`0 failed`）**。
 
 ---
 
@@ -369,8 +379,9 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 | 文档主题 | 中文 | English |
 | --- | --- | --- |
-| **`v0.1.0` 里程碑与 `0.1` 通道热修规范（[`channels/0.1.json`](./channels/0.1.json)）** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) |
-| **`v0.0.3` 版本发布与实测基准报告（当前版本）** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
+| **`v0.1.0` 正式版发布说明与真实任务全量基准（当前版本）** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
+| **`v0.1.0` 作者自述与架构演进哲学（Author's Note）** | [docs/releases/0.1.0/design-philosophy.md](./docs/releases/0.1.0/design-philosophy.md) | [docs/releases/0.1.0/design-philosophy.en.md](./docs/releases/0.1.0/design-philosophy.en.md) |
+| **`v0.0.3` 版本发布与实测基准报告** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
 | **`v0.0.2` 版本发布与实测基准报告** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
 | **系统架构与组件边界** | [docs/architecture.md](./docs/architecture.md) | [docs/architecture.en.md](./docs/architecture.en.md) |
 | **工程设计原则与演进准则** | [docs/design-principles.md](./docs/design-principles.md) | [docs/design-principles.en.md](./docs/design-principles.en.md) |

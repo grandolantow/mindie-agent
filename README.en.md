@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.0.3.en.md"><img src="https://img.shields.io/badge/release-v0.0.3-7045F5.svg" alt="Release v0.0.3"></a>
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.1.0.en.md"><img src="https://img.shields.io/badge/release-v0.1.0-7045F5.svg" alt="Release v0.1.0"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-cc"><img src="https://img.shields.io/badge/Claude_Code-Plugin-D97757.svg" alt="Claude Code Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-codex"><img src="https://img.shields.io/badge/OpenAI_Codex-Plugin-10A37F.svg" alt="OpenAI Codex Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-kimi"><img src="https://img.shields.io/badge/Kimi_Code-Plugin-2563EB.svg" alt="Kimi Code Plugin"></a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="./README.md">中文</a> · <strong>English</strong> · <a href="#-zero-friction-one-sentence-install-agent-only-">⚡ 1-Sentence Install</a> · <a href="#-why-mindie-agent">✨ Why MindIE Agent</a> · <a href="#️-architecture--experience-flywheel">🏗️ Architecture</a> · <a href="#-how-to-use-after-installation-trigger-modes--examples">🔥 Workflows</a> · <a href="#-repository-ecosystem">📦 Ecosystem</a> · <a href="#-contributing-let-your-agent-do-it-too">🤝 Contributing</a> · <a href="#-current-release--benchmark-results-v003">🚀 v0.0.3 Benchmarks</a> · <a href="./docs/README.en.md">📚 Docs</a>
+  <a href="./README.md">中文</a> · <strong>English</strong> · <a href="#-zero-friction-one-sentence-install-agent-only-">⚡ 1-Sentence Install</a> · <a href="#-why-mindie-agent">✨ Why MindIE Agent</a> · <a href="#️-architecture--experience-flywheel">🏗️ Architecture</a> · <a href="#-how-to-use-after-installation-trigger-modes--examples">🔥 Workflows</a> · <a href="#-repository-ecosystem">📦 Ecosystem</a> · <a href="#-contributing-let-your-agent-do-it-too">🤝 Contributing</a> · <a href="#-current-release--benchmark-results-v010">🚀 v0.1.0 Benchmarks</a> · <a href="./docs/README.en.md">📚 Docs</a>
 </p>
 
 ---
@@ -57,7 +57,7 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > Community contribution is off by default. Only after the user enables contribution to a target corpus `<owner/repo>` should you create or reuse that corpus's personal Fork and bind `<GH_USER>/<repo>` as the push target. Do not Fork the main repository, plugin repositories or all domain repositories as an installation step.
 >
 > #### Step 3: Identify your host environment & install the matching plugin
-> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure):
+> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; the `v0.1.0` product release locks the four host plugin tags at `v0.0.3` and shared runtime components via [`channels/0.1.json`](./channels/0.1.json)):
 >
 > - **Branch A — If you are running inside Claude Code (`CLAUDECODE` env or `claude` CLI)**:
 >   ```bash
@@ -348,18 +348,28 @@ Please follow https://github.com/mindie-agent/mindie-agent/blob/main/CONTRIBUTIN
 
 ---
 
-## 🚀 Current Release & Benchmark Results (v0.0.3)
+## 🚀 Current Release & Benchmark Results (v0.1.0)
 
-The current release is **[`v0.0.3`](./docs/releases/0.0.3.en.md)** ([中文发布说明](./docs/releases/0.0.3.md) · [Component Value Report](./docs/releases/0.0.3/component-value-results.md) · [12-Repo Benchmark Summary](./docs/releases/0.0.3/benchmark-results.md)). `0.0.3` ships a unified `0.0.3` release across the product and all four native host plugins (Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness), introduces L1–L4 progressive disclosure with bounded token budgets, adds the `profiler` and `sim` components, and delivers formal benchmark and component-value verification across all twelve code repositories:
+The current official release is **[`v0.1.0`](./docs/releases/0.1.0.en.md)** ([中文发布说明](./docs/releases/0.1.0.md) · [18-Task Full Benchmark Report](./docs/releases/0.1.0/value-results.md) · [Author's Note & Design Philosophy](./docs/releases/0.1.0/design-philosophy.en.md) · [`channels/0.1.json`](./channels/0.1.json)). `v0.1.0` marks MindIE Agent's evolution from the `0.0.1` prototype into a production-grade Ascend engineering substrate backed by the [`channels/0.1.json`](./channels/0.1.json) Release Channel Manifest (`< 500ms` single-component hotfixes), verified across 18 real engineering tasks (`109` end-to-end trials on dual frontier models), all 7 shared runtime components, and 3 hardware platforms × 4 host plugins:
+
+1. **`mindie-bench` Dual-Model (`codex + gpt-6.1-sol (xhigh)` & `dsh + deepseek-flash (max)`) Evaluation Across 18 Real Tasks & `109` End-to-End Trials (`G0 → G1 → G2 → G3 → G4`, Including Live `Ascend950DT` NPUs)**:
+   - **`G0 → G1 → G2` (`remote-dev` + `knowledge` L1–L4 Progressive Disclosure)**: Accelerates L2/L3 vague troubleshooting tasks by **`1.80x – 2.77x`**, cuts token consumption by **`15% – 76%`**, and bounds single-task knowledge reading to **`4,814–5,599` tokens (`< 8,000` ceiling)**;
+   - **`G2 → G3` (`Stop` Capture + `C6` Structured Experience Distillation Flywheel)**: Lifts first-pass solve rate on sibling L2 and live L3 black-box `.so` NPU tasks from **`0% (0/3) → 100% (1/1)`** (**`3.44x` speedup** on live L3 NPU with `codex xhigh`);
+   - **`G2 → G4` (`mode="reuse" → mode="explore"` De-Biased Exploration + Leave-One-Out Ablation)**: Achieves **`G0 (0/8, 0%) / G2 (0/8, 0%) → G4 (8/8, 100%)`** across 4 L2/L3 operator/subgraph fusion tasks × 2 models.
+2. **Real Agent Closed-Loop & Component Benchmarks Across All 7 Shared Runtime Components (`profiler`, `sim`, `diagnostics`, `coordinator`, `npu-top`, `remote-dev`, `knowledge`)**:
+   - On 4 dedicated component repair tasks, both models lift solve rate from **`75% (3/4) → 100% (4/4)`**, reduce total delivery time by **`-17.1% to -33.8%`**, and cut output tokens by **`-25.2% to -34.1%`**:
 
 | Component / Benchmark Suite | Version | Measured Gains & Key Takeaways |
 | --- | --- | --- |
-| **⚡ `remote-dev` Remote Container & Long-Job Execution** | `v0.10.4` | On live Ascend tasks, `quarot` quantization bugfix solves **`3/3` runs** and cuts 3-run total delivery time from `747.31s` to **`550.89s`** (**`1.025x` speedup**); passes all patch-parser, tool-protocol, and record-serialization release benchmarks in `v0.10.4` |
-| **🎯 `coordinator` Multi-Agent Anti-Collision & A5 Preflight** | `v0.6.2` | Across 3 two-agent contention runs: active listeners double from `3` to **`6`**, port conflicts drop **`3 → 0`**, duplicate device selections drop **`3 → 0`**, and handoff after release completes in **`~1.9 ms`**; adds Ascend A5 topology and HCCL/RoCE preflight checks |
-| **🔬 `profiler` Slow-Rank / Slow-Link & Memory Attribution** | `v0.5.0` | In-place read-only `msprof` analysis (`~7.6 ms`) **100% distinguishes slow-link (`Comm`) from slow-rank (`Attention`) bottlenecks**; attributes **`9.9 GB` (99%) of a `10.0 GB` peak allocation** to known memory buckets with **`50 MB` (0.5% < 10% target) explicit residual** and zero SQLite mutation |
-| **📐 `sim` Operator Pipeline, Subgraph Screening & A3 Modeling** | `v0.7.0` | Predicts Ascend A3 Qwen2.5-7B-Instruct `c=1` whole-network TPOT at **`15.06 ms`** vs. **`15.71 ms` measured** (**`-4.14%` error**, within `±15%` gate); identifies **`2.0 MiB` removable GM traffic** and **`5.0 μs` critical-path savings** while rejecting UB-overflowing subgraph candidates |
-| **📊 `npu-top` & 🛡️ `diagnostics` Observability & Triage** | `v0.2.1` / `v0.5.1` | `npu-top` verifies `24/24` physical NPUs, `16/16` process mappings, and `3/3` live container attributions; `diagnostics` adds deterministic CANN/`plog` triage that **100% pinpoints root-cause `Rank 3` (`aicore_memory_or_tiling`) and separates cascading `HCCL` timeout `Rank 7`** with **`3/3` redaction passes** |
-| **🧠 `knowledge` Progressive Disclosure & Closed-Loop Flywheel** | `v0.13.0` | All 7 public Ascend corpora ready; passes 21/21 P0–P4 progressive-disclosure checks with single-task reading bounded at **`4,814–5,599` tokens (`< 8,000` ceiling)** and **`+77,280` to `+89,120` tokens** net multi-task benefit at `k=8` |
+| **⚡ `remote-dev` Remote Container & Long-Job Execution** | `v0.10.4` | On L2/L3 live Ascend tasks, delivers **`1.55x – 2.06x` speedups** over bare host baselines on `dspark-mrv2` / `l3-dspark-mrv2` and solves `quarot` quantization bugfix **`3/3` runs**; passes all patch-parser, tool-protocol, and record-serialization benchmarks |
+| **🎯 `coordinator` Multi-Agent Anti-Collision & A5 Preflight** | `v0.6.2` | Accelerates real Agent multi-Die lease repair tasks by **`1.17x – 2.08x`**; under 2-agent contention, eliminates port conflicts (**`3 → 0`**) and duplicate device selections (**`3 → 0`**) with **`~1.9 ms`** lease handoff; adds Ascend A5 topology and HCCL/RoCE preflight checks |
+| **🔬 `profiler` Slow-Rank / Slow-Link & Memory Attribution** | `v0.5.0` | Lifts real Agent `msprof` straggler/HBM repair solve rate from **`0% (G0) → 100% (G2)`** across both models (**`-29.7% to -34.6%` faster**); in-place read-only analysis (`~7.6 ms`) **100% separates slow-link (`Comm`) from slow-rank (`Attention`)** and attributes **`99%` of `10.0 GB` peak HBM** (**`0.5% < 10%` residual gate**) |
+| **📐 `sim` Operator Pipeline, Subgraph Screening & A3 Modeling** | `v0.7.0` | **100% adopted by both models** to predict Ascend A3 Qwen2.5-7B-Instruct `c=1` whole-network TPOT at **`15.06 ms`** vs. **`15.71 ms` measured** (**`-4.14%` error**, within `±15%` gate), identify **`2.0 MiB` removable GM traffic**, and reject `192 KiB` UB-overflowing subgraph candidates |
+| **📊 `npu-top` & 🛡️ `diagnostics` Observability & Triage** | `v0.2.1` / `v0.5.1` | Accelerates real Agent 8-rank cascading `plog` triage by **`1.31x – 1.82x`** with **`-34.2% to -37.6%` fewer output tokens**, **100% pinpointing root-cause `Rank 3` (`aicore_memory_or_tiling`) and separating cascading `Rank 7` timeouts**; `npu-top` verifies `24/24` physical NPUs and live container attribution |
+| **🧠 `knowledge` Progressive Disclosure & Closed-Loop Flywheel** | `v0.13.0` | All 7 public Ascend corpora (`450` graded `L1–L4` units) ready; bounds single-task reading at **`4,814–5,599` tokens (`< 8,000` ceiling)** and powers `100%` solve rates on `G3` black-box transfer and `G4` `mode="explore"` fusion tasks |
+
+3. **3-Platform (`macOS` / `4090 WSL2` / `Lenovo Windows 11 PowerShell`) × 4-Plugin Full-Matrix Verification**:
+   - Completed end-to-end onboarding and full regression suites across all 3 OS hardware platforms and all 4 native host plugins (Claude Code / OpenAI Codex / Kimi Code / DeepSeek Harness), passing **`15,595+` tests (`0 failed`)**.
 
 ---
 
@@ -369,8 +379,9 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 
 | Topic | 中文 | English |
 | --- | --- | --- |
-| **`v0.1.0` Milestone & `0.1` Release Channel ([`channels/0.1.json`](./channels/0.1.json))** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) |
-| **`v0.0.3` Release & Benchmark Report (Current)** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
+| **`v0.1.0` Official Release & Full Benchmark Report (Current)** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
+| **`v0.1.0` Author's Note & Architectural Philosophy** | [docs/releases/0.1.0/design-philosophy.md](./docs/releases/0.1.0/design-philosophy.md) | [docs/releases/0.1.0/design-philosophy.en.md](./docs/releases/0.1.0/design-philosophy.en.md) |
+| **`v0.0.3` Release & Benchmark Report** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
 | **`v0.0.2` Release & Benchmark Report** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |
 | **System Architecture & Domain Boundaries** | [docs/architecture.md](./docs/architecture.md) | [docs/architecture.en.md](./docs/architecture.en.md) |
 | **Engineering Design Principles** | [docs/design-principles.md](./docs/design-principles.md) | [docs/design-principles.en.md](./docs/design-principles.en.md) |

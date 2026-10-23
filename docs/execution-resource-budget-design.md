@@ -44,7 +44,7 @@ flowchart LR
 | **2. 单进程 `1 GiB` 缺陷警戒线** | 控制面与分析组件（`sim`、`profiler`、`knowledge`、`coordinator`）单次常规调用内存增量 `<= 256 MiB`（峰值 `<= 512 MiB`）。除真实加载模型权重或大型 C++ 并行链接外，单进程峰值 `> 1 GiB` 默认定性为**代码算法 Bug**。 | 不优化数据结构（不使用 `__slots__`/扁平数组/流式迭代），试图靠调大机器内存限额放行。 |
 | **3. 热路径性能与并发纪律** | 热循环内零 `deepcopy`、零外部子进程、零逐行 `sqlite.commit()`；同质重复步采用事件跳步（Analytical Step Folding）；并行度必须按 $\text{Workers} = \max(1, \min(\text{可用 CPU 核数}, \lfloor\text{可用安全内存}/\text{单 Worker 峰值内存}\rfloor))$ 计算。 | 在循环内跑 `subprocess.run`；无脑按 `os.cpu_count()` 启动十几个高内存子进程把本机乘爆。 |
 | **4. 显存（HBM/VRAM）安全** | **零权重控制面**：读取模型结构只解析 `config.json` 或 `safetensors` 头部（前 8 字节 + JSON Header），严禁加载权重或初始化 `torch_npu`/CUDA 上下文。<br>**先算账后上卡**：上卡前必须核算 $\text{Expected VRAM} = \text{权重} + \text{KV Cache} + \text{激活峰值} + \text{HCCL Buffer} + \text{Runtime 预留}$，确认 `vram_free_mb >= Expected VRAM`。 | 为读词表/层数而调用 `from_pretrained`；未核对空闲 HBM 直接拉起推理/压测进程导致 OOM 炸卡。 |
-| **5. 工具输出折叠与上下文保护** | **全量落盘 + 连续重复行折叠 + 头尾有界回显**：`remote-dev` 远端作业日志在磁盘文件保持 100% 原始完整；返回给宿主 LLM 的工具预览通过 [`preview.py:fold_repeated_lines`](../../remote-dev/remote_dev/core/preview.py) 将 `> 2` 行连续相同日志折叠为 `[previous line repeated N more times]`，超长时保留 Head/Tail 并附带原始日志指针供按需切片读取；中途阶段预算提醒一律追加于工具结果尾部（`additionalContext`），严禁改写会话起始 System Prompt 破坏 Prompt Prefix Cache（吸收 `HarnessPro` `arXiv:2610.26770v2`）。 | 把数千行重复编译 Warning / 进度条直接塞进对话历史撑爆上下文；在任务中途动态修改 System Prompt 导致 90% 折扣的 KV Cache 全部失效。 |
+| **5. 工具输出折叠与上下文保护** | **全量落盘 + 连续重复行折叠 + 头尾有界回显**：`remote-dev` 远端作业日志在磁盘文件保持 100% 原始完整；返回给宿主 LLM 的工具预览通过 [`preview.py:fold_repeated_lines`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/preview.py) 将 `> 2` 行连续相同日志折叠为 `[previous line repeated N more times]`，超长时保留 Head/Tail 并附带原始日志指针供按需切片读取；中途阶段预算提醒一律追加于工具结果尾部（`additionalContext`），严禁改写会话起始 System Prompt 破坏 Prompt Prefix Cache（吸收 `HarnessPro` `arXiv:2610.26770v2`）。 | 把数千行重复编译 Warning / 进度条直接塞进对话历史撑爆上下文；在任务中途动态修改 System Prompt 导致 90% 折扣的 KV Cache 全部失效。 |
 
 ---
 
@@ -72,12 +72,12 @@ flowchart LR
   - `heavy`（重度计算/大内存任务：`8+ cores`, `8192+ MB RAM`, `0 VRAM`, `300s`）：全量明细仿真、大体积 Trace 深度分析、全量源码编译（`install-vllm-ascend`）。仅当目标环境（远端服务器或高配本地工作站）具备充足空闲内存与算力时放行。
   - `npu`（加速卡与显存任务：`npu_count >= 1`, `vram_mb > 0`）：模型推理服务、算子实机验证、`mindie-bench`。必须路由至具备对应空闲 NPU 与空闲 HBM 的节点。
 - **组件参数化估算器（复用业务输入）**：
-  - [`sim/mindie_sim/a3_host_budget.py`](../../sim/mindie_sim/a3_host_budget.py)：提供 `estimate_prediction_resources(case, trace_detail)`，根据模型层数 `layers`、请求序列长度与 `trace_detail`（`bounded` vs `full`）计算 `layer_iterations`、`expected_memory_mb` 与 `expected_cpu_cores`，彻底废除 `sys.platform != "darwin"` 的硬编码。
+  - [`sim/mindie_sim/a3_host_budget.py`](https://github.com/mindie-agent/sim)：提供 `estimate_prediction_resources(case, trace_detail)`，根据模型层数 `layers`、请求序列长度与 `trace_detail`（`bounded` vs `full`）计算 `layer_iterations`、`expected_memory_mb` 与 `expected_cpu_cores`，彻底废除 `sys.platform != "darwin"` 的硬编码。
   - `profiler` / `coordinator` 编译：根据待解析 Trace 文件体积或并行编译目标估算 `memory_mb` 与 `cpu_cores`。
 
 ### 2. 跨平台统一硬件规格模型（`HostHardwareSpec`）
 
-无论是用户的 Windows 笔记本、macOS 工作站、Linux 开发机，还是 [`fleet_probe.py`](../../coordinator/mindie_coordinator/fleet_probe.py) 探测到的远端昇腾服务器，均归一化为同一份 `HostHardwareSpec` 结构：
+无论是用户的 Windows 笔记本、macOS 工作站、Linux 开发机，还是 [`fleet_probe.py`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/fleet_probe.py) 探测到的远端昇腾服务器，均归一化为同一份 `HostHardwareSpec` 结构：
 
 ```json
 {
@@ -95,12 +95,12 @@ flowchart LR
 ```
 
 - **本机端（Windows / macOS / Linux 全平台零子进程开销探针）**：
-  - 在 [`remote_dev/core/host_spec.py`](../../remote-dev/remote_dev/core/host_spec.py) 中实现 `probe_local_hardware_spec()`：
+  - 在 [`remote_dev/core/host_spec.py`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) 中实现 `probe_local_hardware_spec()`：
     - 优先复用标准库/生态（`psutil` 若已安装则直接调用），并提供零外部依赖的原生 API 兜底：
       - **Windows (`nt`)**：通过 `ctypes.windll.kernel32.GlobalMemoryStatusEx` 直接读取内核 `ullTotalPhys` 与 `ullAvailPhys`；
       - **Linux (`linux`)**：直接读取 `/proc/meminfo` 的 `MemTotal` / `MemAvailable` 与 `/proc/loadavg`；
       - **macOS (`darwin`)**：读取物理总内存与可回收页面（free + inactive + speculative），扣除桌面交互保底预留（默认保留 `max(2 GiB, 20% 总内存)` 给 GUI 与系统，防止把本机桌面搞卡死）得到安全可用的 `mem_usable_mb`。
-- **远端服务器侧（100% 复用 [`fleet_probe.py`](../../coordinator/mindie_coordinator/fleet_probe.py) 现有采集结果）**：
+- **远端服务器侧（100% 复用 [`fleet_probe.py`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/fleet_probe.py) 现有采集结果）**：
   - `fleet_probe.py` 已经采集了远端主机的 `server.cpu_cores`、`server.load_1m`、`server.mem_total_mb`、`server.mem_available_mb` 以及每张 NPU / Die 的 `hbm_total_mb`、`hbm_used_mb`、`free_phy_ids`。
   - 通过 `normalize_remote_probe_spec(probe_row)` 直接将 `fleet_probe.py` 的返回结构映射为标准 `HostHardwareSpec`（汇总空闲卡/Die 的 `vram_free_mb` 与主机 `mem_usable_mb`），无需新增任何远端 SSH 探测脚本。
 
@@ -108,7 +108,7 @@ flowchart LR
 
 ## 五、第三层：本地 vs 远端规格匹配与自适应调度（Spec-Driven Placement）
 
-在启动任务前，由 [`remote_dev.core.host_spec.evaluate_placement`](../../remote-dev/remote_dev/core/host_spec.py) 与 [`mindie_coordinator.placement.select_execution_target`](../../coordinator/mindie_coordinator/placement.py) 按统一规则完成决策：
+在启动任务前，由 [`remote_dev.core.host_spec.evaluate_placement`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) 与 [`mindie_coordinator.placement.select_execution_target`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/placement.py) 按统一规则完成决策：
 
 ### 1. 规格匹配不变量（与操作系统名称无关）
 
@@ -142,9 +142,9 @@ W.\text{npu\_count} &\le H.\text{free\_npus}
 
 ## 六、第四层：轻量级跨平台进程树保险丝（兜底保护）
 
-在完成事前分流后，实际拉起的进程通过 [`remote-dev`](../../remote-dev/remote_dev/core/local_process.py) 已有的跨平台进程组所有权机制做最后一道兜底，防止未知代码 Bug 引发内存泄漏或孤儿进程残留：
+在完成事前分流后，实际拉起的进程通过 [`remote-dev`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/local_process.py) 已有的跨平台进程组所有权机制做最后一道兜底，防止未知代码 Bug 引发内存泄漏或孤儿进程残留：
 
-- **Windows 本机（`_WindowsJob`）**：复用 [`local_process.py`](../../remote-dev/remote_dev/core/local_process.py) 现有的 Windows Job Object（`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`），并在传入 `max_memory_mb` 时启用内核原生 `JOB_OBJECT_LIMIT_JOB_MEMORY`（`JobMemoryLimit`），无需额外守护进程即可由 Windows 内核兜底整棵进程树内存与退出回收。
+- **Windows 本机（`_WindowsJob`）**：复用 [`local_process.py`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/local_process.py) 现有的 Windows Job Object（`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`），并在传入 `max_memory_mb` 时启用内核原生 `JOB_OBJECT_LIMIT_JOB_MEMORY`（`JobMemoryLimit`），无需额外守护进程即可由 Windows 内核兜底整棵进程树内存与退出回收。
 - **macOS / Linux 本机（`OwnedProcess` + `_posix_owner.py`）**：复用独立会话（`setsid`）与父进程死亡管道守护，确保超时或取消时整棵进程组（`-pgid`）干净回收，无后台孤儿 Python 残留。
 - **Linux 远端服务器（`processes/worker.py`）**：复用 `PR_SET_CHILD_SUBREAPER` 与进程树排空确认（`descendants_drained`），在租约释放前确保所有子孙进程彻底退出。
 
@@ -155,6 +155,6 @@ W.\text{npu\_count} &\le H.\text{free\_npus}
 | 仓库 / 模块 | 核心职责 | 关键入口与测试验证 |
 | --- | --- | --- |
 | [`mindie-agent`](../AGENTS.md) | 编码性能、内存/显存有界性原则（Principle 18）与 PR 自查门禁 | [`docs/design-principles.md`](design-principles.md)、[`.github/pull_request_template.md`](../.github/pull_request_template.md) |
-| [`remote-dev`](../../remote-dev/remote_dev/core/host_spec.py) | Windows/macOS/Linux 本机硬件规格探针、`fleet_probe` 规格归一化、本地/远端分流判定器、`_WindowsJob` 内存保险丝 | `remote_dev/core/host_spec.py`、`remote_dev/core/local_process.py`、`tests/test_host_spec_placement.py` |
-| [`coordinator`](../../coordinator/mindie_coordinator/placement.py) | 扩展 `RESOURCE_KEYS`（支持 `cpu_cores`、`memory_mb`、`hbm_mb`），对接 `fleet_probe.py` 实现本地与远端联合选机 | `mindie_coordinator/placement.py`、`tests/test_workload_placement.py` |
-| [`sim`](../../sim/mindie_sim/a3_host_budget.py) | 跨平台（Windows/macOS/Linux）仿真资源估算 `estimate_prediction_resources` 与本机容量门禁（消除 `darwin` 硬编码） | `mindie_sim/a3_host_budget.py`、`tests/test_a3_host_memory.py` |
+| [`remote-dev`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) | Windows/macOS/Linux 本机硬件规格探针、`fleet_probe` 规格归一化、本地/远端分流判定器、`_WindowsJob` 内存保险丝 | `remote_dev/core/host_spec.py`、`remote_dev/core/local_process.py`、`tests/test_host_spec_placement.py` |
+| [`coordinator`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/placement.py) | 扩展 `RESOURCE_KEYS`（支持 `cpu_cores`、`memory_mb`、`hbm_mb`），对接 `fleet_probe.py` 实现本地与远端联合选机 | `mindie_coordinator/placement.py`、`tests/test_workload_placement.py` |
+| [`sim`](https://github.com/mindie-agent/sim) | 跨平台（Windows/macOS/Linux）仿真资源估算 `estimate_prediction_resources` 与本机容量门禁（消除 `darwin` 硬编码） | `mindie_sim/a3_host_budget.py`、`tests/test_a3_host_memory.py` |
