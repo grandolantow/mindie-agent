@@ -57,25 +57,25 @@
 > 社区贡献默认关闭。用户明确开启目标知识库 `<owner/repo>` 的贡献后，才创建或复用该知识库的个人 Fork，并绑定 `<GH_USER>/<repo>` 作为推送目标。不要因安装而 Fork 主仓、插件仓或所有领域仓库。
 >
 > #### 第三步：识别你所在的宿主客户端并安装对应插件
-> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`；四个宿主插件均已正式发布 `v0.1.2` 并保留此前不可变的 `v0.1.1` 标签，共享组件直接从各官方 GitHub 仓库发现正式 Release，[`channels/0.1.json`](./channels/0.1.json) 记录经主产品验证的组合）：
+> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`；Codex 使用企业网络与 Hook 信任修复版 `v0.1.4`，Claude Code 使用企业网络修复版 `v0.1.3`，Kimi Code 与 DSH 使用 `v0.1.2`。共享组件直接从各官方 GitHub 仓库发现正式 Release，[`channels/0.1.json`](./channels/0.1.json) 记录经主产品验证的组合）：
 >
 > - **分支 A — 如果你是 Claude Code（或检测到 `CLAUDECODE` 环境变量 / 用户使用 `claude`）**：
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.2"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.3"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.1.2`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
+>   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.1.3`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
 >
 > - **分支 B — 如果你是 OpenAI Codex CLI（或检测到 `CODEX_CI` / `CODEX_THREAD_ID` / 用户使用 `codex`）**：
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.2
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.4
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.1.2`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
+>   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.1.4`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
 >
 > - **分支 C — 如果你是 Kimi Code CLI（或检测到 `KIMI_CODE_HOME` / 用户使用 `kimi`）**：
 >   ```bash

@@ -28,6 +28,14 @@
 
 变更只落在对应组件和插件仓；主仓维护本设计和入口文档。后台更新继续复用既有准备、空闲切换和超时预算。
 
+## 企业网络维护版本
+
+[`knowledge 0.13.4`](https://github.com/mindie-agent/knowledge/releases/tag/v0.13.4) 将安装器的 uv 系统证书默认策略带到独立组件更新构建器，并保留显式 TLS、CA 和代理设置。[`Codex 0.1.3`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.3) 与 [`Claude Code 0.1.3`](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.3) 同时修复候选发布契约校验清空 Git 系统/用户配置的问题，使企业代理、CA 与 Windows `schannel` 配置继续生效。
+
+Windows 企业网络下已验证 Codex `0.164.0-alpha.11.1` 的正式 `0.1.2` MCP 进程通过常规后台维护更新到 `0.1.3`，实际运行组件为 `knowledge 0.13.4 / remote-dev 0.10.6 / diagnostics 0.5.2`。本次从更新检查到激活约 `44.9s`，其中绑定切换约 `55ms`；原 MCP 进程持续处理前台工具发现请求。该记录是单机软件更新验收，包含前置环境构建，不将完整流程表述为亚秒级切换。
+
+[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) 另修复 Desktop `0.164` 将 Hook 信任拆为命令与内容哈希两个字段时的继承比较。更新器只迁移已有批准记录；显式停用或任一哈希变化继续保留用户选择。
+
 ## 正常安装与工作区引导
 
 主仓安装入口、四个插件的自动安装协议和首次配置入口都执行同一顺序：检查并复用 GitHub 认证，完成插件安装，介绍已有用户须知，然后提供 `vllm-ascend-workspace` 的创建、复用或继续当前目录选择。手动安装文档明确以 `/mindie-agent 帮我完成首次配置` 收尾；后台启动和普通开发任务不重复询问。

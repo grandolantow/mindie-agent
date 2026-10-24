@@ -28,6 +28,14 @@ Following [design principles](design-principles.en.md) 1, 8, 9, 10, 14 and 15:
 
 Runtime changes belong to their component and plugin repositories. This repository owns the design and entry documentation. Updates retain existing preparation, idle switching and timeout budgets.
 
+## Enterprise-network maintenance releases
+
+[`knowledge 0.13.4`](https://github.com/mindie-agent/knowledge/releases/tag/v0.13.4) applies the installer's uv system certificate defaults to independent component builds while preserving explicit TLS, CA, and proxy settings. [`Codex 0.1.3`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.3) and [`Claude Code 0.1.3`](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.3) also preserve system and user Git configuration during candidate publication-contract validation, retaining enterprise proxies, CA paths, and Windows schannel trust.
+
+On the Windows enterprise network, a formal `0.1.2` MCP process under Codex `0.164.0-alpha.11.1` completed its normal background upgrade to `0.1.3`, running `knowledge 0.13.4 / remote-dev 0.10.6 / diagnostics 0.5.2`. This run took approximately `44.9s` from update check to activation, including a binding switch of approximately `55ms`; the original MCP process continued to handle foreground tool discovery. This is software-update acceptance on one host, including runtime preparation, rather than a subsecond claim for the entire update.
+
+[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) also fixes trust inheritance when Desktop `0.164` stores command and content hashes in separate fields. The updater transfers existing approvals only, preserving explicit disables and changes to either approved hash.
+
 ## Normal installation and workspace onboarding
 
 The main installation entry, all four plugin auto-install protocols, and first-use setup follow the same sequence: check and reuse GitHub authentication, install the plugin, present the existing user notice, then offer creating `vllm-ascend-workspace`, reusing a directory, or keeping the current directory. Manual installation ends with `/mindie-agent help me finish first-time setup`; background startup and ordinary development tasks do not repeat the questions.
