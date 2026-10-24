@@ -350,7 +350,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 ## 🚀 当前版本与实测效果（v0.1.0 Release）
 
-> **评测证据更正（2026-10-24）**：本节及 `0.1.0` 价值报告中的历史成功率、提速和 Token 收益暂不作为当前产品验收结论。六类任务的旧判分器可接受无功能源码，策略 pilot 的默认续跑器还会根据评判答案生成结果与成本。新判分器通过 soundness 不等于历史 Trial 已经重判；组件夹具、回放、模拟与 NPU 实测也需分别解释。[修复范围、验证和 PR](./docs/architecture-review-20261024.md)。
+> **评测证据更正说明（2026-10-24）**：本节及 `0.1.0` 价值评测报告中的历史解出率、提速比与 Token 节省数据**暂停作为当前产品验收结论**。原因包括：六类任务的旧判分器可被无功能源码通过，且策略选择 pilot 的旧默认续跑器曾依据私有评判答案合成续跑结果与成本。新判分器通过 soundness 校验不代表历史 Trial 已完成重判；组件夹具、确定性回放、仿真推演与真实 NPU 实测各自具备独立的证据边界，不可混同。详见 **[并行架构评审与修复记录](./docs/architecture-review-20261024.md)**。
 
 当前正式发布版本为 **[`v0.1.0`](./docs/releases/0.1.0.md)**（[English Release Notes](./docs/releases/0.1.0.en.md) · [18 任务全量基准报告](./docs/releases/0.1.0/value-results.md) · [109 轮真实 Trial 脱敏凭据 (`agent-trials-109.json`)](./docs/releases/0.1.0/agent-trials-109.json) · [组件基准凭据 (`value-results.json`)](./docs/releases/0.1.0/value-results.json) · [作者自述与架构演进哲学](./docs/releases/0.1.0/design-philosophy.md) · [`channels/0.1.json`](./channels/0.1.json)）。`v0.1.0` 标志着 MindIE Agent 从 `0.0.1` 原型演进为面向昇腾（Ascend NPU）AI Infra 的智能研发与验证底座（确立 [`channels/0.1.json`](./channels/0.1.json) 通道清单契约并验证插件级锁定更新 `v0.0.3`，同时为后续 `0.1.x` 单组件免重发独立热修提供通道基线），历史报告记录了 18 个工程任务、`109` 轮主 Trial 与组件/宿主检查。以下量化结论保留供追溯，受上述证据更正约束，待重判后才能重新用于收益比较：
 
