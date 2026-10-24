@@ -2,40 +2,42 @@
 
 [返回文档中心](README.md) · [设计原则与 PR 自查清单](design-principles.md) · [架构与领域边界](architecture.md)
 
-本文定义资源约束的归属和接线目标。规格判定、资源授予、进程回收和内存硬限额各自回答不同的问题，不能把其中一项的测试当成其余各项的验收。
+本文定义执行资源约束的职责归属、当前代码事实与后续接线目标。**设备忙闲（Busy/Idle）、可用容量（Capacity Headroom）、并发预约/租约授予（Reservation / Lease Grant）与内核级内存硬限制（Hard Limit）各自回答完全不同的问题**——绝不能把其中任意一项的单元测试或组件实现冒充为其余各项的端到端验收。
 
-## 一、实现边界
+## 一、“当前代码 / 目标设计 / 未验收”实现边界
 
-2026-10-24 源码审查的基线为 remote-dev `b91874e`、coordinator `7a252d0`。下表记录该基线，配套修复仍应按其 PR 的实际合入状态判断；本文不证明安装中的插件已经采用这些变更。
+以 2026-10-24 源码审查基线（`remote-dev` `b91874e` 及配套 PR [`remote-dev #44`](https://github.com/mindie-agent/remote-dev/pull/44)、`coordinator` `7a252d0` 及配套 PR [`coordinator #64`](https://github.com/mindie-agent/coordinator/pull/64)）为准，各能力的真实状态严格区分如下（本文不代表已安装宿主插件已合入或启用全部下述变更）：
 
-| 能力 | 已有实现 | 尚未完成的接线或验收 |
-| --- | --- | --- |
-| 资源规格 | remote-dev 的 `WorkloadExpectation`、`HostHardwareSpec`、`normalize_remote_probe_spec`、`evaluate_placement` | 库存在不等于所有任务会使用它；sim/profiler 的真实 CLI 尚未统一接入资源估算与分流 |
-| 远端容量 | coordinator 的 `fleet_probe` 采集主机内存、核数与卡/Die 观测 | RuntimePool 的 prepared-root catalog 不含容量；基线中的资源参数不能仅靠该行完成规格判断 |
-| 编译并发 | 主机队列限制编译槽位，构建脚本另算 worker 数；两者的 CPU 侧已读 cgroup 配额 | 内存侧仍只读宿主 `MemAvailable`，且槽位数与每槽 worker 数各按同一份预算计算，尚无一次授予、下游复用的每槽配额 |
-| 进程所有权 | Windows Job Object；POSIX owner/进程组；Linux 远端 subreaper 与排空回执 | 所有权和退出回收不证明内存有上限 |
-| 内存硬限额 | Windows `OwnedProcess(max_memory_mb=...)` 可设置 Job Memory Limit | 仅显式传参才生效；POSIX 路径没有同等内存执行保证，当前不能据此宣称全平台整树限额 |
+| 能力维度 | 当前代码（已实现） | 目标设计（待接线） | 未验收边界（不得夸大宣称） |
+| --- | --- | --- | --- |
+| **工作负载规格与放置判定** | `remote_dev/core/host_spec.py` 提供 `WorkloadExpectation`、`HostHardwareSpec`、`normalize_remote_probe_spec`、`evaluate_placement` 与本机跨进程 `reserve_local_resources`（SQLite WAL） | `sim` / `profiler` 等组件在各自真实 CLI 入口按模型层数、Token/事件规模与 Trace 大小动态计算预期工作集并调用放置判定 | 基础库存在不等于所有业务入口均已接入；`sim` / `profiler` 真实 CLI 尚未统一接入动态估算与自动分流 |
+| **远端集群容量与放置准入** | `coordinator` 的 `fleet_probe` 采集远端主机内存、核数与卡/Die 观测；`placement.py`（`hardware_shortfall`、`select_runtimes`、`can_prepare`）对显式声明 `cpu_cores`/`memory_mb`/`hbm_mb` 的请求按同次放置的 `host_specs` 快照校验容量 | 将逐设备 HBM 余量校验下沉到真正发放物理 Phy-ID 的主机租约队列（`HostQueue`） | `RuntimePool` 的 `prepared-root` 目录行本身不存动态容量；放置阶段的快照校验只是**候选可行性筛查**，不等于编译完成后的启动期显存保留 |
+| **编译并发与每槽份额** | 主机队列限制并发编译槽位数，构建脚本独立计算 worker 数；两侧在 Linux 下已读取 cgroup CPU 配额 | 由主机队列在授予 `CompileLease` 时一次性计算并下发每槽内存/CPU 份额，`PreparationProcess` 与 `MAX_JOBS` / `CMAKE_BUILD_PARALLEL_LEVEL` 统一消费同一上限 | 目前内存侧仍只读宿主机 `MemAvailable`，且“槽位数”与“每槽 worker 数”各自按同一份整机可用内存计算，尚未实现单次授予的乘积预算闭环 |
+| **进程树所有权与退出回收** | Windows Job Object（`KILL_ON_JOB_CLOSE`）、POSIX 进程组 owner、Linux 远端 subreaper 与 `/proc` 进程树排空回执 | 保持现有所有权与退出排空链路，与内存限额解耦 | **进程所有权与超时排空只证明子进程可被追踪和终止，不证明运行期内存峰值有上限** |
+| **进程树内存硬限制（Hard Limit）** | Windows `OwnedProcess(max_memory_mb=...)` 支持在显式传参时设置 Job Memory Limit | Linux 执行器按需接入真实已授权的 cgroup v2 `memory.max`；macOS 如实报告 `observed-only` | **当前不存在跨平台统一的进程树内存硬上限**：Windows 仅在显式传参时生效，POSIX `RLIMIT_AS` 仅限单进程虚拟地址空间而非进程树 RSS，macOS 无等价内核机制 |
 
-已有规格判定库不应成为第二个调度器或守护进程。组件提供工作负载预期；实际执行主机的队列负责授予；执行入口复用结果。
+已有规格判定库不是第二个调度器或常驻守护进程：组件声明工作负载预期 $\to$ 放置层按实测容量做候选筛查 $\to$ 实际执行主机的既有队列负责租约授予 $\to$ 执行入口消费授予结果。
 
-## 二、任务预期与容量事实
+## 二、任务预期与主机/设备容量事实
 
-工作负载在启动前用业务输入声明 CPU、内存、设备和新增显存需求。`TIER_PRESETS` 属于 remote-dev，文档不维护第二份默认值表；档位只是估算起点，不能代替模型尺寸、Trace 规模或单 worker 峰值。
+工作负载在启动前根据业务输入声明 CPU 核数、主机内存、物理执行单元数与新增显存需求。`TIER_PRESETS` 归属 `remote_dev/core/host_spec.py`，文档不维护第二份默认值表；预设档位仅作缺省起点，不能替代模型尺寸、Trace 规模或单 worker 编译峰值的真实核算：
 
-- sim/profiler 应在各自真实入口按模型层数、token/事件规模、明细模式与 Trace 大小估算活跃工作集。估算函数是待接入的设计，当前不引用不存在的 `a3_host_budget.py` 或把规划中的函数写成已实现 API。
-- 编译请求的 worker 内存包含编译器/链接器峰值，不能把进程个数或 NPU 数直接当成内存预算。
-- 元数据路径只读取配置与 safetensors 头部，不加载权重、不初始化设备上下文。大文件流式读取；长循环保留活跃状态和有界预览，原始日志复用既有落盘与切片机制。
+- **组件工作集估算（目标设计，待接入）**：`sim` 与 `profiler` 应在各自真实 CLI/API 入口按模型层数、Token/事件数、明细级别（`--trace-detail`）与 Trace 文件体积估算活跃工作集。该估算属于待接入设计，不在文档中引用不存在的 `a3_host_budget.py` 或将规划接口写成已上线 API。
+- **编译 Worker 峰值**：编译请求的 `per_worker_memory_mb` 必须覆盖 C++ 编译器与链接器峰值，不能把进程数或 NPU 数量直接当成内存预算。
+- **零权重控制面与有界工作集**：元数据探测路径只读取 `config.json` 与 `safetensors` 头部，不加载模型权重、不初始化 `torch_npu`/CANN 上下文；大文件流式读取，长循环只保留活跃状态与有界预览，原始日志复用既有落盘与分片机制。
 
-`HostHardwareSpec` 表示一次容量观测。`cpu_cores` 是物理容量，`usable_cpu_cores` 是并发建议使用的可用核数估计；主机可用内存与容器/cgroup 剩余配额需要分别识别，不能把宿主总量当作容器可用量。
+`HostHardwareSpec` 表示单次容量观测：`cpu_cores` 为物理核数，`usable_cpu_cores` 为扣除当前负载后的并发建议核数；主机可用内存（`mem_usable_mb`）与容器/cgroup 剩余配额需分别识别，不能把宿主机物理总内存当成容器内可用内存。
 
-### HBM 与设备计数
+### HBM 容量、忙闲状态与物理 Die 计数
 
-- `npu_count`/`free_npus` 在统一执行规格中按可独立租用的物理 Die 计数，与 `ASCEND_RT_VISIBLE_DEVICES` 的 Phy-ID 对齐；fleet 的卡级计数仍可用于展示，不能直接充当 A3 双 Die 的执行容量。存在 `free_phy_ids` 时，空列表也是明确的零值。
-- 可用 HBM 使用各设备实测的 `total - used`，缺测不等于全部空闲。设备处于 idle/free-for-leasing 不等于物理 HBM 已用量为零。
-- 已用量可能包含固件、驱动或运行时保留；仅凭 `npu-smi` 总表不能将其全部归因于固件。不同机器和环境的基线可不同，不硬编码 2–3 GiB 或其他固定扣减量。
-- 卡级补充遥测（`npu-smi info -t usages` 对 `0 / 0` 卡的回退查询）只在能唯一对应一个可租用单元时采用：单 Die 卡或没有 Die 行的旧格式卡。多 Die 卡的卡级总量不拆分到各 Die，该卡保持未测量状态，由“缺测不计入可用”处理。补充遥测只增加占用证据，不清除已观测到的进程占用事实；卡级与 Die 级清单由同一处派生，避免出现“卡忙而 Phy-ID 仍在空闲表”的不一致。
-- 当前已用量已从 free 中扣除；任务的 `Expected VRAM` 估算新增权重、KV、激活、通信与运行时分配，避免再次扣除同一基线。
-- 空闲 Die 的 HBM 总和只提供主机级可行性信息。例如两个各剩 48 GiB 的 Die，不证明某个需 64 GiB 的单 Die 负载能放下。逐设备可行性必须由实际设备授予者按选中 Phy-ID 判定。
+在设备层面，必须严格区分 **物理可租用单元数（Die vs. Card）**、**设备忙闲（Busy/Idle）** 与 **实测可用 HBM（`total - used`）**：
+
+- **物理可租用单元（Die）对齐**：在统一执行规格（`normalize_remote_probe_spec`）中，`npu_count` 与 `free_npus` 一律按**可独立租用的物理 Die** 计数（昇腾 A3 双 Die 卡展开为 2 个 `dies` 单元，与 `ASCEND_RT_VISIBLE_DEVICES` 的 `Phy-ID` `0..15` 一一对应；单 Die 的 A2/A5 或无 `dies` 列表的旧格式行保持每卡 1 个单元）。当探测结果包含 `free_phy_ids` 时以其为准（空列表 `[]` 即明确的 `0` 可用 Die，优先于卡级 `free_npus`）。集群卡级计数仍可用于 UI 展示，但不能直接充当 A3 双 Die 的执行容量。
+- **实测 `total - used` 计入可用 HBM，缺测绝不冒充空闲**：空闲单元的可用 HBM 严格按各设备实测的 `max(0, hbm_total_mb - hbm_used_mb)` 计算；若任一单元缺少 `hbm_total_mb` 或 `hbm_used_mb` 观测值，则置 `vram_free_observed = False` 且该单元不贡献可用 HBM（绝不把标称总容量当成可用容量）。同时，**设备处于 `idle`（`busy=False`，无活跃计算进程/可被租用）不等于物理 HBM 已用量为零**。
+- **不将已用 HBM 笼统归因为固件，也不硬扣 `2–3 GiB` 固定常数**：空闲设备上的实测 `hbm_used_mb` 可能来自固件、驱动或未释放的运行时上下文，**仅凭 `npu-smi` 汇总读数并不能证明全部已用量都是固件保留**；且不同机型、驱动与容器环境的基线占用各不相同，因此直接采用各设备实测的 `total - used`，**绝不在代码或规则中硬扣 `2–3 GiB` 等拍脑袋固定值**。
+- **卡级补充遥测的保守边界**：针对 `npu-smi` 摘要显示 `0 / 0` 的行，卡级补充查询（`npu-smi info -t usages`）仅在该卡能唯一对应单个可租用单元（单 Die 卡或无 Die 行的旧格式）时回填；多 Die 卡的卡级总量绝不均摊或臆测拆分到各个 Die，保持 `vram_free_observed = False` 并按“缺测不计入可用”处理。补充遥测只增加占用证据、绝不抹除已观测到的进程占用事实；卡级与 Die 级空闲清单同源派生，避免“卡已忙而 Phy-ID 仍列为空闲”。
+- **避免重复扣减基线**：设备当前已用 HBM 已经在 `free = total - used` 中扣除；任务的 `Expected VRAM`（`vram_mb` / `hbm_mb`）只核算本次任务新增的模型权重、KV Cache、激活值、通信缓冲与运行时分配，不重复扣除设备固有基线。
+- **主机级 HBM 总和 vs. 逐设备授予**：主机级 `vram_free_mb`（所有空闲 Die 的剩余 HBM 之和）仅提供主机级候选可行性筛查（例如两个各剩 `48 GiB` 的空闲 Die 合计 `96 GiB`，并不代表单个需要 `64 GiB` 的单 Die 任务能放下）；逐 Die 的最终显存可行性必须由实际设备租约授予者按选中的具体 `Phy-ID` 判定。
 
 ## 三、分流判定与实际授予
 
@@ -73,11 +75,11 @@ coordinator 的环境 catalog 负责兼容环境和构建 donor；容量来自�
 
 这是一项待实施的协议接线，不是已完成的全局资源隔离。是否需要动态份额，留给静态方案的实机观测回答。
 
-## 五、进程回收与内存限额分开验收
+## 五、进程回收与内存硬限额分开验收
 
-Windows Job Object 可以对关联进程设置作业级内存限制；POSIX 进程组和 Linux subreaper 提供所有权、取消和后代排空。[Job Memory Limit](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information) 与单进程限制不同；[RLIMIT_AS](https://docs.python.org/3/library/resource.html#resource.RLIMIT_AS) 限制单进程地址空间，不能作为整树 RSS 上限的证明。
+Windows Job Object 可以对关联进程设置作业级内存限制（仅当显式传入 `OwnedProcess(max_memory_mb=...)` 时启用）；POSIX 进程组与 Linux subreaper 提供进程树所有权、超时取消和后代排空。[Job Memory Limit](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information) 与单进程限制不同；POSIX [RLIMIT_AS](https://docs.python.org/3/library/resource.html#resource.RLIMIT_AS) 仅限制单进程虚拟地址空间，不能作为整个子进程树物理内存（RSS）硬上限的证明。**因此，绝不能宣称当前代码已在跨平台（Windows / Linux / macOS）上实现了统一的进程树内存硬上限。**
 
-Linux 的整树内存硬限额应使用实际已部署且有权限的 [cgroup v2 内存控制器](https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files)；macOS 在没有等价机制时明确报告 observed-only 能力。调用方可按任务需要的执行能力选择目标，不以操作系统名称代替能力探测。任何实现都不能把“传了 max_memory_mb”当作“内核已经执行了该限额”。
+Linux 的整树内存硬限额应使用实际已部署且具备写权限的 [cgroup v2 内存控制器](https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files)；macOS 在没有等价内核机制时明确报告 `observed-only` 能力。调用方可按任务需要的执行能力选择目标，不以操作系统名称代替能力探测。任何实现都不能把“调用方传入了 `max_memory_mb` 参数”等同于“操作系统内核已经对该进程树强制执行了内存硬限额”。
 
 清理和记账错误保持可见，但不覆盖已确认的业务结果；外部写的不确定性沿用现有 receipt 语义，不为本地探测或分流创建永久故障状态。
 
