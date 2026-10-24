@@ -47,7 +47,7 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > GH_USER=$(gh api --hostname github.com user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
 > gh auth setup-git --hostname github.com
 > ```
-> - **Hard Gate (Never skip or silently ignore failures; a DSH `0.1.1`-only install without community contribution may skip the `gh` gate but still needs `git` and `uv`)**:
+> - **Hard Gate (Never skip or silently ignore failures; a DSH `0.1.1` / `0.1.2`-only install without community contribution may skip the `gh` gate but still needs `git` and `uv`)**:
 >   - If `gh` is missing: assist the user in installing GitHub CLI for their OS first (macOS: `brew install gh`; Windows: `winget install --id GitHub.cli`; Ubuntu / WSL: `sudo apt update && sudo apt install -y gh`).
 >   - Reuse a working account. When login is needed, follow the [GitHub sign-in flow](docs/enterprise-network.en.md#github-sign-in-flow): browser login on ordinary networks, or token login on enterprise networks / blocked browser authorization. Guide creation if needed, receive an existing token through the hidden `gh` prompt, and let `gh` save it. Verify the account, Git and subsequent-process reuse before continuing. Resolve network/proxy/certificate failures as transport problems.
 >
@@ -57,31 +57,31 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > Community contribution is off by default. Only after the user enables contribution to a target corpus `<owner/repo>` should you create or reuse that corpus's personal Fork and bind `<GH_USER>/<repo>` as the push target. Do not Fork the main repository, plugin repositories or all domain repositories as an installation step.
 >
 > #### Step 3: Identify your host environment & install the matching plugin
-> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; the `v0.1.1` product release locks the four host plugin tags at `v0.1.1` and shared runtime components via [`channels/0.1.json`](./channels/0.1.json)):
+> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; all four host plugins have formally published `v0.1.2` while retaining earlier immutable `v0.1.1` tags, and runtime components discover formal GitHub Releases directly from their official repositories while [`channels/0.1.json`](./channels/0.1.json) records the verified product combination):
 >
 > - **Branch A — If you are running inside Claude Code (`CLAUDECODE` env or `claude` CLI)**:
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.1"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.2"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.1.1`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
+>   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.1.2`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
 >
 > - **Branch B — If you are running inside OpenAI Codex CLI (`CODEX_CI` / `CODEX_THREAD_ID` env or `codex` CLI)**:
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.1
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.2
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.1.1`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
+>   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.1.2`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
 >
 > - **Branch C — If you are running inside Kimi Code CLI (`KIMI_CODE_HOME` env or `kimi` CLI)**:
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-kimi-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.2 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
 >   SETUP_OUT=$(python3 "$MINDIE_TMP/scripts/setup.py")
 >   echo "$SETUP_OUT"
 >   NATIVE_PKG=$(printf '%s\n' "$SETUP_OUT" | python3 -c 'import sys, json; text=sys.stdin.read(); data=json.loads(text[text.find("{"):]); print(data["native_package"])')
@@ -93,18 +93,18 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-dsh-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.2 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
 >   uv --native-tls run --quiet --no-project --python 3.11 "$MINDIE_TMP/scripts/setup.py"
 >   ```
 >   Then install and enable in the DSH Web **Plugins** page:
 >   ```text
->   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1
+>   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.2
 >   ```
 >   Inside a DSH session that has the `plugin_manager` tool, the same step is:
 >   ```text
->   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1")
+>   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.2")
 >   ```
->   *Verification*: `setup.py` reports `status: ready`, `activation.status: active`, components `mindie-knowledge 0.13.2 / remote-dev 0.10.5 / mindie-diagnostics 0.5.1`, and `knowledge.status: inactive` (knowledge stays inactive during setup until a session manually invokes `/mindie-agent`); the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
+>   *Verification*: `setup.py` reports `status: ready`, `activation.status: active`, components `mindie-knowledge 0.13.3 / remote-dev 0.10.6 / mindie-diagnostics 0.5.2`, and `knowledge.status: inactive` (knowledge stays inactive during setup until a session manually invokes `/mindie-agent`); the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
 >
 > - **Branch E — If you are running inside Cursor or another generic MCP client (standalone `remote-dev` SSH toolset)**:
 >   Add `remote-dev` to `.mcp.json` (or `.cursor/mcp.json`):
@@ -114,7 +114,7 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 >       "remote-dev": {
 >         "type": "stdio",
 >         "command": "uvx",
->         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.5", "remote-dev", "server"]
+>         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.6", "remote-dev", "server"]
 >       }
 >     }
 >   }
@@ -348,7 +348,7 @@ Please follow https://github.com/mindie-agent/mindie-agent/blob/main/CONTRIBUTIN
 
 ---
 
-The `0.1` maintenance patch **[0.1.1 (Candidate Draft)](./docs/releases/0.1.1.en.md)** covers per-session manual `/mindie-agent` knowledge activation, whole-delivery token budget estimation and exploration pass-through, physical Die & HBM headroom placement, bounded diagnostic intake, captured kernel cost contracts, behavior-executed task verifiers, and the `release-kind=patch` release pipeline (currently published immutable tags: host plugins `0.1.1` and `knowledge` `0.13.2`; final `0.1.1` channel assembly with `knowledge 0.13.3`, host plugins `0.1.2`, and component patch releases `remote-dev 0.10.6` / `coordinator 0.6.3` / `diagnostics 0.5.2` / `sim 0.7.1` / `mindie-bench 0.4.3` is pending final CI and release verification). The section below retains the historical `0.1.0` record.
+The `0.1` maintenance patch **[0.1.1](./docs/releases/0.1.1.en.md)** ([中文](./docs/releases/0.1.1.md) · [0.1.1 Dev Pilot Report](./docs/releases/0.1.1/benchmark-pilot.en.md) · [中文试点报告](./docs/releases/0.1.1/benchmark-pilot.md) · [Pilot Evidence (`benchmark-pilot.json`)](./docs/releases/0.1.1/benchmark-pilot.json) · [4-Host Native Update Acceptance (`native-update-acceptance.json`)](./docs/releases/0.1.1/native-update-acceptance.json)) covers per-session manual `/mindie-agent` knowledge activation, whole-delivery token budget estimation and exploration pass-through, physical Die & HBM headroom placement, bounded diagnostic intake, captured kernel cost contracts, behavior-executed task verifiers, the `HTTP/1.1 chunked` settlement close-race fix, and the `release-kind=patch` release pipeline (all 8 shared runtime and evaluation components—`knowledge 0.13.3`, `remote-dev 0.10.6`, `diagnostics 0.5.2`, `sim 0.7.1`, `coordinator 0.6.3`, `profiler 0.5.0`, `npu-top 0.2.1`, and `mindie-bench 0.4.4`—and all 4 native host plugins `0.1.2` are formally published on GitHub Releases, byte-verified, verified across the 12-repository `release_gate` preflight, and closed on macOS `arm64` formal native session & update acceptance, with the offline CPU engineering reproduction and `G5` dev pilot report archived alongside). The section below retains the historical `0.1.0` record.
 
 ## 🚀 Current Release & Benchmark Results (v0.1.0)
 
@@ -384,7 +384,7 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 
 | Topic | 中文 | English |
 | --- | --- | --- |
-| **`v0.1.1` Patch Notes (Current)** | [docs/releases/0.1.1.md](./docs/releases/0.1.1.md) | [docs/releases/0.1.1.en.md](./docs/releases/0.1.1.en.md) |
+| **`v0.1.1` Patch Notes & Dev Pilot Report (Current)** | [docs/releases/0.1.1.md](./docs/releases/0.1.1.md) · [试点报告](./docs/releases/0.1.1/benchmark-pilot.md) | [docs/releases/0.1.1.en.md](./docs/releases/0.1.1.en.md) · [Pilot Report](./docs/releases/0.1.1/benchmark-pilot.en.md) |
 | **`v0.1.0` Official Release & Full Benchmark Report** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
 | **`v0.1.0` Author's Note & Architectural Philosophy** | [docs/releases/0.1.0/design-philosophy.md](./docs/releases/0.1.0/design-philosophy.md) | [docs/releases/0.1.0/design-philosophy.en.md](./docs/releases/0.1.0/design-philosophy.en.md) |
 | **`v0.0.3` Release & Benchmark Report** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |

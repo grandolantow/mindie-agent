@@ -47,7 +47,7 @@
 > GH_USER=$(gh api --hostname github.com user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
 > gh auth setup-git --hostname github.com
 > ```
-> - **门禁要求（严禁跳过或静默忽略；仅安装 DSH `0.1.1` 且不启用社区贡献时可跳过 `gh` 门禁，但仍需 `git` 与 `uv`）**：
+> - **门禁要求（严禁跳过或静默忽略；仅安装 DSH `0.1.1` / `0.1.2` 且不启用社区贡献时可跳过 `gh` 门禁，但仍需 `git` 与 `uv`）**：
 >   - 若未安装 `gh`：请先按宿主系统协助安装（macOS：`brew install gh`；Windows：`winget install --id GitHub.cli`；Ubuntu / WSL：`sudo apt update && sudo apt install -y gh`）。
 >   - 账号读取成功时直接复用已有认证。需要登录时按 [GitHub 登录引导](docs/enterprise-network.md#github-登录引导) 处理：普通网络使用浏览器，企业网络或浏览器授权受阻时优先 Token；已有 Token 就通过 `gh` 隐藏提示输入，没有则引导创建。由 `gh` 保存凭据，验证账号、Git 及后续进程复用后继续安装。网络、代理或证书失败先修复传输，不把它们当作 Token 失效。
 >
@@ -57,31 +57,31 @@
 > 社区贡献默认关闭。用户明确开启目标知识库 `<owner/repo>` 的贡献后，才创建或复用该知识库的个人 Fork，并绑定 `<GH_USER>/<repo>` 作为推送目标。不要因安装而 Fork 主仓、插件仓或所有领域仓库。
 >
 > #### 第三步：识别你所在的宿主客户端并安装对应插件
-> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`；`v0.1.1` 发布通过 [`channels/0.1.json`](./channels/0.1.json) 锁定四端插件发行标签 `v0.1.1` 及共享组件基线）：
+> 根据你自身的运行环境选择**唯一匹配**的分支执行（若不确定，请检查 `claude --version`、`codex --version`、`kimi --version` 或 `dsh --version`；四个宿主插件均已正式发布 `v0.1.2` 并保留此前不可变的 `v0.1.1` 标签，共享组件直接从各官方 GitHub 仓库发现正式 Release，[`channels/0.1.json`](./channels/0.1.json) 记录经主产品验证的组合）：
 >
 > - **分支 A — 如果你是 Claude Code（或检测到 `CLAUDECODE` 环境变量 / 用户使用 `claude`）**：
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.1"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.2"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.1.1`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
+>   *验证标准*：`claude plugin list --json` 显示 `mindie-agent@mindie-agent-cc`（`0.1.2`）已启用，且 `claude mcp list` 中 `mindie-knowledge` 与 `remote-dev` 均显示 `Connected`。
 >
 > - **分支 B — 如果你是 OpenAI Codex CLI（或检测到 `CODEX_CI` / `CODEX_THREAD_ID` / 用户使用 `codex`）**：
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.1
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.2
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.1.1`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
+>   *验证标准*：`codex plugin list --json` 显示 `mindie-agent@mindie-agent`（`0.1.2`）已启用。提醒用户开启新会话即可自动触发 `SessionStart` 构建锁定运行时。
 >
 > - **分支 C — 如果你是 Kimi Code CLI（或检测到 `KIMI_CODE_HOME` / 用户使用 `kimi`）**：
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-kimi-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.2 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
 >   SETUP_OUT=$(python3 "$MINDIE_TMP/scripts/setup.py")
 >   echo "$SETUP_OUT"
 >   NATIVE_PKG=$(printf '%s\n' "$SETUP_OUT" | python3 -c 'import sys, json; text=sys.stdin.read(); data=json.loads(text[text.find("{"):]); print(data["native_package"])')
@@ -93,18 +93,18 @@
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-dsh-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.2 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
 >   uv --native-tls run --quiet --no-project --python 3.11 "$MINDIE_TMP/scripts/setup.py"
 >   ```
 >   随后在 DSH Web 的 **Plugins** 页面安装并启用：
 >   ```text
->   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1
+>   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.2
 >   ```
 >   如果当前就在 DSH 会话内且具备 `plugin_manager` 工具，可用它完成同一步骤：
 >   ```text
->   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1")
+>   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.2")
 >   ```
->   *验证标准*：`setup.py` 最终 JSON 中 `status` 为 `ready`、`activation.status` 为 `active`、`components` 为 `mindie-knowledge 0.13.2 / remote-dev 0.10.5 / mindie-diagnostics 0.5.1`，且 `knowledge.status` 为 `inactive`（安装期不启动知识服务，待会话内调用 `/mindie-agent` 时按需启用）；Plugins 页面显示 `mindie-agent-dsh` 已启用。提醒用户打开**新会话**后使用 `/mindie-agent`。
+>   *验证标准*：`setup.py` 最终 JSON 中 `status` 为 `ready`、`activation.status` 为 `active`、`components` 为 `mindie-knowledge 0.13.3 / remote-dev 0.10.6 / mindie-diagnostics 0.5.2`，且 `knowledge.status` 为 `inactive`（安装期不启动知识服务，待会话内调用 `/mindie-agent` 时按需启用）；Plugins 页面显示 `mindie-agent-dsh` 已启用。提醒用户打开**新会话**后使用 `/mindie-agent`。
 >
 > - **分支 E — 如果你是 Cursor / 其他通用 MCP 客户端（仅需 SSH 远端 NPU 开发底座 `remote-dev`）**：
 >   在项目的 `.mcp.json`（或 `.cursor/mcp.json`）中写入 `remote-dev` 服务：
@@ -114,7 +114,7 @@
 >       "remote-dev": {
 >         "type": "stdio",
 >         "command": "uvx",
->         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.5", "remote-dev", "server"]
+>         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.6", "remote-dev", "server"]
 >       }
 >     }
 >   }
@@ -348,7 +348,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 ---
 
-当前 `0.1` 维护补丁 **[0.1.1（候选稿）](./docs/releases/0.1.1.md)** 涵盖知识功能按会话显式 `/mindie-agent` 启用、整包 Token 预算估算与探索结果原样透传、物理 Die 与实测 HBM 余量放置、诊断有界阶段准入、实测 Kernel 耗时契约、行为级任务判分器及 `release-kind=patch` 维护发布链路（目前已正式发布的不可变标签为四端插件 `0.1.1` 与 `knowledge 0.13.2`；结合 `knowledge 0.13.3`、四插件 `0.1.2` 及各组件补丁版本 `remote-dev 0.10.6` / `coordinator 0.6.3` / `diagnostics 0.5.2` / `sim 0.7.1` / `mindie-bench 0.4.3` 的主产品 `0.1.1` 最终通道清单待全部 CI 与 Release 验收完成后锁定）。以下保留 `0.1.0` 的历史记录。
+当前 `0.1` 维护补丁 **[0.1.1](./docs/releases/0.1.1.md)**（[English](./docs/releases/0.1.1.en.md) · [0.1.1 开发试点报告](./docs/releases/0.1.1/benchmark-pilot.md) · [English Pilot Report](./docs/releases/0.1.1/benchmark-pilot.en.md) · [试点结构化凭据 (`benchmark-pilot.json`)](./docs/releases/0.1.1/benchmark-pilot.json) · [四端原生更新验收 (`native-update-acceptance.json`)](./docs/releases/0.1.1/native-update-acceptance.json)）涵盖知识功能按会话显式 `/mindie-agent` 启用、整包 Token 预算估算与探索结果原样透传、物理 Die 与实测 HBM 余量放置、诊断有界阶段准入、实测 Kernel 耗时契约、行为级任务判分器、`HTTP/1.1 chunked` 流结算关闭竞态修复及 `release-kind=patch` 维护发布链路（8 个共享与评测组件 `knowledge 0.13.3`、`remote-dev 0.10.6`、`diagnostics 0.5.2`、`sim 0.7.1`、`coordinator 0.6.3`、`profiler 0.5.0`、`npu-top 0.2.1`、`mindie-bench 0.4.4` 与 4 个原生宿主插件 `0.1.2` 均已完成正式 GitHub Release 发布、资产逐字节核验、十二仓 `release_gate` 组合预检及 macOS `arm64` 四端正式包原生更新与会话门禁验收闭环，离线 CPU 工程复现与 `G5` 开发试点报告亦已随附归档）。以下保留 `0.1.0` 的历史记录。
 
 ## 🚀 当前版本与实测效果（v0.1.0 Release）
 
@@ -384,7 +384,7 @@ MindIE Agent 在持续演进中沉淀了 **18 条务实的[工程设计原则](.
 
 | 文档主题 | 中文 | English |
 | --- | --- | --- |
-| **`v0.1.1` 补丁发布说明（当前版本）** | [docs/releases/0.1.1.md](./docs/releases/0.1.1.md) | [docs/releases/0.1.1.en.md](./docs/releases/0.1.1.en.md) |
+| **`v0.1.1` 补丁发布说明与开发试点报告（当前版本）** | [docs/releases/0.1.1.md](./docs/releases/0.1.1.md) · [试点报告](./docs/releases/0.1.1/benchmark-pilot.md) | [docs/releases/0.1.1.en.md](./docs/releases/0.1.1.en.md) · [Pilot Report](./docs/releases/0.1.1/benchmark-pilot.en.md) |
 | **`v0.1.0` 正式版发布说明与真实任务全量基准** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
 | **`v0.1.0` 作者自述与架构演进哲学（Author's Note）** | [docs/releases/0.1.0/design-philosophy.md](./docs/releases/0.1.0/design-philosophy.md) | [docs/releases/0.1.0/design-philosophy.en.md](./docs/releases/0.1.0/design-philosophy.en.md) |
 | **`v0.0.3` 版本发布与实测基准报告** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
