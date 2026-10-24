@@ -1,160 +1,94 @@
-# 执行资源预期、代码有界性与跨平台本地/远端规格匹配设计
+# 执行资源预期、代码有界性与规格匹配设计
 
 [返回文档中心](README.md) · [设计原则与 PR 自查清单](design-principles.md) · [架构与领域边界](architecture.md)
 
-## 一、问题本质：为什么任务会跑超时或把本机搞挂？
+本文定义资源约束的归属和接线目标。规格判定、资源授予、进程回收和内存硬限额各自回答不同的问题，不能把其中一项的测试当成其余各项的验收。
 
-在 MindIE Agent 的实际使用中（涵盖 Windows、macOS 与 Linux 用户），导致系统卡死、低 Swap 强杀、显存 OOM 或工具大面积超时的根因并非某一个操作系统的孤立问题，而是两类系统性缺口叠加的结果：
+## 一、实现边界
 
-1. **代码自身缺乏性能与内存/显存有界性（Code-Level Unboundedness）**
-   - 部分分析与模拟代码将“业务模拟的时间步数或日志全量规模”直接映射为内存中的常驻对象列表（如在数万步循环中无界 `append` 全量历史快照，或一次性对百 MB 级 Trace 执行 `json.load()`），导致一个纯 Python 分析进程一上来就申请十几个 GiB 内存；
-   - 控制面或元数据读取路径误加载模型权重或初始化 `torch_npu`/CUDA 上下文，瞬间吞噬数 GiB 至数十 GiB 内存与显存；
-   - 并行任务盲目使用 `os.cpu_count()` 启动 Worker，未考虑单 Worker 峰值内存与当前机器可用内存的乘积（例如在 16 核但仅剩 6 GiB 可用内存的笔记本上启动 16 个各占 2 GiB 的进程）。
-2. **本地开发与远端开发之间缺乏“按真实硬件规格分流”的事前预期机制（Workload-to-Host Spec Mismatch）**
-   - 算子/框架编译、大规模全模型仿真（`sim`）、GB 级 Profiling Trace 解析（`profiler`）、以及需要 NPU 显存（HBM）的基准测试（`mindie-bench`），天然对 **CPU 核数（决定会不会跑超时）**、**可用内存（决定本机会不会死机）** 与 **可用显存（决定会不会炸卡）** 有明确的规格要求；
-   - 既不能在启动后才靠繁重的操作系统监控去“事后强杀”，也不能用 `if sys.platform == "darwin"` 这种按操作系统名称硬编码的特判（既漏掉了大量使用 16 GiB/32 GiB Windows 笔记本的用户，又错误拦截了拥有 128 GiB+ 内存、规格远超普通开发机的本地工作站用户）。
+2026-10-24 源码审查的基线为 remote-dev `b91874e`、coordinator `7a252d0`。下表记录该基线，配套修复仍应按其 PR 的实际合入状态判断；本文不证明安装中的插件已经采用这些变更。
 
-因此，系统性解决之道不是造一套沉重的跨平台容器监控守护进程，而是借鉴工业界成熟的 **Bazel Dynamic Execution (`ResourceSet`)** 与 **Ray / Kubernetes 声明式资源匹配 (`ResourceRequest` vs `NodeSpec`)** 范式，建立**“一层代码自身有界（PR 门禁）+ 二层事前规格预期与本机/远端自动分流（核心机制）+ 三层轻量级进程树保险丝（兜底保护）”**的三层体系。
+| 能力 | 已有实现 | 尚未完成的接线或验收 |
+| --- | --- | --- |
+| 资源规格 | remote-dev 的 `WorkloadExpectation`、`HostHardwareSpec`、`normalize_remote_probe_spec`、`evaluate_placement` | 库存在不等于所有任务会使用它；sim/profiler 的真实 CLI 尚未统一接入资源估算与分流 |
+| 远端容量 | coordinator 的 `fleet_probe` 采集主机内存、核数与卡/Die 观测 | RuntimePool 的 prepared-root catalog 不含容量；基线中的资源参数不能仅靠该行完成规格判断 |
+| 编译并发 | 主机队列限制编译槽位，构建脚本另算 worker 数；两者的 CPU 侧已读 cgroup 配额 | 内存侧仍只读宿主 `MemAvailable`，且槽位数与每槽 worker 数各按同一份预算计算，尚无一次授予、下游复用的每槽配额 |
+| 进程所有权 | Windows Job Object；POSIX owner/进程组；Linux 远端 subreaper 与排空回执 | 所有权和退出回收不证明内存有上限 |
+| 内存硬限额 | Windows `OwnedProcess(max_memory_mb=...)` 可设置 Job Memory Limit | 仅显式传参才生效；POSIX 路径没有同等内存执行保证，当前不能据此宣称全平台整树限额 |
 
----
+已有规格判定库不应成为第二个调度器或守护进程。组件提供工作负载预期；实际执行主机的队列负责授予；执行入口复用结果。
 
-## 二、整体架构：事前规格匹配为主，轻量保险丝为辅
+## 二、任务预期与容量事实
+
+工作负载在启动前用业务输入声明 CPU、内存、设备和新增显存需求。`TIER_PRESETS` 属于 remote-dev，文档不维护第二份默认值表；档位只是估算起点，不能代替模型尺寸、Trace 规模或单 worker 峰值。
+
+- sim/profiler 应在各自真实入口按模型层数、token/事件规模、明细模式与 Trace 大小估算活跃工作集。估算函数是待接入的设计，当前不引用不存在的 `a3_host_budget.py` 或把规划中的函数写成已实现 API。
+- 编译请求的 worker 内存包含编译器/链接器峰值，不能把进程个数或 NPU 数直接当成内存预算。
+- 元数据路径只读取配置与 safetensors 头部，不加载权重、不初始化设备上下文。大文件流式读取；长循环保留活跃状态和有界预览，原始日志复用既有落盘与切片机制。
+
+`HostHardwareSpec` 表示一次容量观测。`cpu_cores` 是物理容量，`usable_cpu_cores` 是并发建议使用的可用核数估计；主机可用内存与容器/cgroup 剩余配额需要分别识别，不能把宿主总量当作容器可用量。
+
+### HBM 与设备计数
+
+- `npu_count`/`free_npus` 在统一执行规格中按可独立租用的物理 Die 计数，与 `ASCEND_RT_VISIBLE_DEVICES` 的 Phy-ID 对齐；fleet 的卡级计数仍可用于展示，不能直接充当 A3 双 Die 的执行容量。存在 `free_phy_ids` 时，空列表也是明确的零值。
+- 可用 HBM 使用各设备实测的 `total - used`，缺测不等于全部空闲。设备处于 idle/free-for-leasing 不等于物理 HBM 已用量为零。
+- 已用量可能包含固件、驱动或运行时保留；仅凭 `npu-smi` 总表不能将其全部归因于固件。不同机器和环境的基线可不同，不硬编码 2–3 GiB 或其他固定扣减量。
+- 卡级补充遥测（`npu-smi info -t usages` 对 `0 / 0` 卡的回退查询）只在能唯一对应一个可租用单元时采用：单 Die 卡或没有 Die 行的旧格式卡。多 Die 卡的卡级总量不拆分到各 Die，该卡保持未测量状态，由“缺测不计入可用”处理。补充遥测只增加占用证据，不清除已观测到的进程占用事实；卡级与 Die 级清单由同一处派生，避免出现“卡忙而 Phy-ID 仍在空闲表”的不一致。
+- 当前已用量已从 free 中扣除；任务的 `Expected VRAM` 估算新增权重、KV、激活、通信与运行时分配，避免再次扣除同一基线。
+- 空闲 Die 的 HBM 总和只提供主机级可行性信息。例如两个各剩 48 GiB 的 Die，不证明某个需 64 GiB 的单 Die 负载能放下。逐设备可行性必须由实际设备授予者按选中 Phy-ID 判定。
+
+## 三、分流判定与实际授予
 
 ```mermaid
 flowchart LR
-    P["PR 门禁 (Principle 18)<br/>O(活跃状态)内存 <= 512MiB<br/>零权重控制面 & 显存预估"] --> A["1. 组件声明资源预期 (WorkloadExpectation)<br/>CPU核数 / 预期内存MB / 预期显存MB / 预期耗时"]
-    A --> B["2. 跨平台硬件规格探针 (HostHardwareSpec)<br/>本机(Win/Mac/Linux) + 远端(fleet_probe.py)"]
-    B --> C{"3. 规格匹配分流器<br/>(PlacementMatcher)"}
-    C -->|"本机可用规格充足<br/>(含高配本地工作站 > 服务器)"| D["本地执行 (Local)<br/>按本机算力自适应 Worker 数与超时"]
-    C -->|"本机内存/算力/显存不足<br/>且远端服务器满足"| E["远端执行 (Remote)<br/>路由至规格匹配的服务器/容器"]
-    C -->|"两边均不满足或代码异常膨胀"| F["启动前毫秒级拒绝 (Pre-Flight Reject)<br/>返回精确规格缺口 (Shortfall)"]
-    D --> G["4. 轻量级进程树保险丝 (OwnedProcess / Worker)<br/>Windows JobObject / POSIX 进程组 / Linux Subreaper"]
-    E --> G
+    W[组件的资源预期] --> P[按真实本机与远端规格判定]
+    H[主机与设备容量观测] --> P
+    P --> L[本机满足时本地执行]
+    P --> R[远端满足时选择候选主机]
+    P --> X[返回不足或缺测的具体维度]
+    R --> Q[既有主机队列授予设备与执行份额]
+    L --> E[既有执行入口消费授予结果]
+    Q --> E
+    E --> C[进程所有权、超时与排空]
 ```
 
----
+本机满足请求时可以本地执行，包括高配 Windows/macOS/Linux 工作站；不按操作系统名称决定放置。需要远端专属环境或设备时再选择匹配的远端。内存不足一名 worker 时应等待、分流或拒绝，不能仅用 `max(1, ...)` 强行启动。
 
-## 三、第一层：编码性能、内存与显存健壮性硬约束（PR Checklist 门禁）
+coordinator 的环境 catalog 负责兼容环境和构建 donor；容量来自同次放置决策的 fleet 快照。显式声明 CPU/内存/HBM 下限时，每个候选主机取一次观测并传给 donor 选择、容器开通检查和后续兼容性判断。未声明这些约束的旧作业不增加探测。探测失败沿用现有 waiting/cache-miss 结果并保留主机错误，不伪装成空集群。
 
-所有组件代码必须从源头消灭“一上来申请几十个 G”或“空转跑超时”的实现缺陷，并纳入 [`.github/pull_request_template.md`](../.github/pull_request_template.md) 与 [`docs/design-principles.md`](design-principles.md#18-编码性能内存显存有界性与本地远端规格分流准则bounded-memoryvram--spec-driven-placement) 作为提交开发 PR 的必查门禁：
+这是候选可行性检查，不能冒充资源保留。编译期间容量可能变化；真正启动设备负载时，已有主机队列仍是当前设备状态和租约的唯一授予者。后续逐设备 HBM 约束应接到这个现有授予点，消费当前观测与请求，不再建立第二套分配账本，也不以准备开始时的旧快照保证启动时显存充足。
 
-| 约束维度 | 硬性工程标准 | 典型反模式（严禁出现） |
+规格判定本身是纯算术；采集 fleet 可能需要 SSH。不能把网络探测连同分流都宣称为“毫秒级”。单次 SSH 的 30s 上限不是整次放置的上限：一次探测可能包含主查询、可选的补充查询与缓存写入，候选主机又是串行的，因此不存在一个已证明的外部总时限，也不应由候选数乘单次上限充当该时限。任何外层期限都必须覆盖这些阶段；短于已知内层预算的期限会把 live 探测中途掐断。缓存观测保留其年龄，不能把 cache hit 改写为实时采集。
+
+采样时长落在哪条路径上也要分清。守护进程模式（`_async_progress`）在后台进度工作线程上推进，`status`/`target`/`tail` 以非阻塞方式读取已持久化的事实并报告观测新鲜度，不被探测阻塞；同进程同步调用则要等探测返回。不能因此宣称探测对所有调用零开销，也不能宣称它会阻塞状态查询。
+
+## 四、编译槽位只分配一次预算
+
+当前缺口是“主机槽位数 × 每槽 worker 数”分别按同一份整机内存计算。目标是在现有主机队列授予编译租约时给出每槽份额，下游直接使用，不在每个构建脚本里重新证明整机容量。
+
+1. 实际执行主机读取 CPU 可用配额和内存 headroom；Linux 同时考虑 cgroup CPU 配额、`memory.max - memory.current` 与宿主 `MemAvailable`。本地开发机的 `MAX_JOBS` 不能冒充远端规格。
+2. 初期按已配置的并发槽位数静态分份额，避免后续槽位进入时使早先授予失效。对于同质 worker，需满足 `slots * jobs_per_slot <= floor(usable_memory / worker_peak)`，同时受 CPU 配额约束；不够一名 worker 时不授予。
+3. `CompileLease` 复用既有授予回执携带份额，`PreparationProcess` 将其传给构建环境。`MAX_JOBS`、`MINDIE_BUILD_JOBS`、`CMAKE_BUILD_PARALLEL_LEVEL` 消费同一个上限；显式降低可以保留，不能绕过授予上限。
+4. 在授予到消费的链路与兼容行为完成前，不先删除现有 worker 上限。旧组件无法提供份额时明确说明保护能力未提供，不声称乘积预算已经成立。
+
+这是一项待实施的协议接线，不是已完成的全局资源隔离。是否需要动态份额，留给静态方案的实机观测回答。
+
+## 五、进程回收与内存限额分开验收
+
+Windows Job Object 可以对关联进程设置作业级内存限制；POSIX 进程组和 Linux subreaper 提供所有权、取消和后代排空。[Job Memory Limit](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information) 与单进程限制不同；[RLIMIT_AS](https://docs.python.org/3/library/resource.html#resource.RLIMIT_AS) 限制单进程地址空间，不能作为整树 RSS 上限的证明。
+
+Linux 的整树内存硬限额应使用实际已部署且有权限的 [cgroup v2 内存控制器](https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files)；macOS 在没有等价机制时明确报告 observed-only 能力。调用方可按任务需要的执行能力选择目标，不以操作系统名称代替能力探测。任何实现都不能把“传了 max_memory_mb”当作“内核已经执行了该限额”。
+
+清理和记账错误保持可见，但不覆盖已确认的业务结果；外部写的不确定性沿用现有 receipt 语义，不为本地探测或分流创建永久故障状态。
+
+## 六、分期与判别性验收
+
+| 阶段 | 归属与实际改动 | 能证明什么 |
 | --- | --- | --- |
-| **1. 内存工作集有界性** | 主循环常驻内存只能是 $O(\text{当前活跃状态})$；统计分位数用在线增量聚合，明细用有界环形缓冲区（Ring Buffer）或流式落盘（JSONL）；`> 50 MB` 文件必须流式/分块/`mmap` 读取。 | 在数万步迭代中 `history.append()` 全量快照；对数百 MB 的 Trace 直接 `json.load()` 展开对象图。 |
-| **2. 单进程 `1 GiB` 缺陷警戒线** | 控制面与分析组件（`sim`、`profiler`、`knowledge`、`coordinator`）单次常规调用内存增量 `<= 256 MiB`（峰值 `<= 512 MiB`）。除真实加载模型权重或大型 C++ 并行链接外，单进程峰值 `> 1 GiB` 默认定性为**代码算法 Bug**。 | 不优化数据结构（不使用 `__slots__`/扁平数组/流式迭代），试图靠调大机器内存限额放行。 |
-| **3. 热路径性能与并发纪律** | 热循环内零 `deepcopy`、零外部子进程、零逐行 `sqlite.commit()`；同质重复步采用事件跳步（Analytical Step Folding）；并行度必须按 $\text{Workers} = \max(1, \min(\text{可用 CPU 核数}, \lfloor\text{可用安全内存}/\text{单 Worker 峰值内存}\rfloor))$ 计算。 | 在循环内跑 `subprocess.run`；无脑按 `os.cpu_count()` 启动十几个高内存子进程把本机乘爆。 |
-| **4. 显存（HBM/VRAM）安全** | **零权重控制面**：读取模型结构只解析 `config.json` 或 `safetensors` 头部（前 8 字节 + JSON Header），严禁加载权重或初始化 `torch_npu`/CUDA 上下文。<br>**先算账后上卡**：上卡前必须核算 $\text{Expected VRAM} = \text{权重} + \text{KV Cache} + \text{激活峰值} + \text{HCCL Buffer} + \text{Runtime 预留}$，确认 `vram_free_mb >= Expected VRAM`。 | 为读词表/层数而调用 `from_pretrained`；未核对空闲 HBM 直接拉起推理/压测进程导致 OOM 炸卡。 |
-| **5. 工具输出折叠与上下文保护** | **全量落盘 + 连续重复行折叠 + 头尾有界回显**：`remote-dev` 远端作业日志在磁盘文件保持 100% 原始完整；返回给宿主 LLM 的工具预览通过 [`preview.py:fold_repeated_lines`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/preview.py) 将 `> 2` 行连续相同日志折叠为 `[previous line repeated N more times]`，超长时保留 Head/Tail 并附带原始日志指针供按需切片读取；中途阶段预算提醒一律追加于工具结果尾部（`additionalContext`），严禁改写会话起始 System Prompt 破坏 Prompt Prefix Cache（吸收 `HarnessPro` `arXiv:2610.26770v2`）。 | 把数千行重复编译 Warning / 进度条直接塞进对话历史撑爆上下文；在任务中途动态修改 System Prompt 导致 90% 折扣的 KV Cache 全部失效。 |
+| 容量语义 | remote-dev 统一物理 Die/空闲 HBM；coordinator parser 保留实测 HBM，忙闲单独判定 | 真实 A2/A3/A5 golden capture 的单位与可用量正确；不证明任务已实机运行 |
+| 放置接线 | coordinator 从真实 catalog 与 fleet seam 执行约束，无约束零新增 probe | TaskClient→service→RuntimePool 的满足/不足/探测失败路径与一次观测复用 |
+| 编译份额 | 既有主机队列→CompileLease→PreparationProcess→编译器 | 单测证明乘积上限与接线；实机再验证并发编译的进程数、峰值内存和退出回收 |
+| 组件入口 | sim/profiler 在实际 CLI 接入工作集估算与规格分流 | 低规格/高规格主机的分流及不足一个 worker 时不启动；不是全模型仿真精度验收 |
+| 内存执行能力 | 各平台既有进程 owner 接入真实内核能力 | Windows/Linux/macOS 分别报告已实现的 hard-limit 或 observed-only；超时回收与内存限制分别验证 |
 
----
-
-## 四、第二层：工作负载资源预期（`WorkloadExpectation`）与跨平台硬件规格（`HostHardwareSpec`）
-
-### 1. 工作负载资源预期声明（`WorkloadExpectation`）
-
-组件通过**静态规格档位（Tier Presets）**或**参数化估算函数（Parametric Cost Estimator）**在启动前毫秒级产出与操作系统无关的资源预期：
-
-```json
-{
-  "tier": "heavy",
-  "cpu_cores": 8,
-  "memory_mb": 8192,
-  "vram_mb": 0,
-  "npu_count": 0,
-  "expected_seconds": 60,
-  "per_worker_memory_mb": 1024
-}
-```
-
-- **四档标准预设（Tiers）**：
-  - `light`（默认日常操作：`1 core`, `512 MB RAM`, `0 VRAM`, `15s`）：文件读写、Git、配置检查、轻量单测、元数据查询。任何 Windows / macOS / Linux 笔记本均可直接本地执行。
-  - `medium`（中等分析/增量构建：`4 cores`, `2048 MB RAM`, `0 VRAM`, `60s`）：常规有界仿真、中小体积 Trace 汇总、增量构建。本机空闲内存与核数满足时本地执行，否则分流远端。
-  - `heavy`（重度计算/大内存任务：`8+ cores`, `8192+ MB RAM`, `0 VRAM`, `300s`）：全量明细仿真、大体积 Trace 深度分析、全量源码编译（`install-vllm-ascend`）。仅当目标环境（远端服务器或高配本地工作站）具备充足空闲内存与算力时放行。
-  - `npu`（加速卡与显存任务：`npu_count >= 1`, `vram_mb > 0`）：模型推理服务、算子实机验证、`mindie-bench`。必须路由至具备对应空闲 NPU 与空闲 HBM 的节点。
-- **组件参数化估算器（复用业务输入）**：
-  - [`sim/mindie_sim/a3_host_budget.py`](https://github.com/mindie-agent/sim)：提供 `estimate_prediction_resources(case, trace_detail)`，根据模型层数 `layers`、请求序列长度与 `trace_detail`（`bounded` vs `full`）计算 `layer_iterations`、`expected_memory_mb` 与 `expected_cpu_cores`，彻底废除 `sys.platform != "darwin"` 的硬编码。
-  - `profiler` / `coordinator` 编译：根据待解析 Trace 文件体积或并行编译目标估算 `memory_mb` 与 `cpu_cores`。
-
-### 2. 跨平台统一硬件规格模型（`HostHardwareSpec`）
-
-无论是用户的 Windows 笔记本、macOS 工作站、Linux 开发机，还是 [`fleet_probe.py`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/fleet_probe.py) 探测到的远端昇腾服务器，均归一化为同一份 `HostHardwareSpec` 结构：
-
-```json
-{
-  "os_family": "windows | macos | linux",
-  "cpu_cores": 16,
-  "usable_cpu_cores": 12.5,
-  "mem_total_mb": 32768,
-  "mem_available_mb": 14200,
-  "mem_usable_mb": 7646,
-  "vram_total_mb": 0,
-  "vram_free_mb": 0,
-  "npu_count": 0,
-  "free_npus": 0
-}
-```
-
-- **本机端（Windows / macOS / Linux 全平台零子进程开销探针）**：
-  - 在 [`remote_dev/core/host_spec.py`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) 中实现 `probe_local_hardware_spec()`：
-    - 优先复用标准库/生态（`psutil` 若已安装则直接调用），并提供零外部依赖的原生 API 兜底：
-      - **Windows (`nt`)**：通过 `ctypes.windll.kernel32.GlobalMemoryStatusEx` 直接读取内核 `ullTotalPhys` 与 `ullAvailPhys`；
-      - **Linux (`linux`)**：直接读取 `/proc/meminfo` 的 `MemTotal` / `MemAvailable` 与 `/proc/loadavg`；
-      - **macOS (`darwin`)**：读取物理总内存与可回收页面（free + inactive + speculative），扣除桌面交互保底预留（默认保留 `max(2 GiB, 20% 总内存)` 给 GUI 与系统，防止把本机桌面搞卡死）得到安全可用的 `mem_usable_mb`。
-- **远端服务器侧（100% 复用 [`fleet_probe.py`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/fleet_probe.py) 现有采集结果）**：
-  - `fleet_probe.py` 已经采集了远端主机的 `server.cpu_cores`、`server.load_1m`、`server.mem_total_mb`、`server.mem_available_mb` 以及每张 NPU / Die 的 `hbm_total_mb`、`hbm_used_mb`、`free_phy_ids`。
-  - 通过 `normalize_remote_probe_spec(probe_row)` 直接将 `fleet_probe.py` 的返回结构映射为标准 `HostHardwareSpec`（汇总空闲卡/Die 的 `vram_free_mb` 与主机 `mem_usable_mb`），无需新增任何远端 SSH 探测脚本。
-
----
-
-## 五、第三层：本地 vs 远端规格匹配与自适应调度（Spec-Driven Placement）
-
-在启动任务前，由 [`remote_dev.core.host_spec.evaluate_placement`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) 与 [`mindie_coordinator.placement.select_execution_target`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/placement.py) 按统一规则完成决策：
-
-### 1. 规格匹配不变量（与操作系统名称无关）
-
-一个候选目标环境 $H$（无论是 `local` 还是某台 `remote` 服务器）满足工作负载预期 $W$ 的充要条件为：
-
-$$\begin{aligned}
-W.\text{memory\_mb} &\le H.\text{mem\_usable\_mb} \\
-W.\text{cpu\_cores} &\le H.\text{cpu\_cores} \\
-W.\text{vram\_mb} &\le H.\text{vram\_free\_mb} \\
-W.\text{npu\_count} &\le H.\text{free\_npus}
-\end{aligned}$$
-
-### 2. 分流决策规则（Local vs Remote）
-
-1. **优先本地执行（当本机规格充裕，或本机规格优于远端时）**：
-   - 若任务不需要远端专属 NPU（$W.\text{npu\_count} == 0, W.\text{vram\_mb} == 0$），且本机 `local_spec` 满足上述全部条件（或者本机是一台空闲内存/算力比当前远端候选机更大的高配 Windows/macOS/Linux 工作站），则直接判定 `decision = "local"`。
-2. **自动分流远端（当本机内存、CPU 算力或显存不足时）**：
-   - 若本机 `mem_usable_mb < W.memory_mb`（在本机跑有搞挂系统风险）、`cpu_cores < W.cpu_cores`（在本机跑有严重超时风险）、或需要 NPU/HBM 显存，则从 `fleet_probe` 远端候选池中筛选满足规格的节点，并按剩余内存/显存与空闲算力余量排序，返回最优 `decision = "remote"` 及目标主机身份。
-3. **启动前快速拒绝（当本机与远端均不满足时）**：
-   - 若没有任何候选环境满足要求，在创建进程前立即返回 `decision = "reject"`，并附带结构化缺口诊断 `shortfall`（明确指出差多少 MB 内存、多少核 CPU 或多少 MB 显存），绝不盲目启动进程去赌运气。
-
-### 3. 基于目标规格的并发度与超时自适应
-
-选定执行目标 $H$ 后，自动根据 $H$ 的真实硬件规格推导执行参数：
-- **安全并发 Worker 数**：
-  $$\text{recommended\_workers} = \max\Big(1,\; \min\big(\lfloor H.\text{usable\_cpu\_cores} \rfloor,\; \lfloor H.\text{mem\_usable\_mb} / W.\text{per\_worker\_memory\_mb} \rfloor\big)\Big)$$
-- **算力感知的超时缩放（Timeout Scaling）**：
-  根据目标机器的可用核数与负载动态计算 `recommended_timeout_ms`（满足 `AGENTS.md` 的 `outer_timeout >= sum(inner_budgets) + cleanup_grace`），避免因机器核数差异导致误判超时。
-
----
-
-## 六、第四层：轻量级跨平台进程树保险丝（兜底保护）
-
-在完成事前分流后，实际拉起的进程通过 [`remote-dev`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/local_process.py) 已有的跨平台进程组所有权机制做最后一道兜底，防止未知代码 Bug 引发内存泄漏或孤儿进程残留：
-
-- **Windows 本机（`_WindowsJob`）**：复用 [`local_process.py`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/local_process.py) 现有的 Windows Job Object（`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`），并在传入 `max_memory_mb` 时启用内核原生 `JOB_OBJECT_LIMIT_JOB_MEMORY`（`JobMemoryLimit`），无需额外守护进程即可由 Windows 内核兜底整棵进程树内存与退出回收。
-- **macOS / Linux 本机（`OwnedProcess` + `_posix_owner.py`）**：复用独立会话（`setsid`）与父进程死亡管道守护，确保超时或取消时整棵进程组（`-pgid`）干净回收，无后台孤儿 Python 残留。
-- **Linux 远端服务器（`processes/worker.py`）**：复用 `PR_SET_CHILD_SUBREAPER` 与进程树排空确认（`descendants_drained`），在租约释放前确保所有子孙进程彻底退出。
-
----
-
-## 七、组件职责与验证矩阵
-
-| 仓库 / 模块 | 核心职责 | 关键入口与测试验证 |
-| --- | --- | --- |
-| [`mindie-agent`](../AGENTS.md) | 编码性能、内存/显存有界性原则（Principle 18）与 PR 自查门禁 | [`docs/design-principles.md`](design-principles.md)、[`.github/pull_request_template.md`](../.github/pull_request_template.md) |
-| [`remote-dev`](https://github.com/mindie-agent/remote-dev/blob/main/remote_dev/core/host_spec.py) | Windows/macOS/Linux 本机硬件规格探针、`fleet_probe` 规格归一化、本地/远端分流判定器、`_WindowsJob` 内存保险丝 | `remote_dev/core/host_spec.py`、`remote_dev/core/local_process.py`、`tests/test_host_spec_placement.py` |
-| [`coordinator`](https://github.com/mindie-agent/coordinator/blob/main/mindie_coordinator/placement.py) | 扩展 `RESOURCE_KEYS`（支持 `cpu_cores`、`memory_mb`、`hbm_mb`），对接 `fleet_probe.py` 实现本地与远端联合选机 | `mindie_coordinator/placement.py`、`tests/test_workload_placement.py` |
-| [`sim`](https://github.com/mindie-agent/sim) | 跨平台（Windows/macOS/Linux）仿真资源估算 `estimate_prediction_resources` 与本机容量门禁（消除 `darwin` 硬编码） | `mindie_sim/a3_host_budget.py`、`tests/test_a3_host_memory.py` |
+真实主机验证使用隔离状态目录，不扰动现有工作负载。CPU 单测、容器边界、NPU 执行与模型收益分别记录；没有实机证据的阶段保持待验收。
