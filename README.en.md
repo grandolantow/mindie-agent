@@ -57,25 +57,25 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > Community contribution is off by default. Only after the user enables contribution to a target corpus `<owner/repo>` should you create or reuse that corpus's personal Fork and bind `<GH_USER>/<repo>` as the push target. Do not Fork the main repository, plugin repositories or all domain repositories as an installation step.
 >
 > #### Step 3: Identify your host environment & install the matching plugin
-> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; all four host plugins have formally published `v0.1.2` while retaining earlier immutable `v0.1.1` tags, and runtime components discover formal GitHub Releases directly from their official repositories while [`channels/0.1.json`](./channels/0.1.json) records the verified product combination):
+> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; Codex uses `v0.1.4` with enterprise-network and hook-trust fixes, Claude Code uses the enterprise-network fix in `v0.1.3`, and Kimi Code and DSH use `v0.1.2`. Runtime components discover formal GitHub Releases directly from their official repositories while [`channels/0.1.json`](./channels/0.1.json) records the verified product combination):
 >
 > - **Branch A — If you are running inside Claude Code (`CLAUDECODE` env or `claude` CLI)**:
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.2"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.3"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.1.2`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
+>   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.1.3`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
 >
 > - **Branch B — If you are running inside OpenAI Codex CLI (`CODEX_CI` / `CODEX_THREAD_ID` env or `codex` CLI)**:
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.2
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.4
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.1.2`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
+>   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.1.4`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
 >
 > - **Branch C — If you are running inside Kimi Code CLI (`KIMI_CODE_HOME` env or `kimi` CLI)**:
 >   ```bash
