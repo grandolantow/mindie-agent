@@ -69,7 +69,7 @@ MindIE Agent 对外发布的是**经过验证的组件与插件组合**。OpenAI
 2. 并行准备并发布依赖它们的 [`remote-dev`](https://github.com/mindie-agent/remote-dev)、[`knowledge`](https://github.com/mindie-agent/knowledge)、[`profiler`](https://github.com/mindie-agent/profiler) 与 [`npu-top`](https://github.com/mindie-agent/npu-top)；
 3. 发布锁定正式 `remote-dev` 与 `diagnostics` 版本的 [`coordinator`](https://github.com/mindie-agent/coordinator)；
 4. 若需同步发布宿主插件，则发布锁定实际运行时依赖的四个宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)），最后更新 [`channels/0.1.json`](../channels/0.1.json) 并汇总发布主仓库版本说明。
-   - 四个宿主插件实际打包并注册 `knowledge`、`remote-dev` 与 `diagnostics`；`coordinator`、`profiler`、`sim` 与 `npu-top` 可作为独立组件按需安装或升级接入。
+   - 宿主插件运行时基线包含 `knowledge`、`remote-dev` 与 `diagnostics`，打包依赖不代表默认暴露知识接口。Codex `0.1.8` 的默认 MCP 仅注册 remote-dev 和确定性组件入口，知识目录由手动 Skill 私有加载；`coordinator`、`profiler`、`sim` 可独立安装并接入这些入口，`npu-top` 保持为面向人的独立看板。其他宿主按各自发布记录核验发现边界。
    - `mindie-bench` 版本独立演进，各仓发布流水线通过固定 Commit SHA 引用其运行器。
 
 在发布任何一个宿主插件 Release 或更新 [`channels/0.1.json`](../channels/0.1.json) 前，维护者需核对以下清单：

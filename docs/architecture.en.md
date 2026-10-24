@@ -27,8 +27,10 @@ flowchart TB
 
 Each plugin preserves its host agent's native session loop, tool calling, and lifecycle:
 - **On-demand domain guidance**: Invoke `/mindie-agent` (or `$mindie-agent` in Codex) to load Ascend domain knowledge and workflow guidance for your current task.
-- **Deterministic tools available by default**: Remote execution, resource probes and leases, monitoring, profiler analysis, explicit-input simulation, local diagnostics and factual status can run independently of knowledge activation, under their existing configuration, permissions and resource rules.
+- **Agent tools exposed by default**: Remote-dev, coordinator probes and leases, profiler capture and analysis, sim calculations, and local diagnostics/status are discoverable and callable through MCP independently of knowledge activation, under their existing configuration, permissions and resource rules. Knowledge tool names, descriptions and schemas stay out of inactive chats' default tool catalogs. The human-facing `npu-top` dashboard is not an Agent tool.
 - **Authorized experience capture**: A manual `/mindie-agent` entry enables the session's knowledge flywheel; capture and distillation additionally obey saved contribution consent and project scope.
+
+Codex `0.1.8` implements this MCP discovery boundary. Other host plugins require their own implementation and acceptance against this contract; this release does not establish their acceptance. The [native acceptance record](releases/codex-0.1.8-native-acceptance.json) covers discovery, six MCP calls and a scheduled update check, and separately records the old `0.1.6` updater failure and one-time recovery.
 
 By default, plugins use `knowledge`, `remote-dev`, and `diagnostics`. `coordinator`, `profiler`, `sim`, and `npu-top` can be installed standalone or combined as needed.
 

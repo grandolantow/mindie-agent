@@ -27,8 +27,10 @@ flowchart TB
 
 四个插件直接复用各宿主的原生会话、工具调用和生命周期机制：
 - **领域知识按需激活**：输入 `/mindie-agent`（在 Codex 中也可使用 `$mindie-agent`）即可按当前任务加载昇腾领域知识与工作流引导。
-- **确定性工具默认可用**：`remote-dev`、资源协调与探测、监控、Profiling 解析、显式输入的仿真计算、本地诊断和状态查询可独立调用，不依赖知识会话启用；仍遵守各自的配置、权限和资源租约。
+- **Agent 工具默认暴露**：`remote-dev`、`coordinator` 资源协调与探测、`profiler` 采集解析、`sim` 显式输入计算、`diagnostics` 本地诊断和状态查询通过 MCP 可发现、可独立调用，不依赖知识会话启用；仍遵守各自的配置、权限和资源租约。`knowledge` 的名称、描述和参数不进入未启用聊天的默认工具目录；`npu-top` 是面向人的看板，不作为 Agent 工具暴露。
 - **经验沉淀按授权运行**：当前 session 手动 `/mindie-agent` 后，宿主生命周期事件才可驱动会话采集与经验提炼；记录本地材料和社区贡献还需满足用户保存的授权与项目范围。
+
+当前 Codex `0.1.8` 实现上述 MCP 发现边界；其他宿主插件仍需分别按此契约实现和验收，本次发布不代表它们已经完成验证。 [本机原生验收记录](releases/codex-0.1.8-native-acceptance.json)覆盖默认目录、六项 MCP 调用与周期更新检查；旧 `0.1.6` 更新器的迁移失败及一次性恢复单独记录。
 
 默认插件依赖 `knowledge`、`remote-dev` 和 `diagnostics`；`coordinator`、`profiler`、`sim` 与 `npu-top` 可按团队环境独立安装或组合使用。
 
