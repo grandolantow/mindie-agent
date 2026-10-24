@@ -34,7 +34,7 @@
 
 Windows 企业网络下已验证 Codex `0.164.0-alpha.11.1` 的正式 `0.1.2` MCP 进程通过常规后台维护更新到 `0.1.3`，实际运行组件为 `knowledge 0.13.4 / remote-dev 0.10.6 / diagnostics 0.5.2`。本次从更新检查到激活约 `44.9s`，其中绑定切换约 `55ms`；原 MCP 进程持续处理前台工具发现请求。该记录是单机软件更新验收，包含前置环境构建，不将完整流程表述为亚秒级切换。
 
-[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) 另修复 Desktop `0.164` 将 Hook 信任拆为命令与内容哈希两个字段时的继承比较。更新器只迁移已有批准记录；显式停用或任一哈希变化继续保留用户选择。
+[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) 另修复 Desktop `0.164` 将 Hook 信任拆为命令与内容哈希两个字段时的继承比较。更新器只迁移已有批准记录；显式停用或任一哈希变化继续保留用户选择。正式修复版更新器已在同一 Windows 企业网络完成 `0.1.3 → 0.1.4` 全链路升级，五个原生 Hook 的已有批准全部继承成功。
 
 ## 正常安装与工作区引导
 

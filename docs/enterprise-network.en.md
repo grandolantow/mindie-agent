@@ -34,7 +34,7 @@ Runtime changes belong to their component and plugin repositories. This reposito
 
 On the Windows enterprise network, a formal `0.1.2` MCP process under Codex `0.164.0-alpha.11.1` completed its normal background upgrade to `0.1.3`, running `knowledge 0.13.4 / remote-dev 0.10.6 / diagnostics 0.5.2`. This run took approximately `44.9s` from update check to activation, including a binding switch of approximately `55ms`; the original MCP process continued to handle foreground tool discovery. This is software-update acceptance on one host, including runtime preparation, rather than a subsecond claim for the entire update.
 
-[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) also fixes trust inheritance when Desktop `0.164` stores command and content hashes in separate fields. The updater transfers existing approvals only, preserving explicit disables and changes to either approved hash.
+[`Codex 0.1.4`](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.4) also fixes trust inheritance when Desktop `0.164` stores command and content hashes in separate fields. The updater transfers existing approvals only, preserving explicit disables and changes to either approved hash. The formal corrected updater completed the full `0.1.3 → 0.1.4` upgrade on the same Windows enterprise network and inherited all five existing native hook approvals.
 
 ## Normal installation and workspace onboarding
 
