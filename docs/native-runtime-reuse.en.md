@@ -25,7 +25,7 @@ We consolidated runtime lifecycle management around proven native mechanisms:
 
 ## 2. Plugin Updates: Native Installers + Compatibility Filtering
 
-Full update rules are covered in [Release Compatibility & Silent Update](release-compatibility-and-update.en.md). Because native Git plugin marketplaces pull the latest branch tip by default without filtering by the installed host CLI's SemVer version, MindIE Agent adds a single shared pure selector function to pick the highest compatible Release and hands that pinned version to the native installer:
+Full update rules are covered in [Release Compatibility & Silent Update](release-compatibility-and-update.en.md). Because native Git plugin marketplaces pull the latest branch tip by default without filtering by the installed host CLI's SemVer version, MindIE Agent uses a shared pure selector function (`harness-compatibility.json`) for plugin compatibility and hands the pinned version to the native installer; meanwhile, shared runtime component updates discover formal GitHub Releases directly from each official component repository (taking `max(installed version, plugin baseline, formal Release version)`, verifying the tag SHA, `pyproject.toml`, wheel/sdist/checksum asset presence, and `benchmark-results.json`, and installing from the exact Git SHA into an isolated `uv.lock` environment with a native API probe before idle cutover, rather than using `channels/0.1.json` as the client selection source):
 
 ### 2.1 OpenAI Codex CLI Integration
 - **Host cache behavior**: Codex refreshes configured Git marketplaces on startup, and its store (`store.rs`) prunes older version directories or replaces same-version cache directories in place.
@@ -43,7 +43,7 @@ Experience capture strictly separates **fast foreground admission** from **async
 
 ```text
 Host triggers Stop Hook
-  -> 1. Verify task identity & authorized project scope
+  -> 1. Verify session manual-entry lease (knowledge_lease), task identity & authorized project scope (unactivated sessions short-circuit immediately)
   -> 2. Commit durable admission record to local SQLite
   -> 3. Return neutral response immediately (milliseconds, zero LLM calls)
   -> 4. Independent background worker consumes queue

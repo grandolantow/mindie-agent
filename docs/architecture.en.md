@@ -27,8 +27,8 @@ flowchart TB
 
 Each plugin preserves its host agent's native session loop, tool calling, and lifecycle:
 - **On-demand domain guidance**: Invoke `/mindie-agent` (or `$mindie-agent` in Codex) to load Ascend domain knowledge and workflow guidance for your current task.
-- **Always-on remote execution**: `remote-dev` tools are registered via MCP and called automatically whenever your task involves remote servers, Docker containers, or NPU build/test runs.
-- **Authorized experience capture**: Session redaction and experience distillation run only within your authorized project scope and configuration settings.
+- **Deterministic tools available by default**: Remote execution, resource probes and leases, monitoring, profiler analysis, explicit-input simulation, local diagnostics and factual status can run independently of knowledge activation, under their existing configuration, permissions and resource rules.
+- **Authorized experience capture**: A manual `/mindie-agent` entry enables the session's knowledge flywheel; capture and distillation additionally obey saved contribution consent and project scope.
 
 By default, plugins use `knowledge`, `remote-dev`, and `diagnostics`. `coordinator`, `profiler`, `sim`, and `npu-top` can be installed standalone or combined as needed.
 
@@ -58,6 +58,10 @@ When running builds, tests, or benchmarks on remote Ascend servers:
 
 ## 4. Four Knowledge Roles & Dual-Mode Workflow (Routine Reuse vs. Fresh Exploration)
 
+The context loading and experience loop in this section run only in a manually
+enabled session. Deterministic tools such as profiler, sim and coordinator
+remain independently available without knowledge activation.
+
 To support complex Ascend inference adaptation and performance optimization, MindIE Agent organizes domain knowledge into four engineering roles (mapped to `category` and the legacy `tier: L1..L4` field in the schema) and supports both **routine workflow reuse** and **fresh-context exploration (`mode="explore"`)**:
 
 | Knowledge Role & Category | Engineering Purpose | Runtime Coordination |
@@ -82,5 +86,5 @@ To support complex Ascend inference adaptation and performance optimization, Min
 
 ## 6. Releases, Silent Updates, and Privacy Redaction
 
-- **Pinned releases and atomic updates**: Host plugins pin verified runtime component versions and prepare updates in the background, switching versions atomically when idle without interrupting active sessions. See [Release Compatibility](release-compatibility-and-update.en.md).
+- **Pinned releases and atomic updates**: Host plugins pin verified baseline runtime component versions (while [`channels/0.1.json`](../channels/0.1.json) records verified product release combinations). Runtime component updates discover formal GitHub Releases directly from each official component repository—taking `max(installed version, plugin baseline, formal Release version)` to prevent downgrades, verifying the immutable tag SHA, `pyproject.toml`, asset presence, and `benchmark-results.json`, installing from the exact Git SHA into an isolated `uv.lock` environment, and probing the native API—before switching atomically when idle without interrupting active sessions. See [Release Compatibility](release-compatibility-and-update.en.md).
 - **Deterministic redaction and opt-in sharing**: Session transcript capture, experience distillation, and fault reporting pass through deterministic privacy rules and Gitleaks scanning to strip internal IPs, machine paths, credentials, and sensitive arguments. Disabling community sharing never affects local knowledge retrieval, diagnostics, or remote execution. See [Diagnostics and Fault Reporting](diagnostics-and-reporting.en.md).

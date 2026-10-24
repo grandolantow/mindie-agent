@@ -3,23 +3,16 @@
   "schema_version": "mindie-release-channel/1",
   "track": "0.1",
   "milestone_version": "0.1.0",
-  "current_patch_version": "0.1.0",
-  "release_notes": "docs/releases/0.1.0.md",
-  "release_notes_en": "docs/releases/0.1.0.en.md",
+  "current_patch_version": "0.1.1",
+  "release_notes": "docs/releases/0.1.1.md",
+  "release_notes_en": "docs/releases/0.1.1.en.md",
   "independent_update_allowed": true,
-  "hotfix_trigger_on_error": true,
-  "etag_poll_interval_sec": 3600,
-  "background_poll_interval_sec": 86400,
   "update_policy": {
     "independent_update_allowed": true,
-    "hotfix_trigger_on_error": true,
-    "etag_poll_interval_sec": 3600,
-    "background_poll_interval_sec": 86400,
-    "atomic_idle_cutover_max_ms": 500,
     "require_plugin_republish_on_component_patch": false,
     "implementation_status": {
-      "v0_1_0_verified_mechanism": "Host plugins (v0.1.0) pin component Git commits in pyproject.toml / uv.lock / runtime-requirements.txt and verify plugin-release auto-update via GitHub Releases API ETag polling + Staging Dir prebuild + atomic cutover (< 500ms).",
-      "v0_1_x_target_architecture": "Direct runtime consumption of channels/0.1.json for in-place single-component hotfixes without republishing host plugins is the 0.1.x release channel architecture target."
+      "verified_mechanism": "channels/0.1.json records the product-verified 12-repository + 7-corpus combination for release pipeline gating and audit provenance; clients do not download channels/0.1.json to select updates. Host plugins select compatible plugin Releases via harness-compatibility.json, and discover formal GitHub Releases across the 8 runtime/evaluation components directly from each official repository using monotonic max(installed, baseline, latest) selection without downgrades, dereferenced tag SHA + pyproject.toml + benchmark-results.json (release_gate) verification, side-by-side uv override runtime builds from exact Git SHAs, model-free API probes, and idle cutover while preserving native host payloads and without activating knowledge or capture (Codex/CC reuse a cancellable 300s check inside the MCP server process; Kimi runs a 300s launchd/schtasks job switching current.json; DSH runs a host-scoped idle timer mounting ./host3.mjs + remote-dev from the canonical adapter binding in config.json, with current.json only as a legacy seed fallback).",
+      "known_boundaries": "The binding cutover stage takes ~10ms on Codex (unavailable_seconds) and ~15ms on Claude Code (activate_binding.seconds), excluding prior runtime build; end-to-end update preparation (side-by-side uv sync, isolated inventory/API probing, and lock acquisition) runs under bounded multi-second/minute budgets and is never claimed as < 500ms. All 8 runtime/evaluation components and all 4 native host plugins (v0.1.2) are formally published on GitHub Releases, byte-verified, and verified on macOS arm64 for formal native session gating and component alignment (docs/releases/0.1.1/native-update-acceptance.json; automated contract CI runs across Ubuntu/macOS/Windows for Codex/CC/Kimi and on Ubuntu for DSH; Claude Code verified in an isolated native marketplace profile as global CC is not installed on the test host; Codex CLI 0.153.4 and Desktop 0.164.0-alpha.11.1 dual-host 5-hook trust achieved via one-time public app-server config API CAS + native_context alignment rather than automatic native plugin manager inheritance, with formal 0.1.2 session admission verified on Desktop 0.164.0-alpha.11.1; already-loaded Kimi/DSH definitions in running processes reload naturally in new processes without terminating active user hosts), and the 0.1.1 offline CPU engineering reproduction & G5 dev pilot report (docs/releases/0.1.1/benchmark-pilot.json) is archived."
     }
   },
   "corpora": {
@@ -65,21 +58,12 @@
       "role": "shared_component",
       "repository": "mindie-agent/diagnostics",
       "package": "mindie-diagnostics",
-      "version": "0.5.1",
-      "tag": "v0.5.1",
-      "commit": "fba07e8607ddadde14cea315c9dbda23726c1c79",
-      "revision": "fba07e8607ddadde14cea315c9dbda23726c1c79",
-      "runner_revision": "f8651e2b5a940a49eb703a9d48ed496a07dccbe8",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.5.2",
+      "tag": "v0.5.2",
+      "commit": "801a01b2789aed7f58e971a909205a7d40b61077",
+      "revision": "801a01b2789aed7f58e971a909205a7d40b61077",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "profiler": {
       "name": "profiler",
@@ -91,37 +75,19 @@
       "commit": "4010d72f0b6950caf1425e3b683d495a6c76016a",
       "revision": "4010d72f0b6950caf1425e3b683d495a6c76016a",
       "runner_revision": "0a3c9fd81fb37a1b4a52807d35509daca777ebf2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "independent_update_allowed": true
     },
     "sim": {
       "name": "sim",
       "role": "shared_component",
       "repository": "mindie-agent/sim",
       "package": "mindie-sim",
-      "version": "0.7.0",
-      "tag": "v0.7.0",
-      "commit": "4040f078c19487c019c87466a0d128821289ccc2",
-      "revision": "4040f078c19487c019c87466a0d128821289ccc2",
-      "runner_revision": "0a3c9fd81fb37a1b4a52807d35509daca777ebf2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.7.1",
+      "tag": "v0.7.1",
+      "commit": "15f93f3f0247b2653d0e9441eae56959e4d16d4e",
+      "revision": "15f93f3f0247b2653d0e9441eae56959e4d16d4e",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "npu-top": {
       "name": "npu-top",
@@ -133,185 +99,104 @@
       "commit": "6737925d0ebb39c1aefda2c933eae0486169333c",
       "revision": "6737925d0ebb39c1aefda2c933eae0486169333c",
       "runner_revision": "0a3c9fd81fb37a1b4a52807d35509daca777ebf2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "independent_update_allowed": true
     },
     "remote-dev": {
       "name": "remote-dev",
       "role": "shared_component",
       "repository": "mindie-agent/remote-dev",
       "package": "remote-dev",
-      "version": "0.10.5",
-      "tag": "v0.10.5",
-      "commit": "20d34abebeab17bb6a68f0966ac4d627af54be88",
-      "revision": "20d34abebeab17bb6a68f0966ac4d627af54be88",
-      "runner_revision": "0a3c9fd81fb37a1b4a52807d35509daca777ebf2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.10.6",
+      "tag": "v0.10.6",
+      "commit": "0463a13fce9618ec9a51904869d61acb0cdb8538",
+      "revision": "0463a13fce9618ec9a51904869d61acb0cdb8538",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "knowledge": {
       "name": "knowledge",
       "role": "shared_component",
       "repository": "mindie-agent/knowledge",
       "package": "mindie-knowledge",
-      "version": "0.13.1",
-      "tag": "v0.13.1",
-      "commit": "2e5cf79050a6634a53b9c2cff52d98ca87850e50",
-      "revision": "2e5cf79050a6634a53b9c2cff52d98ca87850e50",
-      "runner_revision": "3bf7fa6efc111876cc31c602f11dcd0c029769d7",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.13.3",
+      "tag": "v0.13.3",
+      "commit": "38a42f6f778cfa555d8918fdcacd12cee4a181f5",
+      "revision": "38a42f6f778cfa555d8918fdcacd12cee4a181f5",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "coordinator": {
       "name": "coordinator",
       "role": "shared_component",
       "repository": "mindie-agent/coordinator",
       "package": "mindie-coordinator",
-      "version": "0.6.2",
-      "tag": "v0.6.2",
-      "commit": "bdead0ac37cc4cee34a1736edc776b48ea823542",
-      "revision": "bdead0ac37cc4cee34a1736edc776b48ea823542",
-      "runner_revision": "0a3c9fd81fb37a1b4a52807d35509daca777ebf2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.6.3",
+      "tag": "v0.6.3",
+      "commit": "0ec71fb947ab24df8e543dcf056f4f06664baad8",
+      "revision": "0ec71fb947ab24df8e543dcf056f4f06664baad8",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "mindie-agent-codex": {
       "name": "mindie-agent-codex",
       "role": "harness_plugin",
       "repository": "mindie-agent/mindie-agent-codex",
       "package": "mindie-agent-codex",
-      "version": "0.1.0",
-      "tag": "v0.1.0",
-      "commit": "d5f91d5a937e931c03ae2f00a8ccd5c525283110",
-      "revision": "d5f91d5a937e931c03ae2f00a8ccd5c525283110",
-      "runner_revision": "3bf7fa6efc111876cc31c602f11dcd0c029769d7",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.1.2",
+      "tag": "v0.1.2",
+      "commit": "0b3c690b95401631782a656d99f2b4487582636a",
+      "revision": "0b3c690b95401631782a656d99f2b4487582636a",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "mindie-agent-cc": {
       "name": "mindie-agent-cc",
       "role": "harness_plugin",
       "repository": "mindie-agent/mindie-agent-cc",
       "package": "mindie-agent-cc",
-      "version": "0.1.0",
-      "tag": "v0.1.0",
-      "commit": "bbd3fea27bfc2e637db4aebe5549202057469d9b",
-      "revision": "bbd3fea27bfc2e637db4aebe5549202057469d9b",
-      "runner_revision": "3bf7fa6efc111876cc31c602f11dcd0c029769d7",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.1.2",
+      "tag": "v0.1.2",
+      "commit": "edabca82e02fb313d734c699e75735095effebfd",
+      "revision": "edabca82e02fb313d734c699e75735095effebfd",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "mindie-agent-kimi": {
       "name": "mindie-agent-kimi",
       "role": "harness_plugin",
       "repository": "mindie-agent/mindie-agent-kimi",
       "package": "mindie-agent-kimi",
-      "version": "0.1.0",
-      "tag": "v0.1.0",
-      "commit": "cd53bb4fbb7efa4642900f3b6a76bd697a808b93",
-      "revision": "cd53bb4fbb7efa4642900f3b6a76bd697a808b93",
-      "runner_revision": "3bf7fa6efc111876cc31c602f11dcd0c029769d7",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.1.2",
+      "tag": "v0.1.2",
+      "commit": "7aecfd22857c313b52d6fe5923292f297884fec0",
+      "revision": "7aecfd22857c313b52d6fe5923292f297884fec0",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "mindie-agent-dsh": {
       "name": "mindie-agent-dsh",
       "role": "harness_plugin",
       "repository": "mindie-agent/mindie-agent-dsh",
       "package": "mindie-agent-dsh",
-      "version": "0.1.0",
-      "tag": "v0.1.0",
-      "commit": "71a6b550bf0216f6616d70044959da26a87993cd",
-      "revision": "71a6b550bf0216f6616d70044959da26a87993cd",
-      "runner_revision": "3bf7fa6efc111876cc31c602f11dcd0c029769d7",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.1.2",
+      "tag": "v0.1.2",
+      "commit": "a38f1cb191f625905aace734e20a2ad196624b60",
+      "revision": "a38f1cb191f625905aace734e20a2ad196624b60",
+      "runner_revision": "484b80621aaf9293c559786d0ef2174c79a0dbb4",
+      "independent_update_allowed": true
     },
     "mindie-bench": {
       "name": "mindie-bench",
       "role": "evaluation_runner",
       "repository": "mindie-agent/mindie-bench",
       "package": "mindie-bench",
-      "version": "0.4.2",
-      "tag": "v0.4.2",
-      "commit": "0d051cd3413bfb851ba9fd7f68dc1372e2c590a9",
-      "revision": "0d051cd3413bfb851ba9fd7f68dc1372e2c590a9",
-      "runner_revision": "0d051cd3413bfb851ba9fd7f68dc1372e2c590a9",
-      "component_gate_runner_revision": "994b48e410f8dec989e26130b6e52fc5a6b569d2",
-      "independent_update_allowed": true,
-      "hotfix_trigger_on_error": true,
-      "etag_poll_interval_sec": 3600,
-      "background_poll_interval_sec": 86400,
-      "update_policy": {
-        "independent_update_allowed": true,
-        "hotfix_trigger_on_error": true,
-        "etag_poll_interval_sec": 3600,
-        "background_poll_interval_sec": 86400
-      }
+      "version": "0.4.4",
+      "tag": "v0.4.4",
+      "commit": "a36d8a5ae8633e560d19fee231179c3680149109",
+      "revision": "a36d8a5ae8633e560d19fee231179c3680149109",
+      "runner_revision": "a36d8a5ae8633e560d19fee231179c3680149109",
+      "component_gate_runner_revision": "a36d8a5ae8633e560d19fee231179c3680149109",
+      "independent_update_allowed": true
     }
   },
   "patch_releases": [
@@ -339,8 +224,11 @@
       "patch_version": "0.1.1",
       "type": "hotfix",
       "updated_components": [
-        "knowledge",
+        "diagnostics",
+        "sim",
         "remote-dev",
+        "knowledge",
+        "coordinator",
         "mindie-agent-codex",
         "mindie-agent-cc",
         "mindie-agent-kimi",
@@ -348,7 +236,7 @@
         "mindie-bench"
       ],
       "plugin_republish_required": true,
-      "summary": "Align all 4 host plugins to v0.1.0 with knowledge v0.13.1 (2e5cf79050a6634a53b9c2cff52d98ca87850e50) and remote-dev v0.10.5 (20d34abebeab17bb6a68f0966ac4d627af54be88); bump mindie-bench to v0.4.2 (0d051cd3413bfb851ba9fd7f68dc1372e2c590a9) with tasks/zh-vague/, test_four_harness_g1_g4.py, matrix CLI alias, portable Python resolution, and hardened independent G4 RSI verifiers; pin 7 synced knowledge corpora commits (450 graded units)."
+      "summary": "0.1.1 maintenance patch: formal component releases for knowledge v0.13.3 (38a42f6f778cfa555d8918fdcacd12cee4a181f5; per-session manual /mindie-agent gate, whole-delivery token budget estimation, deduplicated delivery receipts, and direct GitHub Release component update discovery/runtime build), remote-dev v0.10.6 (0463a13fce9618ec9a51904869d61acb0cdb8538; primary SSH exception preservation with cleanup_error and dual-Die A3 / measured free HBM normalization), diagnostics v0.5.2 (801a01b2789aed7f58e971a909205a7d40b61077; cooperative JSONL record-boundary intake drain and offline stage-admission budget), sim v0.7.1 (15f93f3f0247b2653d0e9441eae56959e4d16d4e; profiled_kernel cost plans with captured median duration floors), coordinator v0.6.3 (0ec71fb947ab24df8e543dcf056f4f06664baad8; preparation job refresh, factual A5/A3 HBM telemetry, and host-capacity placement admission), and mindie-bench v0.4.4 (a36d8a5ae8633e560d19fee231179c3680149109; behavior-executed verifiers for 6 tasks, strategy-selection continuation isolation, release-kind=patch collector gate, and HTTP/1.1 chunked settlement close-race fix), reusing profiler v0.5.0 and npu-top v0.2.1; formal v0.1.2 releases across all four native host plugins (Codex 0b3c690b95401631782a656d99f2b4487582636a, CC edabca82e02fb313d734c699e75735095effebfd, Kimi 7aecfd22857c313b52d6fe5923292f297884fec0, DSH a38f1cb191f625905aace734e20a2ad196624b60) verified on macOS arm64 for exploration pass-through, session gating, and independent component updates (docs/releases/0.1.1/native-update-acceptance.json), plus the offline CPU engineering reproduction and G5 dev pilot report (docs/releases/0.1.1/benchmark-pilot.md)."
     }
   ]
 }
