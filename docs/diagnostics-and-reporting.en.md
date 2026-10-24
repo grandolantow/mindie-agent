@@ -58,6 +58,26 @@ Public GitHub Issues are assembled deterministically from **allowlisted metadata
 
 ---
 
+## 4.1 Update Failure Coverage and Reporting Eligibility
+
+Diagnostics 0.5.3 provides a shared `category="update"` recorder policy based on exception types, structured codes and retained causes. It never analyzes free-form exception text. Missing modules and broken artifacts or protocols are product faults; transport, credentials, permissions, cancellation and local prerequisites remain visible locally. Plugins must record failures at their boundaries instead of only saving an updater receipt or marking every update failure non-reportable.
+
+Codex 0.1.6, Claude Code 0.1.5, Kimi 0.1.3 and DSH 0.1.3 adopt this policy. Codex also covers component-inheritance helper startup failures and updater children that crash before writing a receipt. Trusted inner incident references are reused across outer boundaries. Plugin baselines pin formal diagnostics 0.5.3 and use the package manager to override older transitive diagnostics pins.
+
+Recent local failures include `error_code` and `reporting_eligibility`:
+
+| Eligibility | Meaning |
+| --- | --- |
+| `local_only` | Recorded locally; excluded from automatic reporting by classification or caller policy |
+| `not_authorized_at_capture` | No reporting consent at capture; enabling it later never backfills this event |
+| `other_profile` | Belongs to another profile and is not consumed by this profile |
+| `consent_allowed` | Currently eligible; consult the queue for ingestion and delivery outcomes |
+| `consent_withdrawn` / `consent_unavailable` | Revoke delivery or retain evidence until authority can be read again, respectively |
+
+This bounded view reads at most eight 16 KiB log tails and returns five failures. `truncated` marks an incomplete window, not a global failure count. A healthy worker, an upgraded diagnostics package, a recorded event, a queued incident and a GitHub acknowledgment are separate facts. Only a `published` receipt and its issue establish successful delivery. A new version cannot reconstruct failures an older plugin never recorded.
+
+---
+
 ## 5. Deduplication & Recoverable Delivery Queue (Loop Prevention)
 
 To prevent duplicate Issues and retain pending reports across transient network outages:
