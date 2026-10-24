@@ -22,7 +22,9 @@ MindIE Agent does not invent a proprietary chat UI or force you into a custom ta
 
 In everyday workflows:
 - **Manual `/mindie-agent` Trigger**: Type `/mindie-agent <problem description>` (or `$mindie-agent` in Codex; DSH uses its native `/mindie-agent` gesture) whenever you want to invoke Ascend domain knowledge, historical troubleshooting experience, and the Skill workflow;
-- **Deterministic tools available by default**: Configured tools for remote-dev, coordinator inventory and leases, npu-top monitoring, profiler capture and analysis, sim calculations, local diagnostics and status inspection do not require `/mindie-agent`. Their existing permissions, device leases and outbound consent still apply.
+- **Agent tools discoverable and callable by default**: Installed and configured remote-dev, coordinator inventory and leases, profiler capture and analysis, sim calculations, local diagnostics and status inspection expose their names, purposes and schemas through native MCP without `/mindie-agent`. Existing permissions, device leases and outbound consent still apply. `npu-top` is a human-facing monitoring dashboard and does not belong in the Agent MCP catalog.
+
+Codex `0.1.8` implements this MCP discovery boundary. Other host plugins require their own implementation and acceptance against this contract; this release does not establish their acceptance. The [native acceptance record](releases/codex-0.1.8-native-acceptance.json) covers discovery, six MCP calls and a scheduled update check, and separately records the old `0.1.6` updater failure and one-time recovery.
 
 The boundary is whether a capability introduces or accumulates knowledge and
 experience context. Direct hardware facts, trace analysis, calculations and
@@ -35,10 +37,13 @@ The entire knowledge flywheel (query, explain, feedback, distillation, sync and
 background Stop capture) requires manual `/mindie-agent` activation once per
 session. Later turns retain the grant until deactivation; new chats, forks and
 subagents do not inherit it. Contribution consent and project scope are
-additional capture conditions. Inactive sessions receive no knowledge Skill,
-flywheel instructions or activation reminders. An accidental discovered-tool
-call is rejected as unauthorized before knowledge execution. Legacy automatic
-associations never establish this manual grant.
+additional capture conditions. Inactive sessions receive no knowledge tool names,
+descriptions or schemas, knowledge Skill, flywheel instructions or activation
+reminders. Rejecting calls at execution time alone is insufficient: the default
+MCP catalog must exclude knowledge interfaces. The explicit entry supplies their
+instructions on demand, while execution still checks the current session's grant.
+Another chat's activation must never expose a shared knowledge catalog. Legacy
+automatic associations never establish this manual grant.
 
 ---
 
