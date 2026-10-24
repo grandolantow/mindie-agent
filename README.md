@@ -1,6 +1,6 @@
 # 📊 MindIE Agent 开源仓库与下载统计
 
-> **最近更新**：`2026-10-24 00:03 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
+> **最近更新**：`2026-10-24 10:20 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
 
 ![MindIE Agent Repository & Download Statistics](./dashboard.zh.svg)
 
@@ -10,9 +10,9 @@
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | 产品入口 | [`mindie-agent`](https://github.com/mindie-agent/mindie-agent) | `v0.1.0` | 54 | 50 | **1,331** | 1,211 (411) | 203 (76) | 3 (7) |
 | 技能目录 | [`awesome-mindie-skills`](https://github.com/mindie-agent/awesome-mindie-skills) | `-` | 3 | 7 | **187** | 187 (90) | 136 (24) | 0 (0) |
-| 客户端插件 | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) | `v0.1.0` | 0 | 2 | **1,855** | 1,615 (373) | 29 (12) | 54 (73) |
+| 客户端插件 | [`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex) | `v0.1.0` | 0 | 2 | **1,855** | 1,615 (373) | 29 (12) | 55 (74) |
 | 客户端插件 | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) | `v0.1.0` | 0 | 0 | **1,324** | 1,303 (242) | 4 (3) | 27 (48) |
-| 客户端插件 | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) | `v0.1.0` | 0 | 0 | **1,435** | 1,379 (257) | 1 (1) | 1,159 (1,178) |
+| 客户端插件 | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) | `v0.1.0` | 0 | 0 | **1,435** | 1,379 (257) | 1 (1) | 1,611 (1,630) |
 | 客户端插件 | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | `v0.1.0` | 0 | 0 | **684** | 684 (246) | 1 (1) | 16 (38) |
 | 运行时组件 | [`knowledge`](https://github.com/mindie-agent/knowledge) | `v0.13.1` | 0 | 2 | **5,411** | 4,827 (1,238) | 15 (6) | 28 (64) |
 | 领域知识库 | [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) | `knowledge-v1f0362a8ba94` | 0 | 2 | **3,345** | 3,222 (620) | 36 (11) | 629 (629) |
@@ -21,7 +21,7 @@
 | NPU 监控 | [`npu-top`](https://github.com/mindie-agent/npu-top) | `v0.2.1` | 2 | 3 | **605** | 547 (131) | 17 (5) | 612 (648) |
 | 运行时组件 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.5.1` | 0 | 1 | **5,413** | 4,798 (1,742) | 0 (0) | 38 (77) |
 | 评测工具 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | `v0.4.2` | 0 | 0 | **917** | 917 (222) | 38 (4) | 14 (35) |
-| **合计** | **13 个公开仓库** | — | **59** | **70** | **25,933** | **23,793** | — | **2,626** (2,919) |
+| **合计** | **13 个公开仓库** | — | **59** | **70** | **25,933** | **23,793** | — | **3,079** (3,372) |
 
 ## 数据文件
 
