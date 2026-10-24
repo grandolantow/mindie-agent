@@ -27,7 +27,7 @@
 |---|---|---|
 | [宿主边界与任务生命周期](harness-boundary-and-lifecycle.md) | [Harness Boundary & Lifecycle](harness-boundary-and-lifecycle.en.md) | 任务身份识别、持久授权设置、操作生命周期管理与本地状态保护机制 |
 | [执行资源预期、代码有界性与规格匹配设计](execution-resource-budget-design.md) | — | 代码层内存/显存有界性红线（Principle 18）、工作负载资源预期声明，以及 Windows/macOS/Linux 本机与远端 `fleet_probe` 硬件规格自动匹配分流 |
-| [版本兼容与无感更新](release-compatibility-and-update.md) | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | 双层版本演进与发布通道清单（`channels/0.1.json`）、单组件独立热修、宿主兼容匹配及三层极速无感更新 |
+| [版本兼容与无感更新](release-compatibility-and-update.md) | [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | 双层版本演进与产品组合清单（`channels/0.1.json`）、组件仓库正式 Release 直接发现、宿主兼容匹配及空闲无感切换 |
 | [诊断日志与故障上报](diagnostics-and-reporting.md) | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | 本地结构化诊断日志、隐私脱敏红线与可选的 GitHub Issue 自动故障上报 |
 | [原生能力与系统机制复用](native-runtime-reuse.md) | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | 为什么及如何复用宿主插件市场、`uv` 锁定环境与操作系统原生进程树管理 |
 | [企业网络下的配置与传输](enterprise-network.md) | [Enterprise Network Transport](enterprise-network.en.md) | 代理与系统证书、安装更新、后台上传及本机接口直连 |
@@ -38,7 +38,8 @@
 
 | 文档 | English | 核心内容 |
 |---|---|---|
-| [**`0.1.0` 正式版发布说明（当前版本）**](releases/0.1.0.md) | [**`0.1.0` Official Release Record (Current)**](releases/0.1.0.en.md) | `0.0.1 → 0.1.0` 完整能力演进、`mindie-bench` 双模型 18 任务 `G0–G4` 真机实测、三端 × 四插件全量验收与 [`channels/0.1.json`](../channels/0.1.json) 单组件热修通道 |
+| [**`0.1.1` 补丁发布说明（候选稿）**](releases/0.1.1.md) | [**`0.1.1` Patch Notes (Candidate Draft)**](releases/0.1.1.en.md) | 知识功能按会话显式 `/mindie-agent` 启用、整包预算与探索透传、双 Die/实测 HBM 放置、有界诊断准入、捕获 Kernel 耗时绑定、行为判分器及维护补丁发布链路 |
+| [**`0.1.0` 特性里程碑发布说明**](releases/0.1.0.md) | [**`0.1.0` Feature Milestone Record**](releases/0.1.0.en.md) | `0.0.1 → 0.1.0` 完整能力演进、`mindie-bench` 双模型 18 任务 `G0–G4` 真机实测、三端 × 四插件全量验收与 [`channels/0.1.json`](../channels/0.1.json) 单组件热修通道 |
 | [`0.1.0` 作者自述：架构演进与工程哲学](releases/0.1.0/design-philosophy.md) | [`0.1.0` Author's Note: Architecture & Engineering Philosophy](releases/0.1.0/design-philosophy.en.md) | 为什么砍掉多 Skill、只做薄插件与双支柱（MCP 工具 + `L1–L4` 知识飞轮）、五大核心组件设计初衷与人机协同思考 |
 | [`0.1.0` 真实任务全组件价值实测报告](releases/0.1.0/value-results.md) | [`0.1.0` 18-Task Full Component Value Benchmark Report](releases/0.1.0/value-results.md) | `codex + gpt-6.1-sol (xhigh)` 与 `dsh + deepseek-flash (max)` 在 18 个 L2/L3 真实任务（109 轮 Trial）与 7 大组件上的 `G0–G4` 消融数据 |
 | [`0.0.3` 版本发布记录](releases/0.0.3.md) | [`0.0.3` Release Record](releases/0.0.3.en.md) | L1–L4 渐进式知识披露、`profiler` 与 `sim` 组件发布、CANN 确定性故障分诊及十二仓正式 benchmark |
@@ -50,4 +51,5 @@
 
 | 文档 | English | 范围 |
 |---|---|---|
+| [并行架构评审与修复（2026-10-24）](architecture-review-20261024.md) · [前次简化记录（2026-10-23）](architecture-simplification-20261023.md) | — | 整包预算与去重记账、探索透传、SSH 清理与双 Die 容量放置、评测判分器与证据边界审查记录 |
 | [2026-10-20 代码质量审计](audits/2026-10-20/README.md) | [2026-10-20 Code Quality Audit](audits/2026-10-20/README.en.md) | 固定源码版本的跨仓扫描、实测行/分支覆盖率、审查结论与分批修改计划；不代表缺陷已修复或硬件已验收 |

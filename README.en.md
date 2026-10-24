@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.1.0.en.md"><img src="https://img.shields.io/badge/release-v0.1.0-7045F5.svg" alt="Release v0.1.0"></a>
+  <a href="https://github.com/mindie-agent/mindie-agent/blob/main/docs/releases/0.1.1.en.md"><img src="https://img.shields.io/badge/release-v0.1.1-7045F5.svg" alt="Release v0.1.1"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-cc"><img src="https://img.shields.io/badge/Claude_Code-Plugin-D97757.svg" alt="Claude Code Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-codex"><img src="https://img.shields.io/badge/OpenAI_Codex-Plugin-10A37F.svg" alt="OpenAI Codex Plugin"></a>
   <a href="https://github.com/mindie-agent/mindie-agent-kimi"><img src="https://img.shields.io/badge/Kimi_Code-Plugin-2563EB.svg" alt="Kimi Code Plugin"></a>
@@ -47,7 +47,7 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > GH_USER=$(gh api --hostname github.com user --jq .login) && echo "GitHub channel verified for account: $GH_USER"
 > gh auth setup-git --hostname github.com
 > ```
-> - **Hard Gate (Never skip or silently ignore failures; a DSH `0.0.3`-only install without community contribution may skip the `gh` gate but still needs `git` and `uv`)**:
+> - **Hard Gate (Never skip or silently ignore failures; a DSH `0.1.1`-only install without community contribution may skip the `gh` gate but still needs `git` and `uv`)**:
 >   - If `gh` is missing: assist the user in installing GitHub CLI for their OS first (macOS: `brew install gh`; Windows: `winget install --id GitHub.cli`; Ubuntu / WSL: `sudo apt update && sudo apt install -y gh`).
 >   - Reuse a working account. When login is needed, follow the [GitHub sign-in flow](docs/enterprise-network.en.md#github-sign-in-flow): browser login on ordinary networks, or token login on enterprise networks / blocked browser authorization. Guide creation if needed, receive an existing token through the hidden `gh` prompt, and let `gh` save it. Verify the account, Git and subsequent-process reuse before continuing. Resolve network/proxy/certificate failures as transport problems.
 >
@@ -57,31 +57,31 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 > Community contribution is off by default. Only after the user enables contribution to a target corpus `<owner/repo>` should you create or reuse that corpus's personal Fork and bind `<GH_USER>/<repo>` as the push target. Do not Fork the main repository, plugin repositories or all domain repositories as an installation step.
 >
 > #### Step 3: Identify your host environment & install the matching plugin
-> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; the `v0.1.0` product release locks the four host plugin tags at `v0.0.3` and shared runtime components via [`channels/0.1.json`](./channels/0.1.json)):
+> Run the **single matching branch** for your host CLI (check `claude --version`, `codex --version`, `kimi --version`, or `dsh --version` if unsure; the `v0.1.1` product release locks the four host plugin tags at `v0.1.1` and shared runtime components via [`channels/0.1.json`](./channels/0.1.json)):
 >
 > - **Branch A — If you are running inside Claude Code (`CLAUDECODE` env or `claude` CLI)**:
 >   ```bash
->   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.0.3"
+>   claude plugin marketplace add "https://github.com/mindie-agent/mindie-agent-cc.git#v0.1.1"
 >   claude plugin install mindie-agent@mindie-agent-cc --scope user
 >   claude --init-only
 >   claude plugin list --json
 >   claude mcp list
 >   ```
->   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.0.3`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
+>   *Verification*: Confirm `claude plugin list --json` shows `mindie-agent@mindie-agent-cc` (`0.1.1`) enabled and `claude mcp list` shows both `mindie-knowledge` and `remote-dev` as `Connected`.
 >
 > - **Branch B — If you are running inside OpenAI Codex CLI (`CODEX_CI` / `CODEX_THREAD_ID` env or `codex` CLI)**:
 >   ```bash
->   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.0.3
+>   codex plugin marketplace add https://github.com/mindie-agent/mindie-agent-codex.git --ref v0.1.1
 >   codex plugin add mindie-agent@mindie-agent --json
 >   codex plugin list --json
 >   ```
->   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.0.3`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
+>   *Verification*: Confirm `codex plugin list --json` shows `mindie-agent@mindie-agent` (`0.1.1`) enabled. Let the user know that starting a new session will trigger `SessionStart` to build the locked runtime.
 >
 > - **Branch C — If you are running inside Kimi Code CLI (`KIMI_CODE_HOME` env or `kimi` CLI)**:
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-kimi-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-kimi.git "$MINDIE_TMP"
 >   SETUP_OUT=$(python3 "$MINDIE_TMP/scripts/setup.py")
 >   echo "$SETUP_OUT"
 >   NATIVE_PKG=$(printf '%s\n' "$SETUP_OUT" | python3 -c 'import sys, json; text=sys.stdin.read(); data=json.loads(text[text.find("{"):]); print(data["native_package"])')
@@ -93,18 +93,18 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 >   ```bash
 >   MINDIE_TMP="${TMPDIR:-/tmp}/mindie-agent-dsh-install"
 >   rm -rf "$MINDIE_TMP"
->   git clone --depth 1 --branch v0.0.3 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
+>   git clone --depth 1 --branch v0.1.1 https://github.com/mindie-agent/mindie-agent-dsh.git "$MINDIE_TMP"
 >   uv --native-tls run --quiet --no-project --python 3.11 "$MINDIE_TMP/scripts/setup.py"
 >   ```
 >   Then install and enable in the DSH Web **Plugins** page:
 >   ```text
->   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3
+>   git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1
 >   ```
 >   Inside a DSH session that has the `plugin_manager` tool, the same step is:
 >   ```text
->   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.0.3")
+>   plugin_manager(action="install_bundle", target="git+https://github.com/mindie-agent/mindie-agent-dsh.git#v0.1.1")
 >   ```
->   *Verification*: `setup.py` reports `status: ready`, components `knowledge 0.13.0 / remote-dev 0.10.4 / diagnostics 0.5.1`, and `knowledge.status: ready`; the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
+>   *Verification*: `setup.py` reports `status: ready`, `activation.status: active`, components `mindie-knowledge 0.13.2 / remote-dev 0.10.5 / mindie-diagnostics 0.5.1`, and `knowledge.status: inactive` (knowledge stays inactive during setup until a session manually invokes `/mindie-agent`); the Plugins page shows `mindie-agent-dsh` enabled. Tell the user to open a **new session** and use `/mindie-agent`.
 >
 > - **Branch E — If you are running inside Cursor or another generic MCP client (standalone `remote-dev` SSH toolset)**:
 >   Add `remote-dev` to `.mcp.json` (or `.cursor/mcp.json`):
@@ -114,7 +114,7 @@ Sit back while your Agent reads this page, verifies a **stable `gh` (GitHub CLI)
 >       "remote-dev": {
 >         "type": "stdio",
 >         "command": "uvx",
->         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.4", "remote-dev", "server"]
+>         "args": ["--from", "git+https://github.com/mindie-agent/remote-dev@v0.10.5", "remote-dev", "server"]
 >       }
 >     }
 >   }
@@ -225,7 +225,7 @@ sequenceDiagram
   Agent->>NPU: 2. Edit code, sync patches, and run tests in the target container
   NPU-->>Agent: Return build, accuracy, and performance results with log paths
   Agent-->>Dev: 3. Deliver verified changes and test summary; optionally record feedback
-  Note over Agent,Know: Runs only when authorized by local configuration
+  Note over Agent,Know: Runs in /mindie-agent-enabled sessions when authorized by local consent & project scope
   Agent->>Know: 4. Redact and archive session troubleshooting records
   Agent->>Know: 5. Distill verified fixes into reusable knowledge entries
   Note over Know,Repo: Triggered only when community sharing is enabled
@@ -240,9 +240,9 @@ MindIE Agent is built around **simplicity and progressive disclosure**—from th
 
 | Capability Module | Trigger Mode | How It Works |
 | --- | --- | --- |
-| **🧠 Ascend Domain Knowledge & Skills**<br/>(`mindie-knowledge` + Domain Skills) | **Manual Trigger**<br/>(Unified `/mindie-agent` entry) | Whether you are adapting a new model in `vLLM-Ascend`, writing `AscendC` / `Triton` kernels, adding accuracy tests, or tuning performance, type **`/mindie-agent <your task>`** (or `$mindie-agent` in Codex). Setup, status checks, and preference changes also go through `/mindie-agent` + natural language. |
-| **⚡ Remote Ascend Server Development & Testing**<br/>(`remote-dev` SSH / Container Toolset) | **Default Auto-Trigger**<br/>(Always-on MCP, no slash command needed) | `remote-dev` is active by default. Whenever you mention a remote server, container, or NPU build/test command in normal conversation, your Agent **automatically calls** `remote_read`, `remote_edit`, `remote_bash`, and background job tools. |
-| **🔄 Experience Distillation & Community Sharing**<br/>(Redaction, distillation, and review) | **Configured capture; verified milestones** | Session records are redacted and archived within your authorized project scope. Verified fixes and optimization results can be distilled into reusable knowledge entries and shared when community contribution is enabled. |
+| **🧠 Ascend Domain Knowledge & Skills**<br/>(`mindie-knowledge` + Domain Skills) | **Manual Per-Session Trigger**<br/>(Unified `/mindie-agent` entry) | When adapting a model in `vLLM-Ascend`, writing `AscendC` / `Triton` kernels, adding accuracy tests, or tuning performance, type **`/mindie-agent <your task>`** (or `$mindie-agent` in Codex) once in the current session to enable knowledge search, feedback, distillation, and sync across subsequent turns. Setup, status checks, and preference changes also go through `/mindie-agent` + natural language. |
+| **⚡ Remote Ascend Execution & Deterministic Tools**<br/>(`remote-dev` / `coordinator` / `profiler` / `sim` / `diagnostics`) | **Default Auto-Trigger**<br/>(Always available, no `/mindie-agent` needed) | `remote-dev` and deterministic engineering tools are active by default. Whenever you mention a remote server, container, NPU probe/lease, profiling trace, roofline simulation, or factual status check in normal conversation, your Agent **automatically calls** the corresponding tools without requiring `/mindie-agent`. |
+| **🔄 Experience Distillation & Community Sharing**<br/>(Redaction, distillation, and review) | **Configure consent once; active in `/mindie-agent` sessions** | Contribution consent (`mindie-consent.json`) is configured once and persists across sessions. In any session enabled via `/mindie-agent`, `Stop` redacts and archives public dialogue within your authorized project scope (ordinary unactivated sessions perform zero `Stop` capture); verified fixes are distilled into reusable knowledge entries and shared when contribution is enabled. |
 
 ### Copy-Paste Usage Examples
 
@@ -348,11 +348,13 @@ Please follow https://github.com/mindie-agent/mindie-agent/blob/main/CONTRIBUTIN
 
 ---
 
+The `0.1` maintenance patch **[0.1.1 (Candidate Draft)](./docs/releases/0.1.1.en.md)** covers per-session manual `/mindie-agent` knowledge activation, whole-delivery token budget estimation and exploration pass-through, physical Die & HBM headroom placement, bounded diagnostic intake, captured kernel cost contracts, behavior-executed task verifiers, and the `release-kind=patch` release pipeline (currently published immutable tags: host plugins `0.1.1` and `knowledge` `0.13.2`; final `0.1.1` channel assembly with `knowledge 0.13.3`, host plugins `0.1.2`, and component patch releases `remote-dev 0.10.6` / `coordinator 0.6.3` / `diagnostics 0.5.2` / `sim 0.7.1` / `mindie-bench 0.4.3` is pending final CI and release verification). The section below retains the historical `0.1.0` record.
+
 ## 🚀 Current Release & Benchmark Results (v0.1.0)
 
 > **Benchmark Evidence Correction (2026-10-24):** Historical solve rates, speedups, and token savings in this section and in the `0.1.0` value benchmark report are **suspended as current product acceptance claims**. Six task verifiers previously accepted nonfunctional source changes, and the strategy-selection pilot's legacy default executor synthesized continuation outcomes and costs from its private judge. Passing soundness checks on the repaired verifiers does not retroactively rejudge historical trials, and component fixtures, deterministic replays, simulations, and live NPU measurements each carry distinct evidence boundaries. See **[Parallel Architecture Review & Fixes (2026-10-24)](./docs/architecture-review-20261024.md)**.
 
-The current official release is **[`v0.1.0`](./docs/releases/0.1.0.en.md)** ([中文发布说明](./docs/releases/0.1.0.md) · [18-Task Full Benchmark Report](./docs/releases/0.1.0/value-results.md) · [109-Trial Redacted Manifest (`agent-trials-109.json`)](./docs/releases/0.1.0/agent-trials-109.json) · [Component Benchmark Manifest (`value-results.json`)](./docs/releases/0.1.0/value-results.json) · [Author's Note & Design Philosophy](./docs/releases/0.1.0/design-philosophy.en.md) · [`channels/0.1.json`](./channels/0.1.json)). `v0.1.0` marks MindIE Agent's evolution from the `0.0.1` prototype into an intelligent R&D and verification substrate for Ascend NPU AI Infra (establishing the [`channels/0.1.json`](./channels/0.1.json) Release Channel Manifest contract and verifying `v0.0.3` locked plugin auto-updates as the foundation for `0.1.x` single-component hotfixes), with historical records for 18 engineering tasks, `109` primary trials and component/host checks. The figures below are retained for traceability under the correction above; benefit comparisons require rejudgment:
+The latest feature milestone is **[`v0.1.0`](./docs/releases/0.1.0.en.md)** ([中文发布说明](./docs/releases/0.1.0.md) · [18-Task Full Benchmark Report](./docs/releases/0.1.0/value-results.md) · [109-Trial Redacted Manifest (`agent-trials-109.json`)](./docs/releases/0.1.0/agent-trials-109.json) · [Component Benchmark Manifest (`value-results.json`)](./docs/releases/0.1.0/value-results.json) · [Author's Note & Design Philosophy](./docs/releases/0.1.0/design-philosophy.en.md) · [`channels/0.1.json`](./channels/0.1.json)). `v0.1.0` marks MindIE Agent's evolution from the `0.0.1` prototype into an intelligent R&D and verification substrate for Ascend NPU AI Infra (establishing the [`channels/0.1.json`](./channels/0.1.json) Release Channel Manifest contract to record verified product combinations and verifying `v0.0.3` locked plugin auto-updates; independent runtime component updates discover formal GitHub Releases directly from each official component repository and cut over when idle after verifying immutable tag SHAs, `pyproject.toml` versions, and `benchmark-results.json`), with historical records for 18 engineering tasks, `109` primary trials, all 7 shared runtime components, and 3 hardware platforms × 4 host plugins. The figures below are retained for traceability under the correction above; benefit comparisons require rejudgment:
 
 1. **`mindie-bench` Dual-Model (`codex + home/codex/gpt-6.1-sol (xhigh)` & `dsh + deepseek-flash (max)`) Controlled Ablation Across 18 Engineering Tasks & `109` End-to-End Trials (`G0 → G1 → G2 → G3 → G4`, Including Live `Ascend950DT` NPUs)**:
    - **`G0 → G1 → G2` (`remote-dev` + `knowledge` L1–L4 Progressive Disclosure)**: Accelerates cross-module L2/L3 vague troubleshooting tasks by **`1.80x – 2.77x`**, cuts token consumption by **`15% – 76%`**, and bounds single-task knowledge reading to **`4,814–5,599` tokens (`< 8,000` ceiling)** (note: when a local single-file traceback is already self-contained, extra `knowledge_query` round-trips can incur negative latency deltas; see [`value-results.md`](./docs/releases/0.1.0/value-results.md) for the full distribution);
@@ -382,7 +384,8 @@ See **[`docs/README.en.md`](./docs/README.en.md)** (**[中文文档中心](./doc
 
 | Topic | 中文 | English |
 | --- | --- | --- |
-| **`v0.1.0` Official Release & Full Benchmark Report (Current)** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
+| **`v0.1.1` Patch Notes (Current)** | [docs/releases/0.1.1.md](./docs/releases/0.1.1.md) | [docs/releases/0.1.1.en.md](./docs/releases/0.1.1.en.md) |
+| **`v0.1.0` Official Release & Full Benchmark Report** | [docs/releases/0.1.0.md](./docs/releases/0.1.0.md) · [实测报告](./docs/releases/0.1.0/value-results.md) | [docs/releases/0.1.0.en.md](./docs/releases/0.1.0.en.md) · [Benchmark Report](./docs/releases/0.1.0/value-results.md) |
 | **`v0.1.0` Author's Note & Architectural Philosophy** | [docs/releases/0.1.0/design-philosophy.md](./docs/releases/0.1.0/design-philosophy.md) | [docs/releases/0.1.0/design-philosophy.en.md](./docs/releases/0.1.0/design-philosophy.en.md) |
 | **`v0.0.3` Release & Benchmark Report** | [docs/releases/0.0.3.md](./docs/releases/0.0.3.md) | [docs/releases/0.0.3.en.md](./docs/releases/0.0.3.en.md) |
 | **`v0.0.2` Release & Benchmark Report** | [docs/releases/0.0.2.md](./docs/releases/0.0.2.md) | [docs/releases/0.0.2.en.md](./docs/releases/0.0.2.en.md) |

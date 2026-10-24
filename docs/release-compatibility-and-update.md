@@ -2,79 +2,86 @@
 
 [English](release-compatibility-and-update.en.md) · [返回文档中心](README.md)
 
-本文说明 MindIE Agent 的双层版本演进架构（特性里程碑与发布通道清单 `Release Channel Manifest`）、组件与插件配套发布规则、单组件独立增量更新、宿主版本兼容性筛选机制，以及三层极速触达与后台无感切换流程。
+本文说明 MindIE Agent 的双层版本演进架构（特性里程碑与主仓产品组合清单 `channels/0.1.json`）、组件与插件配套发布门禁、宿主 CLI 兼容性筛选规则，以及共享运行时组件的独立正式 Release 发现、旁路隔离 `uv` 环境构建与空闲切换机制。
 
 - 遵循准则：[工程设计原则与演进准则](design-principles.md)
-- 当前通道清单：[`channels/0.1.json`](../channels/0.1.json)（`schema: "mindie-release-channel/1"`，`track: "0.1"`）
+- 主仓产品组合清单：[`channels/0.1.json`](../channels/0.1.json)（`schema: "mindie-release-channel/1"`，`track: "0.1"`）
 - 版本与实测记录：[版本发布记录](README.md#版本记录与路线图)
 
 ---
 
-## 双层版本演进与发布通道架构（Release Channel Manifest）
+## 双层版本演进、产品组合清单与更新发现分工
 
-MindIE Agent 采用 **`0.Y.0` 特性里程碑 + `0.Y.Z` 通道热修（`channels/0.Y.json`）** 的双层 SemVer 演进机制，将重大版本迭代与日常高频单组件缺陷修复解耦：
+MindIE Agent 采用 **`0.Y.0` 特性里程碑 + `0.Y.Z` 维护补丁/组件独立演进** 的双层 SemVer 机制，并将**主仓产品验证组合记录（`channels/0.1.json`）**与**客户端运行时更新发现源（各官方代码仓正式 GitHub Release）**的职责明确分离：
 
-| 版本层级 | 版本号形态 | 演进载体与定位 | 宿主插件是否需重发 |
+| 维度 | 版本号与载体 | 实际职责与选择源 | 宿主插件是否需重发 |
 | --- | --- | --- | --- |
-| **特性里程碑（Milestone Release）** | `0.Y.0`（如 `0.1.0` → `0.2.0`） | 重大功能演进或跨组件协议升级；配套完整版本发布说明与十二仓全量基准验证 | **是**（四个宿主插件对齐升级至新的 `0.Y.0` 里程碑基线） |
-| **通道补丁与单组件热修（Channel Patch / Single-Component Hotfix）** | `0.Y.Z`（如 `0.1.1`、`0.1.2`） | 快速缺陷修复与单组件独立演进；由主仓通道清单（当前活跃通道为 [`channels/0.1.json`](../channels/0.1.json)，`schema: "mindie-release-channel/1"`）驱动 | **否**（仅发布变更组件本身并更新对应通道清单，无需连坐重发 `mindie-agent-codex`、`mindie-agent-cc`、`mindie-agent-kimi`、`mindie-agent-dsh` 四个宿主插件） |
+| **特性里程碑（Milestone Release）** | `0.Y.0`（如 `0.1.0` → `0.2.0`） | 重大功能演进或跨组件协议升级；配套十二仓全量基准验证与主仓 [`channels/0.1.json`](../channels/0.1.json) 里程碑清单 | **是**（四个宿主插件对齐升级至新的 `0.Y.0` 里程碑基线） |
+| **宿主插件版本选择（Plugin Release Selection）** | 四个宿主插件仓正式 GitHub Release（`mindie-plugin-release.json`） | 客户端按本机宿主 CLI 版本与 `harness-compatibility.json` 直接从对应插件官方仓库筛选最高兼容正式版（`mindie_knowledge.releases` / `releases_io.py`） | 按插件自身变更独立发版 |
+| **共享组件独立更新（Independent Component Release Update）** | 八个组件仓正式 GitHub Release（`knowledge`、`remote-dev`、`diagnostics`、`profiler`、`sim`、`npu-top`、`coordinator`、`mindie-bench`） | 客户端**直接读取各官方组件仓库的正式 GitHub Release**（`mindie_knowledge.component_releases` / `component_runtime.py`），在旁路独立 `uv` 环境中构建并通过 API 探针后等待空闲切换 | **否**（组件独立发版即可被发现，无需仅因单组件补丁连坐重发四个宿主插件） |
+| **主仓发布通道清单（Product Channel Manifest）** | [`channels/0.1.json`](../channels/0.1.json)（`schema: "mindie-release-channel/1"`） | 记录主产品里程碑（`0.Y.0`）与维护补丁（`0.Y.Z`）经过验证的十二仓 + 七大知识语料库版本与不可变 Commit SHA 组合，供发布流水线门禁与审计溯源使用；**不作为客户端运行时更新的选择源** | 随主产品里程碑或维护补丁汇总更新 |
 
-### 1. 通道清单结构（以 `channels/0.1.json` 为例）
+### 1. 主仓通道清单（`channels/0.1.json`）的定位与字段身份
 
-[`channels/0.1.json`](../channels/0.1.json) 是当前活跃轨道的唯一权威组件版本清单（`schema: "mindie-release-channel/1"`）：
-- **轨道与版本标识**：声明 `track`、`milestone_version` 与当前补丁号 `current_patch_version`（随单组件热修递增）；
-- **十二仓精确组件条目（`components`）**：集中登记 `diagnostics`、`profiler`、`sim`、`npu-top`、`remote-dev`、`knowledge`、`coordinator`、四个宿主插件（`mindie-agent-codex`、`mindie-agent-cc`、`mindie-agent-kimi`、`mindie-agent-dsh`）以及 `mindie-bench` 的经过验证版本号（`version`）、GitHub 仓库（`repository`）、Release 标签（`tag`）与不可变 40 位源码提交哈希（`commit` / `revision`）；
-- **更新策略声明（`update_policy`）**：
-  - `independent_update_allowed: true`：允许在不重发宿主插件的前提下独立更新单个共享组件；
-  - `hotfix_trigger_on_error: true`：开启故障/崩溃触发的即时自愈检查；
-  - `etag_poll_interval_sec: 3600`：1 小时轻量级 HTTP `ETag` 通道轮询；
-  - `background_poll_interval_sec: 86400`：24 小时常规后台全量轮询。
+[`channels/0.1.json`](../channels/0.1.json) 是主仓库用于登记**经过产品级验证的组件与语料组合**的机器可读清单（`schema: "mindie-release-channel/1"`）：
+- **轨道与版本标识**：声明 `track`、`milestone_version`、`current_patch_version` 及 `patch_releases` 历史记录；
+- **十二仓精确组件条目（`components`）与七大语料库快照（`corpora`）**：登记 `diagnostics`、`profiler`、`sim`、`npu-top`、`remote-dev`、`knowledge`、`coordinator`、四个宿主插件（`mindie-agent-codex`、`mindie-agent-cc`、`mindie-agent-kimi`、`mindie-agent-dsh`）与 `mindie-bench` 的验证版本号（`version`）、GitHub 仓库（`repository`）、Release 标签（`tag`）与 40 位不可变提交哈希（`commit` / `revision`），主仓发布流水线（`collect_product_benchmarks.py`）强制核对 `channels/0.1.json` 与 `benchmark-manifest.json` 完全一致；
+- **策略元数据与设计目标声明（`update_policy`）**：清单中的 `independent_update_allowed`、`require_plugin_republish_on_component_patch`、`hotfix_trigger_on_error`、`etag_poll_interval_sec: 3600`、`background_poll_interval_sec: 86400` 与 `atomic_idle_cutover_max_ms: 500` 等字段属于通道级策略声明与架构目标描述（详见清单内 `implementation_status` 说明）。客户端运行时的真实发现源、HTTP 缓存 TTL、触发周期与切换实现以各仓源码为准（见下文第 2–3 节）。
 
-### 2. 单组件独立增量更新（`< 500ms` 空闲原子切换）
+### 2. 共享组件正式 Release 直接发现与多重校验（`component_releases.py`）
 
-当仅单个底层共享组件（例如 `remote-dev` 或 `diagnostics`）修复缺陷并发布新 Tag 时：
-1. 维护者只需将该组件的新版本、Tag 与精确 Commit SHA 写入当前通道清单（如 [`channels/0.1.json`](../channels/0.1.json)），并将 `current_patch_version` 递增，无需修改或重发四个宿主插件仓库；
-2. 客户端后台更新器对比本地已激活组件版本与通道清单中的目标组件版本，仅针对发生变更的组件执行 `uv` 单包增量替换（复用本地 wheel 缓存与已锁定的其余依赖树）；
-3. 待当前 MCP 工具调用、经验采集与索引任务空闲后，在 **`< 500ms`** 窗口内通过排他锁完成唯一安装绑定（Canonical Binding）原子切换。
+客户端更新器不读取 `channels/0.1.json` 选择运行时组件，而是通过 `mindie_knowledge.component_releases` 与 `runtime_inventory.py` 直接查询各官方组件仓库（`mindie-agent/{knowledge,remote-dev,diagnostics,profiler,sim,npu-top,coordinator,mindie-bench}`）：
 
-### 3. 三层极速更新触达（Three-Tier Rapid Rollout）
+1. **单调不降级版本选择（`component_releases.select`）**：
+   - 通过 `python -I runtime_inventory.py` 只读提取当前运行环境中各第一方组件的已安装版本与 `direct_url.json` 中的 40 位不可变 Commit SHA（不导入业务引擎）；
+   - 对每个已安装组件，取 **已安装版本（`installed`）、插件声明基线版本（`baseline`，来自 `pyproject.toml` 或 `runtime-requirements.txt`）与组件仓最新正式 Release 版本（`latest`）三者的最大值**；
+   - 绝不自动降级，且一旦发现相同版本号对应的源码 Commit SHA 发生漂移，立即抛出校验错误拒绝采用。
+2. **正式 Release 与基准报告逐项核验（`Catalog.latest`）**：
+   - **正式版过滤与资产完整性检查**：仅接受 `draft=false`、`prerelease=false` 且不含预发布/构建后缀的稳定 SemVer 标签；强制校验 Release 资产列表中同时包含对应版本的 `.whl`、`.tar.gz`（sdist）、`SHA256SUMS`、`benchmark-results.json`、`benchmark-results.md` 与 `benchmark-SHA256SUMS`（且文件大小均 `> 0`）。例如实测中旧版 `mindie-bench 0.4.2` 因缺少 wheel/sdist 资产被自动拒绝，其余七个共享组件的正式 Release 均通过发现校验。
+   - **不可变 Tag 对象解引用**：通过 `/git/ref/tags/<tag>`（含 Annotated Tag 逐层解引用至 `type == "commit"`）获取真实的 40 位源码 Commit SHA（`revision`），不盲信可能指向分支名的 `target_commitish`。
+   - **源码 `pyproject.toml` 一致性核对**：按解引用得到的精确 Commit SHA 读取源码中的 `pyproject.toml`，校验 Git blob SHA-1 摘要与字节长度，并确认 `project.name` 与 `project.version` 与 Release Tag 完全一致。
+   - **基准门禁报告下载与 SHA256 校验**：实际下载 `SHA256SUMS` 与 `benchmark-results.json`，校验 `SHA256SUMS` 覆盖 wheel、sdist 与基准报告文件，核对 `benchmark-results.json` 的真实 SHA256 摘要，并确认报告内 `release_gate is True`、`version` 一致且测量前后工作区状态（`source` 与 `source_after`）均为同一 `revision` 且 `dirty is False`。
+   - **精确 Git SHA 安装边界**：组件运行时安装直接锁定经过上述校验的**精确 Git Commit SHA**（`git+https://github.com/mindie-agent/<repo>@<revision>`），在隔离环境中生成完整 `uv.lock`（并不宣称在客户端下载并逐字节校验全部 wheel/sdist 归档文件）。
 
-为了确保关键故障修复与新沉淀的领域知识以最快速度触达开发者，MindIE Agent 建立三层协同触达机制：
+### 3. 公共元数据 `ETag`/TTL 缓存与各宿主实际触发周期
 
-1. **(a) 故障/崩溃触发的即时自愈检查（Fault/Crash-Triggered Immediate Self-Healing Check）**：
-   - 当 `diagnostics` 或任意 MCP 工具遭遇非预期执行失败或崩溃时（`hotfix_trigger_on_error: true`），更新触发器立即旁路 `24 小时`（`86400s`）常规冷却周期（受最小退避保护以防死循环风暴），在后台异步拉取当前通道清单；
-   - 若通道清单中已发布针对该故障组件的热修补丁，立即在后台完成单组件增量准备并在空闲窗口原子自愈切换。
-2. **(b) 轻量级 HTTP `ETag` 通道轮询（Lightweight HTTP `ETag` Channel Polling）**：
-   - 后台按 `etag_poll_interval_sec: 3600`（1 小时）向通道清单发起带 `If-None-Match` 头的条件请求；通道无更新时直接命中 `304 Not Modified`（零 JSON 解析与环境构建开销），有更新时立即触发增量准备；常规全量检查周期保持 `background_poll_interval_sec: 86400`（24 小时）。
-3. **(c) 零代码知识与分诊规则热加载（Zero-Code Knowledge/Rule Feed Hot-Reload）**：
-   - 7 大昇腾公共知识库（`L1–L4` 结构化单元）与分诊规则通过 `feed_sync` 通道独立增量拉取并就地热加载，无需走代码发版或重启常驻进程。
+1. **有界公共 Release 元数据缓存（`release_http.py` / `releases_io.py`）**：
+   - 插件与组件更新器共享 `mindie_knowledge.release_http.read`（默认缓存目录 `~/.cache/mindie-agent/releases` 或 `MINDIE_RELEASE_CACHE`，上限 `128` 个条目、`64 MiB`，单次响应上限在组件目录读取为 `2 MiB`、插件元数据为 `1 MiB`、Release 分页为 `8 MiB`），仅允许访问 `github.com`、`api.github.com` 与 `release-assets.githubusercontent.com` 官方 HTTPS 源。
+   - 缓存保存公共响应体与公开响应头（`ETag`、`Link`、`Content-Length`、`Content-Type`、`Last-Modified`）：对不可变路径（`/git/`、`/contents/`、`/releases/download/`）采用 `86400s`（24 小时）TTL；对可变 Release 列表/最新接口采用 `300s`（有 GitHub Token 时）或 `900s`（无 Token 时）TTL，并在缓存过期后携带 `If-None-Match` 发起条件请求（命中 `304 Not Modified` 时直接复用本地响应体）。
+   - **离线与故障显式可见**：过期的缓存条目绝不会掩盖网络读取失败；断网、超时或超限响应会显式返回失败状态（如 `ReleaseFetchError` / `TimeoutError`），不会伪装成“无更新”静默成功。
+2. **四个宿主插件的实际触发器与冷却周期**：
+   - **OpenAI Codex CLI（`update_trigger.py` / `harness_update.py`）与 Claude Code（`release_update.py`）**：由常驻 MCP 服务进程内的后台维护线程（`mindie-release-check`）异步触发，日常工具调用仅检查内存/本地时间戳，零前台网络阻塞；成功检查后的常规冷却周期为 `CHECK_INTERVAL = 300s`（5 分钟），失败退避为 `FAILURE_BACKOFF = 60s`，待激活候选重试间隔为 `ACTIVATION_BACKOFF = 5s`。
+   - **Kimi Code（`updater.py` / `updater_check.py` / `updater_schedule.py`）**：通过系统定时任务（macOS `launchd` `agent.mindie.kimi-update` 或 Windows 计划任务 `MindIEKimiUpdate`，默认 `INTERVAL_SECONDS = 300s` / 5 分钟）在后台独立运行 `updater check`；失败后按指数退避（`300s` 起，最高 `6 小时`）推迟 `next_retry_at`。
+   - **DeepSeek Harness（`host3.mjs` / `updater.py`）**：在插件加载 `30s` 后及随后每隔 `interval_minutes`（默认 `5` 分钟），当检测当前无正在运行的 Agent 任务时，在后台启动分离的 `updater.py check --silent` 子进程。
+3. **公共知识流同步与手动会话启用门禁严格解耦**：
+   - 昇腾公共知识语料库（`knowledge-*`）的拉取与热加载仅在用户已通过 `/mindie-agent` 显式启用的会话中按需执行；**后台软件更新检查与组件环境构建绝不会主动启动知识 Worker、创建会话租约或触发知识语料同步**。
 
 ---
 
 ## 组件与插件配套发布
 
-MindIE Agent 对外发布的是**经过验证的组件与插件组合**。OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件在每个特性里程碑版本跟随主产品统一版本号；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`profiler`、`sim`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件直接复用已有正式 Release，并在通道热修期间通过 [`channels/0.1.json`](../channels/0.1.json) 独立演进。
+MindIE Agent 对外发布的是**经过验证的组件与插件组合**。OpenAI Codex CLI、Claude Code、Kimi Code 与 DeepSeek Harness（DSH）四个宿主插件在每个特性里程碑版本跟随主产品统一版本号；底层共享组件（`diagnostics`、`knowledge`、`remote-dev`、`coordinator`、`npu-top`、`profiler`、`sim`）与评测工具 `mindie-bench` 保持各自独立的版本序列，未发生代码改动的组件直接复用已有正式 Release，并在补丁演进期间既可由客户端直接发现各组件仓的新正式 Release，也会在主产品汇总发版时登记至 [`channels/0.1.json`](../channels/0.1.json)。
 
 ### 发布顺序与依赖闭环
 
-里程碑发版遵循**自底向上的拓扑依赖顺序**（单组件通道热修仅需执行对应组件步骤并更新通道清单）：
+里程碑或成套补丁发版遵循**自底向上的拓扑依赖顺序**（单个共享组件独立发版仅需执行对应组件步骤并通过自身 Release 门禁）：
 1. 先发布基础诊断组件 [`diagnostics`](https://github.com/mindie-agent/diagnostics) 与理论仿真求解组件 [`sim`](https://github.com/mindie-agent/sim)；
 2. 并行准备并发布依赖它们的 [`remote-dev`](https://github.com/mindie-agent/remote-dev)、[`knowledge`](https://github.com/mindie-agent/knowledge)、[`profiler`](https://github.com/mindie-agent/profiler) 与 [`npu-top`](https://github.com/mindie-agent/npu-top)；
 3. 发布锁定正式 `remote-dev` 与 `diagnostics` 版本的 [`coordinator`](https://github.com/mindie-agent/coordinator)；
-4. 发布锁定实际运行时依赖的四个宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)），最后更新 [`channels/0.1.json`](../channels/0.1.json) 并汇总发布主仓库版本说明。
+4. 若需同步发布宿主插件，则发布锁定实际运行时依赖的四个宿主插件（[`mindie-agent-codex`](https://github.com/mindie-agent/mindie-agent-codex)、[`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc)、[`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi)、[`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh)），最后更新 [`channels/0.1.json`](../channels/0.1.json) 并汇总发布主仓库版本说明。
    - 四个宿主插件实际打包并注册 `knowledge`、`remote-dev` 与 `diagnostics`；`coordinator`、`profiler`、`sim` 与 `npu-top` 可作为独立组件按需安装或升级接入。
    - `mindie-bench` 版本独立演进，各仓发布流水线通过固定 Commit SHA 引用其运行器。
 
-在发布任何一个宿主插件 Release 或更新通道清单前，维护者需核对以下清单：
+在发布任何一个宿主插件 Release 或更新 [`channels/0.1.json`](../channels/0.1.json) 前，维护者需核对以下清单：
 
 | 发布前检查项 | 核对标准 |
 | --- | --- |
-| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` 或通道清单 `channels/0.1.json` 中提取直接第一方依赖，并结合安装环境盘点间接依赖；列出仓库名、包名、版本号、完整 Commit SHA 与对应 Release Tag |
+| **1. 完整依赖盘点** | 从插件最终源码的 `uv.lock` / `runtime-requirements.txt` 或通道清单 `channels/0.1.json` 中提取直接第一方依赖，并结合安装环境盘点间接依赖；列出仓库名、包名、版本号、完整 Commit SHA 与对应 Release Tag |
 | **2. 组件已正式发布** | 每个第一方运行时依赖均已发布正式 GitHub Release（`draft=false` 且 `prerelease=false`） |
 | **3. 源码与标签严格对齐** | 解引用组件 Release Tag 后的源码 Commit 与插件/通道锁定的 Commit 及安装环境 `direct_url.json` 完全一致；Tag 版本、源码包版本与构建产物元数据一致 |
 | **4. 发行产物下载校验** | 从正式 Release 页面下载构建产物，确认包内文件与锁定源码一致 |
 | **5. 验收范围清晰记录** | 如实记录实机验收覆盖的客户端版本、操作系统平台、实测源码 SHA 与已知边界 |
-| **6. 组合闭环复核** | 确认所有底层依赖组件 Release 均已就绪后再发布插件 Release 或推进 `channels/0.1.json` 的 `current_patch_version` |
+| **6. 组合闭环复核** | 确认所有底层依赖组件 Release 均已就绪后再发布插件 Release 或更新 `channels/0.1.json` |
 | **7. 发布 benchmark 随包交付** | 每个代码仓的新 Release 均附带基于该 Tag 精确源码、在干净工作区上运行通过的基准测试报告 |
 
 ### 每次发布的 benchmark 交付
@@ -83,48 +90,61 @@ MindIE Agent 对外发布的是**经过验证的组件与插件组合**。OpenAI
 
 每个代码仓的新 Release 随构建产物一并交付：
 
-- `benchmark-results.json`：记录仓库、版本、测量前后完整 SHA、工作区干净状态、测试套件摘要、运行环境、每次重复样本值、迭代次数、单位、场景状态与准入结论；
+- `benchmark-results.json`：记录仓库、版本、测量前后完整 SHA、工作区干净状态、测试套件摘要、运行环境、每次重复样本值、迭代次数、单位、场景状态与准入结论（`release_gate`）；
 - `benchmark-results.md`：便于直接阅读的测试工作负载、数据与范围说明；
+- `release-notes.md`（配置 `release-notes-path` 时）：随包归档并纳入 `SHA256SUMS` 的社区版本发布说明。
 
 若必选基准场景失败、缺失、超时，或测量期间工作区源码发生变化，发布流水线将直接拦截。公开报告仅包含合成输入描述、环境信息与测量数值，不包含凭据、用户对话或私有路径。
 
-主仓库每次里程碑版本发布均自动校验并汇总 `diagnostics`、`profiler`、`sim`、`npu-top`、`remote-dev`、`knowledge`、`coordinator`、四个宿主插件与 `mindie-bench` 共十二个代码仓的正式评测报告与组件价值实测结果（详见[版本发布记录](README.md#版本记录与路线图)）。
+主仓库发布支持两种门禁模式：特性里程碑（`release-kind=milestone`）强制汇总并校验十二仓完整基准与端到端价值评测报告；维护补丁（`release-kind=patch`，要求 `PATCH > 0`）不将历史里程碑价值报告重标为新实验，但同样强制校验十二个代码仓的真实正式 GitHub Release、不可变 Tag SHA、`mindie-release-benchmark/2` 报告与 `channels/0.1.json` 完整一致（详见[版本发布记录](README.md#版本记录与路线图)）。
 
-> **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 与通道热修规范；而 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)、[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)、[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)、[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)、[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat) 与 [`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering) 是领域知识内容仓库，按固定的内容契约通过零代码知识流（Feed Hot-Reload）持续合入更新，日常新增知识单元无需同步发布软件版本。
+> **说明**：`knowledge` 是代码运行时组件，遵循上述软件 Release 规范；而 [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend)、[`knowledge-operators`](https://github.com/mindie-agent/knowledge-operators)、[`knowledge-infer-core`](https://github.com/mindie-agent/knowledge-infer-core)、[`knowledge-infer-distributed`](https://github.com/mindie-agent/knowledge-infer-distributed)、[`knowledge-infer-observability`](https://github.com/mindie-agent/knowledge-infer-observability)、[`knowledge-infer-ops-compat`](https://github.com/mindie-agent/knowledge-infer-ops-compat) 与 [`knowledge-agent-engineering`](https://github.com/mindie-agent/knowledge-agent-engineering) 是领域知识内容仓库，按固定的内容契约通过知识流持续合入更新，日常新增知识单元无需同步发布软件版本。
 
 ---
 
 ## 宿主兼容性声明与版本选择
 
-不同版本的宿主 CLI（如 Claude Code 或 OpenAI Codex CLI）在 Hook 参数、MCP 超时控制和环境变量传递上可能存在差异。为了防止“插件自动升级后在当前旧版宿主上跑崩”，我们采用确定性的兼容筛选机制：
+不同版本的宿主 CLI（如 Claude Code、OpenAI Codex CLI、Kimi Code 或 DSH）在 Hook 参数、MCP 超时控制和插件清单协议上可能存在差异。为了防止“插件自动升级后在当前旧版宿主上跑崩”，我们采用确定性的兼容筛选机制：
 
-1. **机器可读的兼容性清单（`harness-compatibility.json`）**：
-   - 每个插件仓库维护一份 `harness-compatibility.json`，集中登记插件实际调用的所有宿主接口（Hook、MCP、CLI 参数、环境变量）、代码调用位置、官方依据、测试用例以及经过验证的宿主 SemVer 版本区间。
-   - 发布前门禁脚本会自动校验：插件声明支持的宿主版本区间，必须完全落在所有必需接口的支持区间交集之内。
-2. **自动匹配最高兼容正式版与通道补丁**：
-   - 无论是首次安装还是后续更新，共享版本选择器都会根据本机当前安装的宿主版本，利用标准 SemVer 规则选出**当前宿主能用的最高兼容里程碑正式版（Ordinary Release）**，并结合对应轨道的通道清单（如 [`channels/0.1.json`](../channels/0.1.json)）应用最新的 `0.1.x` 单组件热修版本。
-   - 绝不自动降级，也绝不把 `draft`、`prerelease` 或开发中的 `main` 分支当成正式版本推送给用户。
+1. **机器可读的兼容性清单（`harness-compatibility.json` / `mindie-plugin-release.json`）**：
+   - 插件仓库维护 `harness-compatibility.json`（并在 Release 资产中发布 `mindie-plugin-release.json`），集中登记插件实际调用的所有宿主接口（Hook、MCP、CLI 参数、环境变量）、代码调用位置、官方依据、测试用例以及经过验证的宿主 SemVer 版本区间（DSH 同时核对 `package.json` 中的 `peerDependencies["@deepseek-ai/dsh"]`）。
+   - 发布前门禁脚本与客户端 `validate_compatibility` 会自动校验：插件声明支持的宿主版本区间，必须完全落在所有被使用接口（`used_interfaces`）的支持区间交集之内，且 `verify_release_source` 会二次核对不可变 Git Commit 中的兼容性文件字节摘要。
+2. **宿主插件与共享组件的协同单调升级**：
+   - 插件选择器根据本机当前安装的宿主版本，选出**当前宿主能用的最高兼容正式版插件 Release**（排除 `draft` 与 `prerelease`）。
+   - 当没有更高版本的插件 Release 可用时，宿主更新器直接调用组件更新流程（`component_update.py`），将共享运行时组件独立推进至各组件仓库最新的正式 Release；当升级到新插件 Release 时，也会继承当前已安装组件的版本下界（`max(已安装版本, 新插件基线, 组件正式 Release)`），防止新插件把已独立升级过的组件回退到旧基线。
 
 ---
 
-## 后台静默检查与无感原子切换
+## 旁路隔离环境构建、API 探针与空闲切换流程
 
-客户端通过**轻量级 HTTP `ETag` 通道轮询（每 `3600s` / 1 小时）**、**常规后台全量轮询（每 `86400s` / 24 小时）**以及**故障触发的即时自愈检查（`hotfix_trigger_on_error: true`）**在后台异步检测更新。整个过程遵循“**零打扰、零阻塞、`< 500ms` 空闲原子切换**”原则：
+不同于在活动虚拟环境中原地执行单包替换，MindIE Agent 的插件更新与共享组件更新均采用**旁路独立 Generation 构建 + 隔离进程探针校验 + 空闲服务退役 + 唯一指针文件原子替换（`os.replace`）**的四步安全流程：
 
-- **日常调用零网络阻塞**：日常工具调用和会话启动只做极轻量的本地时间戳判断（毫秒级），绝不在前台等待网络请求、扫描版本列表或构建虚拟环境；高频触发的短时 Stop Hook 更不会执行任何联网或安装动作。
-- **不弹窗、不重置授权**：静默更新不会弹出确认框、不发打扰通知、不要求用户手动敲 Reload，并且完整保留用户已配置的知识贡献开关、项目范围和故障上报设置。
-- **失败退避与幂等保护**：如果断网或遇到 GitHub 限流，检查失败会触发退避策略，不会在接下来的每次工具调用中疯狂重试；已经下载准备好的候选版本会直接等待空闲窗口切换，不会重复下载。
+- **日常调用零网络阻塞**：日常工具调用和短时 Hook 仅读取本地已激活绑定文件或检查时间戳，不在前台等待网络请求、扫描版本列表或运行 `uv` 构建。
+- **不主动启动知识服务、不重置用户授权**：更新检查、旁路环境构建、API 探针与激活切换均在无模型（Model-Free）模式下运行，**绝不会主动启动知识后台服务或创建会话知识授权**（会话知识循环仍严格由用户在会话中手动输入 `/mindie-agent` 启用），并完整保留用户已保存的知识贡献开关、项目范围与故障上报设置。
+- **失败可见与幂等复用**：若网络不可达、GitHub Release 资产不完整或探针校验失败，更新器将错误如实记录在本地更新状态文件（如 `status.json` / `release-update.json`）并进入退避窗口，绝不触碰当前正在运行的环境；同一组件组合（由插件源码摘要、目标组件修订集合与 Python/平台 ABI 共同计算的 `generation_key`）通过非阻塞 `prepare.lock` 去重，已完成校验的候选环境无需重复构建。
 
-### 四步安全切换流程
+### 四步安全准备与空闲切换流程
 
 ```mermaid
 flowchart LR
-    P["1. 后台独立准备<br/>全量构建或 uv 单包增量替换"] --> W["2. 等待服务空闲<br/>有在途 RPC / 采集 / 索引时推迟切换"]
-    W --> S["3. 排他锁原子切换 (< 500ms)<br/>退役旧服务 -> 校验新服务就绪 -> 切换唯一绑定"]
-    S --> R["4. 平滑恢复服务<br/>后续调用自动读取新绑定，无需手动 Reload"]
+    P["1. 旁路独立环境构建<br/>复制插件源码 -> 精确 Git SHA 锁定 -> uv sync 生成独立 .venv 与 uv.lock"] --> V["2. 隔离清单与 API 探针校验<br/>python -I runtime_inventory.py 核验 uv.lock 与 direct_url.json -> 原生无模型探针"]
+    V --> W["3. 排他锁与空闲服务退役<br/>获取排他更新锁 -> 有在途任务时推迟 (deferred) -> 空闲时退役旧服务"]
+    W --> S["4. 唯一绑定原子发布 (os.replace)<br/>原子替换配置文件指针 -> 后续调用自动解析新环境"]
 ```
 
-1. **后台独立准备**：在当前运行环境之外下载目标版本；若是 `0.Y.0` 里程碑升级则执行 `uv sync --locked --no-editable` 构建完整隔离环境，若是 `0.1.x` 单组件通道热修则仅针对变更组件执行 `uv` 单包增量替换并完成包校验。如果准备失败，直接保留当前可用版本，丝毫不影响正在进行的业务。
-2. **等待服务空闲**：只要还有正在执行的工具调用、已入队的经验采集或摘要索引任务，就继续使用旧版本服务，绝不强行中断在途任务。
-3. **排他锁原子切换（`< 500ms`）**：确认旧服务完全空闲后，短暂获取排他操作锁，干净退役旧后台进程，确认新服务就绪后，在 `< 500ms` 内将解释器、入口脚本与引擎配置作为一个整体原子更新到唯一安装绑定（Canonical Binding）。
-4. **平滑承接后续请求**：在亚秒级的短暂切换窗口内，新进入的请求会短暂等待或收到明确的“暂时繁忙、尚未执行”提示；切换完成后，即使是不重启的老会话，下一次触发 Hook 或工具调用时也会自动读取新绑定，真正做到无感升级。
+1. **旁路独立环境构建（`component_runtime.build`）**：
+   - 在活动环境之外创建独立的 Generation 目录（`component-runtimes/<generation_key>`），复制插件源码文件（上限 `16 MiB`），生成锁定目标组件精确 Git Commit SHA 的 `pyproject.toml`（通过 `[tool.uv] override-dependencies` 覆盖组件修订），并在有界超时预算（默认 `420s`）内执行 `uv sync --project <runtime> --no-editable --no-dev` 生成完整隔离 `.venv` 与 `uv.lock`，写入包含 `adapter_source_sha256`、`runtime` 与 `lock_sha256` 的 `components.json`（`schema: "mindie-component-runtime/1"`）。若准备失败，直接保留当前可用环境。
+2. **隔离清单核验与原生 API 探针**：
+   - 在候选解释器中通过 `python -I runtime_inventory.py <components.json>` 校验 `uv.lock` 的 SHA256（`verify_lock`）以及每个第一方组件实际安装的 `direct_url.json` 提交哈希（`verify`），并核对保留的插件源码字节未被并发修改；
+   - 随后执行宿主适配器的无模型候选校验与运行时 API 探针（如 `candidate_validate.py` / `runtime_probe.py`），在接触任何活动配置前确认新组件组合与当前插件脚本接口兼容。
+3. **等待服务空闲与有界退役**：
+   - 准备与探针全部通过后，激活器尝试获取宿主排他操作锁（`update_lock` / `OperationLock`），并检查当前知识服务与各领域 Worker 是否空闲（如 `retire_service` / `stop_if_idle`）。只要存在正在执行的工具调用、经验采集或索引任务，切换立即推迟（返回 `deferred` / `service_busy`），绝不强行中断在途任务；确认空闲后，在有界控制窗口（如 `30s`）内干净停止旧后台服务进程。
+4. **唯一绑定指针原子发布（`os.replace`）**：
+   - 旧服务确认退役（或原本未启动）后，激活器通过 `os.replace` 原子替换唯一安装绑定或当前 Generation 指针文件（如 `codex.json`、`cc.json` 或 `current.json`）。
+   - **耗时边界说明**：仅最终的本地指针文件替换（`os.replace`）是毫秒级的原子文件系统重命名操作；而包含旁路 `uv` 环境构建、候选 API 探针、排他锁获取与旧后台服务空闲退役在内的完整流程运行在各自有界的秒级/分钟级超时预算内，**不将包含构建、停止与就绪检查的全流程承诺为 `< 500ms`**。
+
+### 当前实现与验收边界说明
+
+- **已正式发布并验证的基线机制**：基于 `harness-compatibility.json` 的宿主插件版本选择，以及插件级锁定依赖构建与空闲切换已在 `0.1.0` / `0.1.1` 插件版本中落地验证；主仓 `channels/0.1.json` 与 `benchmark-manifest.json` 的严格组合一致性门禁已在本轮 `mindie-bench #27`（`release-kind=patch`，提交 `484b80621aaf9293c559786d0ef2174c79a0dbb4`）中落地并通过跨平台 CI。
+- **共享组件独立更新核心实现（`mindie-knowledge #101`，提交 `0e4123d` / `7357417`）**：`component_releases.py`、`component_runtime.py`、`runtime_inventory.py`、`release_http.py` 与 `releases_io.py` 已在 `knowledge` 仓完成实现并锁定已正式发布的 `diagnostics 0.5.2`（`801a01b2789aed7f58e971a909205a7d40b61077`），本地全量测试套件（`1555 passed, 22 skipped, 3 deselected, 3 subtests`）、组件更新定向测试（`58 passed`）及三类 CI 工作流均已通过；正式发布 `knowledge 0.13.3` 标签待该仓 PR 最终 CI 与组件 Release 门禁完成。
+- **四端宿主插件接线与端到端新会话验收状态**：Codex、Claude Code、Kimi Code 与 DSH 四个宿主插件的 `component_update.py` 接线已在本地工作树完成实现与单元验证，待创建第二阶段 PR、发布四端 `0.1.2` 正式标签并完成跨端原生新会话端到端验收后闭环。

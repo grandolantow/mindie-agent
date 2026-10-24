@@ -23,7 +23,7 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 |---|---|---|
 | [Harness Boundary & Lifecycle](harness-boundary-and-lifecycle.en.md) | [宿主边界与任务生命周期](harness-boundary-and-lifecycle.md) | Task identity attribution, persistent user consent, operation lifetimes, and local state protection |
 | [Execution Resource Expectations & Spec Placement](execution-resource-budget-design.md) | [执行资源预期、代码有界性与规格匹配设计](execution-resource-budget-design.md) | Code-level bounded memory/VRAM rules (Principle 18), workload resource expectations, and cross-platform (Windows/macOS/Linux) local vs. remote `fleet_probe` spec-driven placement |
-| [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | [版本兼容与无感更新](release-compatibility-and-update.md) | Two-tier release architecture & Release Channel Manifest (`channels/0.1.json`), single-component hotfixes, SemVer host compatibility, and three-tier silent rollout |
+| [Release Compatibility & Silent Update](release-compatibility-and-update.en.md) | [版本兼容与无感更新](release-compatibility-and-update.md) | Two-tier release architecture & product combination manifest (`channels/0.1.json`), direct component Release discovery, SemVer host compatibility, and idle atomic cutover |
 | [Diagnostics & Fault Reporting](diagnostics-and-reporting.en.md) | [诊断日志与故障上报](diagnostics-and-reporting.md) | Bounded local structured logs, strict privacy redaction rules, and opt-in GitHub Issue fault reporting |
 | [Native Runtime & Process Reuse](native-runtime-reuse.en.md) | [原生能力与系统机制复用](native-runtime-reuse.md) | How MindIE Agent reuses native plugin managers, `uv` locked environments, and OS process-tree primitives |
 | [Enterprise Network Transport](enterprise-network.en.md) | [企业网络下的配置与传输](enterprise-network.md) | Proxy and system trust, installation, updates, background uploads and direct local APIs |
@@ -34,7 +34,8 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 
 | Document (English) | 中文 | What It Covers |
 |---|---|---|
-| [**`0.1.0` Official Release Record (Current)**](releases/0.1.0.en.md) | [**`0.1.0` 正式版发布说明（当前版本）**](releases/0.1.0.md) | Full `0.0.1 → 0.1.0` capability evolution, dual-model 18-task `mindie-bench` `G0–G4` evaluation, 3-platform × 4-plugin verification, and the [`channels/0.1.json`](../channels/0.1.json) hotfix channel |
+| [**`0.1.1` Patch Notes (Candidate Draft)**](releases/0.1.1.en.md) | [**`0.1.1` 补丁发布说明（候选稿）**](releases/0.1.1.md) | Explicit per-session `/mindie-agent` gate, whole-delivery budgeting & exploration pass-through, physical Die/HBM placement, bounded diagnostic intake, captured kernel cost contracts, behavior verifiers, and the `release-kind=patch` pipeline |
+| [**`0.1.0` Feature Milestone Record**](releases/0.1.0.en.md) | [**`0.1.0` 特性里程碑发布说明**](releases/0.1.0.md) | Full `0.0.1 → 0.1.0` capability evolution, dual-model 18-task `mindie-bench` `G0–G4` evaluation, 3-platform × 4-plugin verification, and the [`channels/0.1.json`](../channels/0.1.json) hotfix channel |
 | [`0.1.0` Author's Note: Architecture & Engineering Philosophy](releases/0.1.0/design-philosophy.en.md) | [`0.1.0` 作者自述：架构演进与工程哲学](releases/0.1.0/design-philosophy.md) | Why we replaced sprawling multi-Skills with a thin plugin and two orthogonal pillars (MCP tools + `L1–L4` knowledge flywheel), the 5 core runtime components, and human-in-the-loop reflections |
 | [`0.1.0` 18-Task Full Component Value Benchmark Report](releases/0.1.0/value-results.md) | [`0.1.0` 真实任务全组件价值实测报告](releases/0.1.0/value-results.md) | End-to-end `G0–G4` ablation measurements across 18 real L2/L3 tasks (109 trials) and all 7 shared runtime components on `codex + gpt-6.1-sol (xhigh)` and `dsh + deepseek-flash (max)` |
 | [`0.0.3` Release Record](releases/0.0.3.en.md) | [`0.0.3` 版本发布记录](releases/0.0.3.md) | L1–L4 progressive disclosure, `profiler` and `sim` components, deterministic CANN fault triage, and 12-repository formal benchmarks |
@@ -46,4 +47,5 @@ Welcome to the MindIE Agent documentation center. Here you will find the system 
 
 | Document (English) | 中文 | Scope |
 |---|---|---|
+| [Parallel Architecture Review & Fixes (2026-10-24)](architecture-review-20261024.md) · [2026-10-23 Simplification Record](architecture-simplification-20261023.md) | [并行架构评审与修复（2026-10-24）](architecture-review-20261024.md) | Whole-delivery budgeting, exploration pass-through, SSH cleanup & dual-Die placement, behavior task verifiers, and benchmark evidence boundary corrections |
 | [2026-10-20 Code Quality Audit](audits/2026-10-20/README.en.md) | [2026-10-20 代码质量审计](audits/2026-10-20/README.md) | Cross-repository review at fixed revisions, measured line/branch coverage, findings, and staged changes; not a claim that defects are fixed or hardware acceptance is complete |

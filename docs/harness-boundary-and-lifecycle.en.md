@@ -22,7 +22,23 @@ MindIE Agent does not invent a proprietary chat UI or force you into a custom ta
 
 In everyday workflows:
 - **Manual `/mindie-agent` Trigger**: Type `/mindie-agent <problem description>` (or `$mindie-agent` in Codex; DSH uses its native `/mindie-agent` gesture) whenever you want to invoke Ascend domain knowledge, historical troubleshooting experience, and the Skill workflow;
-- **Default Auto-Trigger for `remote-dev`**: Remote SSH and container tools are active by default and trigger automatically whenever you ask the Agent to work on a remote server or container, independent of whether experience capture is enabled.
+- **Deterministic tools available by default**: Configured tools for remote-dev, coordinator inventory and leases, npu-top monitoring, profiler capture and analysis, sim calculations, local diagnostics and status inspection do not require `/mindie-agent`. Their existing permissions, device leases and outbound consent still apply.
+
+The boundary is whether a capability introduces or accumulates knowledge and
+experience context. Direct hardware facts, trace analysis, calculations and
+control-plane status are ordinary tool capabilities. Retrieved L1-L4 experience,
+feedback, distillation and capture belong to the manually enabled knowledge
+flywheel, including deterministic knowledge sync/search implementations. Status
+tools return facts without knowledge onboarding or contribution guidance.
+
+The entire knowledge flywheel (query, explain, feedback, distillation, sync and
+background Stop capture) requires manual `/mindie-agent` activation once per
+session. Later turns retain the grant until deactivation; new chats, forks and
+subagents do not inherit it. Contribution consent and project scope are
+additional capture conditions. Inactive sessions receive no knowledge Skill,
+flywheel instructions or activation reminders. An accidental discovered-tool
+call is rejected as unauthorized before knowledge execution. Legacy automatic
+associations never establish this manual grant.
 
 ---
 
@@ -35,7 +51,7 @@ In everyday workflows:
 
 ### 2.2 Exact Task Attribution & Capture Boundaries
 - **Zero guessing**: Material ownership for every native session or child task (fork) comes strictly from verified host session IDs and transcript headers—never from "most recently modified file," matching `cwd`, or similar prompt text.
-- **Clear time boundaries**: Only turns generated after consent is enabled and within an authorized project path are captured. Disabling sharing immediately cancels unsent queue items; re-enabling captures only new turns going forward without back-scanning conversations from the disabled period.
+- **Clear time boundaries**: Only turns generated inside a manually `/mindie-agent`-activated session after both session activation and contribution consent (`max(created_at, activated_at)`) and within an authorized project path are captured. Disabling sharing immediately cancels unsent queue items; re-enabling captures only new turns going forward without back-scanning conversations from the disabled or unactivated period.
 
 ### 2.3 Stable GitHub Channel (`gh`) & Protecting Uncertain (`unknown`) Writes
 - **Unified `gh` authenticated transport (Hard Requirement) & Two-Stage On-Demand Forking**: All GitHub API requests and remote Git branch pushes go through the authenticated `gh` CLI (`GhTransport` invokes `gh api`, and Git binds `!gh auth git-credential`), keeping credentials out of command-line arguments, logs, and config files. Installation does not require Stars or Forks. When contribution is enabled, create or reuse a Fork of the selected knowledge repository and bind `fork` to `<GH_USER>/<repo>`. Stars are optional. If `gh` is missing or unauthenticated, operations fail visibly rather than silently degrading.
