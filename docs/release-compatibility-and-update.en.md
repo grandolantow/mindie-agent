@@ -83,6 +83,9 @@ Before publishing any plugin Release or updating [`channels/0.1.json`](../channe
 | **5. Documented Acceptance Scope** | Record verified host versions, OS platforms, exact tested source SHAs, and known boundaries accurately. |
 | **6. Closed-Loop Combination** | Publish plugins or update `channels/0.1.json` only after all underlying component Releases are verified. |
 | **7. Release Benchmark Delivery** | Every new code repository Release includes benchmark JSON and Markdown reports generated from the exact tagged commit on a clean checkout. |
+| **8. Upgrade from Existing Installations** | Start with supported published plugins and their old updaters to verify candidate preparation, retention of the old generation on failure, and idle activation. Check that the final host package preserves MCP timeouts, environment variables, and user grants, and inspect the tool catalog and parameters actually loaded by the host. Label isolated candidate-feed evidence explicitly; after publication, verify normal background discovery and activation against the formal release source. |
+
+Independent component updates cover component fixes that preserve the host plugin interface. Changes to native tool catalogs, host MCP timeouts, plugin environment variables, or resident launcher code require a plugin release carrying those changes. Update receipts must distinguish a prepared candidate, a switched installation binding, and host definitions actually loaded: an updated on-disk version or component pointer alone does not prove that a resident host exposes the new interface. Use the host's supported refresh boundary; when natural reload or a new process is required, preserve active sessions and record that boundary explicitly.
 
 ### Benchmark Evidence on Every Release
 
