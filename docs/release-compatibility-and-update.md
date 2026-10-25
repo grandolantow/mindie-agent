@@ -37,7 +37,7 @@ MindIE Agent 采用 **`0.Y.0` 特性里程碑 + `0.Y.Z` 维护补丁/组件独�
    - 对每个已安装组件，取 **已安装版本（`installed`）、插件声明基线版本（`baseline`，来自 `pyproject.toml` 或 `runtime-requirements.txt`）与组件仓最新正式 Release 版本（`latest`）三者的最大值**；
    - 绝不自动降级，且一旦发现相同版本号对应的源码 Commit SHA 发生漂移，立即抛出校验错误拒绝采用。
 2. **正式 Release 与基准报告逐项核验（`Catalog.latest`）**：
-   - **正式版过滤与资产完整性检查**：仅接受 `draft=false`、`prerelease=false` 且不含预发布/构建后缀的稳定 SemVer 标签；强制校验 Release 资产列表中同时包含对应版本的 `.whl`、`.tar.gz`（sdist）、`SHA256SUMS`、`benchmark-results.json`、`benchmark-results.md` 与 `benchmark-SHA256SUMS`（且文件大小均 `> 0`）。当前 8 个运行时与评测组件（`knowledge 0.13.3`、`remote-dev 0.10.6`、`diagnostics 0.5.2`、`profiler 0.5.0`、`sim 0.7.1`、`npu-top 0.2.1`、`coordinator 0.6.3`、`mindie-bench 0.4.4`）的正式 Release 均满足完整资产门禁（而缺少 wheel/sdist 的旧版 `mindie-bench 0.4.2` 会被该门禁自动拒绝）。
+   - **正式版过滤与资产完整性检查**：仅接受 `draft=false`、`prerelease=false` 且不含预发布/构建后缀的稳定 SemVer 标签；强制校验 Release 资产列表中同时包含对应版本的 `.whl`、`.tar.gz`（sdist）、`SHA256SUMS`、`benchmark-results.json`、`benchmark-results.md` 与 `benchmark-SHA256SUMS`（且文件大小均 `> 0`）。历史 0.1.1 验收中的 8 个运行时与评测组件（`knowledge 0.13.3`、`remote-dev 0.10.6`、`diagnostics 0.5.2`、`profiler 0.5.0`、`sim 0.7.1`、`npu-top 0.2.1`、`coordinator 0.6.3`、`mindie-bench 0.4.4`）的正式 Release 均满足完整资产门禁（而缺少 wheel/sdist 的旧版 `mindie-bench 0.4.2` 会被该门禁自动拒绝）。
    - **不可变 Tag 对象解引用**：通过 `/git/ref/tags/<tag>`（含 Annotated Tag 逐层解引用至 `type == "commit"`）获取真实的 40 位源码 Commit SHA（`revision`），不盲信可能指向分支名的 `target_commitish`。
    - **源码 `pyproject.toml` 一致性核对**：按解引用得到的精确 Commit SHA 读取源码中的 `pyproject.toml`，校验 Git blob SHA-1 摘要与字节长度，并确认 `project.name` 与 `project.version` 与 Release Tag 完全一致。
    - **基准门禁报告下载与 SHA256 校验**：实际下载 `SHA256SUMS` 与 `benchmark-results.json`，校验 `SHA256SUMS` 覆盖 wheel、sdist 与基准报告文件，核对 `benchmark-results.json` 的真实 SHA256 摘要，并确认报告内 `release_gate is True`、`version` 一致且测量前后工作区状态（`source` 与 `source_after`）均为同一 `revision` 且 `dirty is False`。
@@ -83,6 +83,9 @@ MindIE Agent 对外发布的是**经过验证的组件与插件组合**。OpenAI
 | **5. 验收范围清晰记录** | 如实记录实机验收覆盖的客户端版本、操作系统平台、实测源码 SHA 与已知边界 |
 | **6. 组合闭环复核** | 确认所有底层依赖组件 Release 均已就绪后再发布插件 Release 或更新 `channels/0.1.json` |
 | **7. 发布 benchmark 随包交付** | 每个代码仓的新 Release 均附带基于该 Tag 精确源码、在干净工作区上运行通过的基准测试报告 |
+| **8. 既有安装升级验收** | 从仍受支持的已发布插件及其旧更新器出发验证候选准备、失败保留旧代与空闲切换；检查最终宿主包保留 MCP 超时、环境变量和用户授权，并核对实际加载的工具目录与参数。隔离候选源验证须明确标注；正式发布后，再验证正常后台发现与激活路径 |
+
+组件独立更新适用于宿主插件接口不变的组件修复。若变更涉及原生工具目录、宿主 MCP 超时、插件环境变量或常驻启动器自身代码，必须发布包含这些变更的插件版本。更新回执应区分“候选已准备”“安装绑定已切换”与“宿主已加载新定义”：磁盘上的版本或组件指针更新，不能单独证明常驻宿主中的新接口已经生效。沿用宿主支持的刷新边界；需要自然重载或新进程时，保留活动会话，并明确记录该边界。
 
 ### 每次发布的 benchmark 交付
 
@@ -143,7 +146,25 @@ flowchart LR
    - 旧服务确认退役（或原本未启动）后，激活器通过 `os.replace` 原子替换唯一安装绑定或当前 Generation 指针文件（如 `codex.json`、`cc.json` 或 `current.json`）。
    - **耗时边界说明**：绑定切换阶段约 `10ms`（Codex `unavailable_seconds`）/ `15ms`（Claude Code `activate_binding.seconds`），不含前置构建，并由 `os.replace` 原子更新绑定配置；而包含前置旁路 `uv` 环境构建、隔离清单核验与候选 API 探针在内的完整流程运行在各自有界的秒级/分钟级超时预算内，**绝不将包含前置构建的全流程承诺为 `< 500ms`**。
 
-### 当前实现与验收边界说明
+### 2026-10-25 独立组件与插件发布核验
+
+以下六个正式 Release 已发布，标签、版本元数据、下载资产的 SHA256、benchmark 的精确源码与准入结果，以及发行包中的运行时源码均已核对。它们是本次独立发布记录；主产品仍为 `0.1.1`，此处不将历史十二仓组合报告重标为新验收。`channels/0.1.json` 的组件组合保留原记录，仅补充本次已知更新边界。
+
+| 仓库 | 正式版本 | 标签源码 SHA |
+| --- | --- | --- |
+| diagnostics | [0.5.4](https://github.com/mindie-agent/diagnostics/releases/tag/v0.5.4) | `5ae643e19223f2181ecdbaa3edaf464137c4805e` |
+| remote-dev | [0.10.7](https://github.com/mindie-agent/remote-dev/releases/tag/v0.10.7) | `4c40cb5d302ddb8400ff6abb7dc47873b931eaa9` |
+| mindie-agent-codex | [0.1.9](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.9) | `572d5609dd9596c37968f18d43c9597d8b8f345f` |
+| mindie-agent-cc | [0.1.6](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.6) | `92e5a0b11a8c0c186660825c4dc1598f7defb9c2` |
+| mindie-agent-kimi | [0.1.5](https://github.com/mindie-agent/mindie-agent-kimi/releases/tag/v0.1.5) | `58d3cf95092d966617935815350f1e024ddaf607` |
+| mindie-agent-dsh | [0.1.4](https://github.com/mindie-agent/mindie-agent-dsh/releases/tag/v0.1.4) | `ea7d2a327c74d5376c2a5adf5569436d4b304f83` |
+
+- **Kimi 2.3.1 / macOS arm64**：既有 `0.1.2` 安装通过正常 300 秒后台任务发现并切到 `0.1.5`；下一轮自动修复旧构包器遗漏的原生字段。原生注册回读和新启动的已注册 MCP 入口确认 `29` 个工具、`toolTimeoutMs=660000`、`REMOTE_DEV_HARNESS_PROFILE=kimi`，活动组件为 `remote-dev 0.10.7 / 4c40cb5`、`diagnostics 0.5.4 / 5ae643e`、`knowledge 0.13.4 / 6e921b2`。未手工调用更新或修改活动配置；既有宿主进程加载的定义仍遵循自然刷新边界。独立的 `knowledge-vllm-ascend` 语料同步仍报告语义修订未前进，未把它计为插件安装失败或宣称已修复。
+- **Codex Desktop 0.164.0-alpha.11.1 / macOS arm64**：正常后台已安装 `0.1.9`、完成新组件环境准备并保留五条 Hook 信任，但活动绑定仍为 `0.1.8`，激活返回 `deferred / operation_busy`。旧 `tools-mcp` 入口未被纳入常驻 MCP 分支，整个空闲 serve 生命周期持共享更新锁。新启动器也优先读取旧 canonical binding，因此不能承诺自然重启即可恢复。锁范围修复保留于 [Draft PR #69](https://github.com/mindie-agent/mindie-agent-codex/pull/69)；本地真实 OS 锁回归和三平台 CI 已通过，但旧安装迁移未闭环，`0.1.10` 未发布。
+- **Claude Code 2.1.269 与 DSH 0.2.0-rc.2**：正式源选择器分别可选择 `0.1.6`、`0.1.4`，发布测试与资产核验通过。本轮未观察到用户全局 Claude Code 安装或正在运行的 DSH 用户插件定时器，因此不声称这两端已自动激活。DSH 的常驻 `host.mjs` 仍需宿主自然重载或新进程；先前隔离原生验收保留其原始测量修订。
+- **Kimi `0.1.4` 发布失败保留**：标签未移动，未生成正式 Release。发布工作流的浅克隆缺少旧控制器回归所需的历史提交；`0.1.5` 显式拉取两个不可变历史 SHA，完成真实浅克隆复现、CI 与正式发布，不改变运行时实现或依赖 pins。
+
+### 0.1.1 历史实现与验收记录
 
 - **已正式发布的 8 个共享与评测组件**：`knowledge 0.13.3`（`38a42f6f778cfa555d8918fdcacd12cee4a181f5`）、`remote-dev 0.10.6`（`0463a13fce9618ec9a51904869d61acb0cdb8538`）、`diagnostics 0.5.2`（`801a01b2789aed7f58e971a909205a7d40b61077`）、`sim 0.7.1`（`15f93f3f0247b2653d0e9441eae56959e4d16d4e`）、`coordinator 0.6.3`（`0ec71fb947ab24df8e543dcf056f4f06664baad8`）、未变更复用的 `profiler 0.5.0`（`4010d72f0b6950caf1425e3b683d495a6c76016a`）与 `npu-top 0.2.1`（`6737925d0ebb39c1aefda2c933eae0486169333c`），以及评测运行器 `mindie-bench 0.4.4`（`a36d8a5ae8633e560d19fee231179c3680149109`，含 `release-kind=patch` 十二仓正式报告与 `channels/0.1.json` 精确对齐门禁）均已完成正式 GitHub Release 发布与资产校验。
 - **四端宿主插件 `0.1.2` 正式发布与 macOS `arm64` 原生更新/会话门禁验收闭环（[`releases/0.1.1/native-update-acceptance.json`](releases/0.1.1/native-update-acceptance.json)）**：`mindie-agent-codex 0.1.2`（`0b3c690b95401631782a656d99f2b4487582636a`，8 项资产/49 个 `.py` 源文件）、`mindie-agent-cc 0.1.2`（`edabca82e02fb313d734c699e75735095effebfd`，8 项资产/34 个 `.py` 源文件）、`mindie-agent-kimi 0.1.2`（`7aecfd22857c313b52d6fe5923292f297884fec0`，7 项资产/145 个源文件）与 `mindie-agent-dsh 0.1.2`（`a38f1cb191f625905aace734e20a2ad196624b60`，6 项资产/47 个源文件）均已完成正式 GitHub Release 发布与逐字节核验，并在 macOS `arm64` 完成正式包安装、组件版本对齐（`knowledge 0.13.3`、`remote-dev 0.10.6`、`diagnostics 0.5.2`）及被动/显式手动入口/同会话续轮/新会话拒绝闭环验收（自动化契约 CI 方面，Codex、Claude Code 与 Kimi Code 覆盖 Ubuntu / macOS / Windows 三平台矩阵，DSH 覆盖 Ubuntu `ubuntu-latest`）。其中：Codex 用户既有安装通过一次性公共 `app-server` config API CAS 与 `native_context` 对齐至实际 Codex Desktop `0.164.0-alpha.11.1`，使 CLI `0.153.4` 与 Desktop `0.164.0-alpha.11.1` 双端全部 5 条 Hook（`SessionStart`×1、`UserPromptSubmit`×1、`Stop`×1、`Interrupt`×2）均保持 `trusted`（非原生插件管理器自动零干预继承，正式会话门禁于 Desktop `0.164.0-alpha.11.1` 通过显式手动 Skill 入口验证）；Claude Code 因本机未全局安装而在独立真实原生 Marketplace Profile（`2.1.269`，`/mindie-agent:mindie-agent` 入口）中完成验收；Kimi（`2.3.1`）与 DSH（`0.2.0-rc.2`）在既有用户安装的新原生进程中完成验收，已运行宿主中的旧加载定义在下次自然重载或新进程中生效而不强杀活跃会话（详见 [`releases/0.1.1.md`](releases/0.1.1.md) 及开发试点报告 [`releases/0.1.1/benchmark-pilot.md`](releases/0.1.1/benchmark-pilot.md)）。
