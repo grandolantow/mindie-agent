@@ -146,7 +146,7 @@ flowchart LR
    - 旧服务确认退役（或原本未启动）后，激活器通过 `os.replace` 原子替换唯一安装绑定或当前 Generation 指针文件（如 `codex.json`、`cc.json` 或 `current.json`）。
    - **耗时边界说明**：绑定切换阶段约 `10ms`（Codex `unavailable_seconds`）/ `15ms`（Claude Code `activate_binding.seconds`），不含前置构建，并由 `os.replace` 原子更新绑定配置；而包含前置旁路 `uv` 环境构建、隔离清单核验与候选 API 探针在内的完整流程运行在各自有界的秒级/分钟级超时预算内，**绝不将包含前置构建的全流程承诺为 `< 500ms`**。
 
-### 2026-10-25 独立组件与插件发布核验
+### 2026-10-26 独立组件与插件发布核验
 
 以下六个正式 Release 已发布，标签、版本元数据、下载资产的 SHA256、benchmark 的精确源码与准入结果，以及发行包中的运行时源码均已核对。它们是本次独立发布记录；主产品仍为 `0.1.1`，此处不将历史十二仓组合报告重标为新验收。`channels/0.1.json` 的组件组合保留原记录，仅补充本次已知更新边界。
 
@@ -154,13 +154,15 @@ flowchart LR
 | --- | --- | --- |
 | diagnostics | [0.5.4](https://github.com/mindie-agent/diagnostics/releases/tag/v0.5.4) | `5ae643e19223f2181ecdbaa3edaf464137c4805e` |
 | remote-dev | [0.10.7](https://github.com/mindie-agent/remote-dev/releases/tag/v0.10.7) | `4c40cb5d302ddb8400ff6abb7dc47873b931eaa9` |
-| mindie-agent-codex | [0.1.9](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.9) | `572d5609dd9596c37968f18d43c9597d8b8f345f` |
+| mindie-agent-codex | [0.1.10](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.10) | `3a6b84012c5c0cc0306bf06a1a236dd2638bd06f` |
 | mindie-agent-cc | [0.1.6](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.6) | `92e5a0b11a8c0c186660825c4dc1598f7defb9c2` |
 | mindie-agent-kimi | [0.1.5](https://github.com/mindie-agent/mindie-agent-kimi/releases/tag/v0.1.5) | `58d3cf95092d966617935815350f1e024ddaf607` |
 | mindie-agent-dsh | [0.1.4](https://github.com/mindie-agent/mindie-agent-dsh/releases/tag/v0.1.4) | `ea7d2a327c74d5376c2a5adf5569436d4b304f83` |
 
 - **Kimi 2.3.1 / macOS arm64**：既有 `0.1.2` 安装通过正常 300 秒后台任务发现并切到 `0.1.5`；下一轮自动修复旧构包器遗漏的原生字段。原生注册回读和新启动的已注册 MCP 入口确认 `29` 个工具、`toolTimeoutMs=660000`、`REMOTE_DEV_HARNESS_PROFILE=kimi`，活动组件为 `remote-dev 0.10.7 / 4c40cb5`、`diagnostics 0.5.4 / 5ae643e`、`knowledge 0.13.4 / 6e921b2`。未手工调用更新或修改活动配置；既有宿主进程加载的定义仍遵循自然刷新边界。独立的 `knowledge-vllm-ascend` 语料同步仍报告语义修订未前进，未把它计为插件安装失败或宣称已修复。
-- **Codex Desktop 0.164.0-alpha.11.1 / macOS arm64**：正常后台已安装 `0.1.9`、完成新组件环境准备并保留五条 Hook 信任，但活动绑定仍为 `0.1.8`，激活返回 `deferred / operation_busy`。旧 `tools-mcp` 入口未被纳入常驻 MCP 分支，整个空闲 serve 生命周期持共享更新锁。新启动器也优先读取旧 canonical binding，因此不能承诺自然重启即可恢复。锁范围修复保留于 [Draft PR #69](https://github.com/mindie-agent/mindie-agent-codex/pull/69)；本地真实 OS 锁回归和三平台 CI 已通过，但旧安装迁移未闭环，`0.1.10` 未发布。
+- **Codex Desktop 0.164.0-alpha.11.1 / macOS arm64，发布与迁移机制**：[PR #69](https://github.com/mindie-agent/mindie-agent-codex/pull/69) 已合并并正式发布 `0.1.10`，修复空闲 `tools-mcp` 生命周期持锁、旧绑定阻止新启动器迁移、中断后的本地激活回执，以及原生安装清理旧缓存后无法退休旧候选的问题。八项发行资产校验通过，wheel 中 72 个包文件与已测试源码逐字节一致，精确 Tag 源码的 benchmark 准入通过；依赖继续使用正式 `remote-dev 0.10.7`、`diagnostics 0.5.4` 和 `knowledge 0.13.4`。最终本地套件为 598 passed、26 skipped，三系统 CI 通过；发布提交的 macOS 首次运行在成功断言后的测试进程组清理阶段失败，保留原失败并完成定向重试，[PR #71](https://github.com/mindie-agent/mindie-agent-codex/pull/71) 单独修复该测试夹具。
+- **Codex 隔离原生迁移验收**：真实 Desktop 原生宿主从已发布 `0.1.8` 运行时、已准备 `0.1.9` 的状态出发，安装候选 `0.1.10` 并刷新同一隔离会话的 MCP 连接，约 47 秒完成新绑定、两项 MCP 服务连接、22 个远程工具与 5 个组件入口、正常后台退休旧候选和空闲锁释放核验。独立原生探针确认刷新保留在途调用至完成。该验收使用隔离候选源；组件业务探针由真实诊断 CLI 完成，管理 API 缺少原生轮次身份时按契约拒绝工具调用，不将其计作已通过的原生业务调用。
+- **Codex 既有用户安装**：已通过一次性恢复复用原生安装器安装正式 `0.1.10`，准备新运行时，保留五条 Hook 信任、用户字段与原有授权。当前活动绑定仍为 `0.1.8`：已加载的旧 MCP 进程仍持共享锁，激活返回 `deferred / operation_busy`。须通过宿主支持的 MCP 刷新或正常重启退出旧进程，再核验新绑定、真实工具调用和正常后台回执；此处尚不声明用户安装已激活或此次首跳由旧更新器自动完成。
 - **Claude Code 2.1.269 与 DSH 0.2.0-rc.2**：正式源选择器分别可选择 `0.1.6`、`0.1.4`，发布测试与资产核验通过。本轮未观察到用户全局 Claude Code 安装或正在运行的 DSH 用户插件定时器，因此不声称这两端已自动激活。DSH 的常驻 `host.mjs` 仍需宿主自然重载或新进程；先前隔离原生验收保留其原始测量修订。
 - **Kimi `0.1.4` 发布失败保留**：标签未移动，未生成正式 Release。发布工作流的浅克隆缺少旧控制器回归所需的历史提交；`0.1.5` 显式拉取两个不可变历史 SHA，完成真实浅克隆复现、CI 与正式发布，不改变运行时实现或依赖 pins。
 
