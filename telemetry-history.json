@@ -380,7 +380,7 @@
         }
       },
       "latest_snapshot": {
-        "stars": 3,
+        "stars": 4,
         "forks": 7,
         "clones_14d": 200,
         "clones_14d_uniques": 100,
@@ -585,8 +585,8 @@
         "views_14d": 22,
         "views_14d_uniques": 11,
         "cumulative_views": 39,
-        "pkg_downloads": 210,
-        "all_asset_downloads": 263,
+        "pkg_downloads": 224,
+        "all_asset_downloads": 277,
         "latest_release": "v0.1.10"
       }
     },
@@ -2551,5 +2551,5 @@
       }
     }
   },
-  "updated_at_cst": "2026-10-27 01:49"
+  "updated_at_cst": "2026-10-27 10:46"
 }
