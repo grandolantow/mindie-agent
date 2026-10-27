@@ -146,6 +146,28 @@ flowchart LR
    - After the old worker is confirmed retired (or absent), the activator atomically replaces the canonical binding or generation pointer file (`codex.json`, `cc.json`, or `current.json`) via `os.replace`.
    - **Latency Boundary Note**: The binding cutover stage takes ~`10ms` on Codex (`unavailable_seconds`) and ~`15ms` on Claude Code (`activate_binding.seconds`), excluding prior runtime build, and publishes the canonical binding via `os.replace`; the end-to-end pipeline—including prior side-by-side `uv` environment building, isolated inventory checks, and candidate API probing—runs under bounded multi-second / multi-minute budgets and **is never promised as `< 500ms` end to end**.
 
+### Missing remote arguments and agent correction, 2026-10-27
+
+A direct SSH endpoint has always required both `host` and `port`. Installed remote-dev `0.10.6` and `0.10.7` reject the same missing-port request as caller/not_sent. Codex `0.1.0`, `0.1.2`, `0.1.8`, `0.1.9`, and `0.1.10` all lacked host/port property descriptions, while the adapter reduced the specific cause to a generic error. Earlier successful acceptance supplied the port explicitly and missed the agent-correction path; historical calls also show the same failure. The evidence does not support a newly introduced port requirement.
+
+remote-dev `0.10.8` puts endpoint rules in model-visible tool and parameter descriptions and supplies bounded `input_repair.missing/action` for local caller failures confirmed as not submitted. Codex, Claude Code, and Kimi preserve that structure and readable guidance; DSH mounts the shared MCP directly. `port=22` is an example. Aliases, resolvers, and configured defaults with all endpoint selectors omitted remain supported. Correction is a new agent call, not automatic adapter replay; uncertain remote effects retain their original job-state handling.
+
+All assets, SHA256 values, exact-source benchmarks, and packaged files were verified for these formal Releases. All 72 Codex wheel files, including the native MCP, Hook, and plugin manifests, match the tagged source; Claude Code wheel resources and source-package manifests were also compared. Plugins pin formal remote-dev `4b1c5ca`; Kimi updates its active override while retaining the original bootstrap dependencies.
+
+| Repository | Formal version | Immutable source SHA | Verified assets |
+| --- | --- | --- | --- |
+| remote-dev | [0.10.8](https://github.com/mindie-agent/remote-dev/releases/tag/v0.10.8) | `4b1c5cab5d36cdaff79d27e4288c6d5f60667c72` | 7 |
+| Codex | [0.1.11](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.11) | `ee9860ffa472599577fa77af9e591d48f663f8fe` | 8 |
+| Claude Code | [0.1.7](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.7) | `e1ab115627c632654dc3e9e6db9a056a20280589` | 8 |
+| Kimi | [0.1.6](https://github.com/mindie-agent/mindie-agent-kimi/releases/tag/v0.1.6) | `3813383c6b100294cb5ea4e9bd9d97a6ecfc1cae` | 7 |
+| DSH | [0.1.5](https://github.com/mindie-agent/mindie-agent-dsh/releases/tag/v0.1.5) | `670b776b675c0b6dd93faef289e6538135e1f0db` | 6 |
+
+Pre-release acceptance used private configuration, candidate production code, actual native clients, and real A3 SSH. In Codex CLI `0.164.0-alpha.11.1`, the model first omitted port, received `Missing input: port`, and added only `port=22` on its second call. The actual business result confirmed `exit_code=0` and a unique stdout marker in `34.672s`. DSH + DeepSeek Flash also added only port and succeeded in `10.323s`, with a succeeded job record. That client did not project RPC error.data or a success exit code, so the model's own exit-code claim was not used as evidence. These results establish the argument-correction path, not four-host upgrade acceptance or NPU performance.
+
+After publication, the existing Codex installation upgraded from `0.1.10` to formal `0.1.11 / ee9860f` through its normal background check, without a forced update or manual binding edit. All 72 installed package files match the verified formal wheel, five Hooks remain trusted, and user configuration and community-consent bytes are unchanged. A native CLI using that installed runtime again completed missing port → add only `port=22` → real SSH `exit_code=0` and expected stdout in `37.382s`; actual MCP calls in the existing Desktop chat completed the same correction. That Desktop's tool description still awaits a natural host reload, so runtime dispatch cutover is not equated with refreshing a resident catalog. The [caller-repair acceptance record](releases/remote-caller-repair-2026-10-27.json) records scope, raw business-result summaries, and local receipt digests.
+
+The existing Kimi `2.3.1` installation switched to formal `0.1.6 / 3813383` through its normal background task, with active remote-dev `0.10.8 / 4b1c5ca`, diagnostics `0.5.4 / 5ae643e`, and the already newer knowledge `0.13.4 / 6e921b2` retained. Active `mcp_server.py` matches the formal source byte for byte; no update was forced and no binding was edited manually. The receipt reports `current` and `needs_host_reload=true`. It establishes the new dispatch runtime, not refresh of an existing host's Skill, command, or tool catalogs.
+
 ### Independent component and plugin release verification, 2026-10-26
 
 The following six formal Releases are published. Verification covered tags and version metadata, downloaded asset SHA256 values, exact-source benchmark provenance and admission, and packaged runtime source bytes. These are independent releases; the main product remains `0.1.1`, and the historical twelve-repository report is not relabelled as new acceptance. The component combination in `channels/0.1.json` is retained; only the newly observed update boundaries are added.
