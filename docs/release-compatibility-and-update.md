@@ -146,6 +146,28 @@ flowchart LR
    - 旧服务确认退役（或原本未启动）后，激活器通过 `os.replace` 原子替换唯一安装绑定或当前 Generation 指针文件（如 `codex.json`、`cc.json` 或 `current.json`）。
    - **耗时边界说明**：绑定切换阶段约 `10ms`（Codex `unavailable_seconds`）/ `15ms`（Claude Code `activate_binding.seconds`），不含前置构建，并由 `os.replace` 原子更新绑定配置；而包含前置旁路 `uv` 环境构建、隔离清单核验与候选 API 探针在内的完整流程运行在各自有界的秒级/分钟级超时预算内，**绝不将包含前置构建的全流程承诺为 `< 500ms`**。
 
+### 2026-10-27 远端参数缺失与自纠正验收
+
+直接 SSH 端点一直要求同时提供 `host` 与 `port`。已安装的 remote-dev `0.10.6` 与 `0.10.7` 对相同漏 port 输入均返回 caller/not_sent；Codex `0.1.0`、`0.1.2`、`0.1.8`、`0.1.9`、`0.1.10` 的工具目录均缺少 host/port 属性说明，适配器又把具体原因压缩为通用错误。此前正确传参验收没有覆盖 Agent 从缺参错误自行纠正的路径；历史调用也曾触发同类失败，因此不能归因于本次版本新增端口规则。
+
+remote-dev `0.10.8` 将端点规则放入模型可见的工具描述和参数说明，并为确认未提交的本地 caller 错误提供有界 `input_repair.missing/action`。Codex、Claude Code 和 Kimi 的适配器保留该结构和可读提示；DSH 直接挂载共享 MCP。`port=22` 只是示例，alias/resolver/完整省略端点字段时的配置默认值继续有效。纠正是 Agent 的新调用，不是适配器自动重放；不确定的远端副作用仍需按原始任务状态处理。
+
+下列正式 Release 的全部资产、SHA256、精确源码 benchmark 和发行包文件已核验。Codex 的 72 个 wheel 文件及原生 MCP/Hook/插件清单均与标签源码一致；Claude Code 同时核对 wheel 资源与源码包清单。插件锁定正式 remote-dev `4b1c5ca`，Kimi 通过活动覆盖层更新并保留原始引导依赖。
+
+| 仓库 | 正式版本 | 不可变源码 SHA | 已核验资产数 |
+| --- | --- | --- | --- |
+| remote-dev | [0.10.8](https://github.com/mindie-agent/remote-dev/releases/tag/v0.10.8) | `4b1c5cab5d36cdaff79d27e4288c6d5f60667c72` | 7 |
+| Codex | [0.1.11](https://github.com/mindie-agent/mindie-agent-codex/releases/tag/v0.1.11) | `ee9860ffa472599577fa77af9e591d48f663f8fe` | 8 |
+| Claude Code | [0.1.7](https://github.com/mindie-agent/mindie-agent-cc/releases/tag/v0.1.7) | `e1ab115627c632654dc3e9e6db9a056a20280589` | 8 |
+| Kimi | [0.1.6](https://github.com/mindie-agent/mindie-agent-kimi/releases/tag/v0.1.6) | `3813383c6b100294cb5ea4e9bd9d97a6ecfc1cae` | 7 |
+| DSH | [0.1.5](https://github.com/mindie-agent/mindie-agent-dsh/releases/tag/v0.1.5) | `670b776b675c0b6dd93faef289e6538135e1f0db` | 6 |
+
+发布前真实验收使用隔离配置、候选生产代码、真实原生客户端与 A3 SSH。Codex CLI `0.164.0-alpha.11.1` 的模型第一次漏传 port，收到 `Missing input: port` 后第二次仅增加 `port=22`，原始业务结果确认 `exit_code=0` 和唯一 stdout 标记，耗时 `34.672s`。DSH + DeepSeek Flash 同样仅补 port 后成功，耗时 `10.323s`，原始 job record 为 succeeded；该客户端未展示 RPC error.data 或成功退出码，因此不以模型自行声称的退出码作为证据。这些是参数纠正链路的实测，不代表四端宿主升级均已验收，也不计为 NPU 性能测试。
+
+正式发布后，既有 Codex 从 `0.1.10` 通过正常后台检查升级至 `0.1.11 / ee9860f`，未强制更新或手工改写绑定。72 个实际安装包文件与已核验正式 wheel 一致，五个 Hook 继续受信任，用户配置与社区授权字节未变。使用该正式安装运行时的原生 CLI 再次完成漏 port → 仅补 `port=22` → 真实 SSH `exit_code=0` 和预期 stdout，耗时 `37.382s`；当前既有桌面聊天的实际 MCP 调用也完成相同纠正。既有桌面工具目录中的描述仍待宿主自然重载，不能把调用运行时已切换等同于常驻目录已刷新。完整范围、原始业务结果摘要与本地回执摘要见[参数纠正验收记录](releases/remote-caller-repair-2026-10-27.json)。
+
+既有 Kimi `2.3.1` 安装通过正常后台任务切换至正式 `0.1.6 / 3813383`，活动依赖为 remote-dev `0.10.8 / 4b1c5ca`、diagnostics `0.5.4 / 5ae643e`，并保留已经升级的 knowledge `0.13.4 / 6e921b2`。活动 `mcp_server.py` 与正式源码逐字节一致，未手工触发更新或改写绑定。回执为 `current` 且 `needs_host_reload=true`；它证明新的调用分发运行时已切换，不证明既有宿主已刷新 Skill、命令和工具目录。
+
 ### 2026-10-26 独立组件与插件发布核验
 
 以下六个正式 Release 已发布，标签、版本元数据、下载资产的 SHA256、benchmark 的精确源码与准入结果，以及发行包中的运行时源码均已核对。它们是本次独立发布记录；主产品仍为 `0.1.1`，此处不将历史十二仓组合报告重标为新验收。`channels/0.1.json` 的组件组合保留原记录，仅补充本次已知更新边界。
