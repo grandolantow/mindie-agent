@@ -1,6 +1,6 @@
 # 📊 MindIE Agent 开源仓库与下载统计
 
-> **最近更新**：`2026-10-28 00:58 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
+> **最近更新**：`2026-10-28 10:54 (UTC+8)` · 每 12 小时通过 GitHub Actions 自动同步。
 
 ![MindIE Agent Repository & Download Statistics](./dashboard.zh.svg)
 
@@ -14,14 +14,14 @@
 | 客户端插件 | [`mindie-agent-cc`](https://github.com/mindie-agent/mindie-agent-cc) | `v0.1.7` | 0 | 0 | **2,110** | 2,086 (336) | 4 (3) | 53 (103) |
 | 客户端插件 | [`mindie-agent-kimi`](https://github.com/mindie-agent/mindie-agent-kimi) | `v0.1.6` | 0 | 0 | **2,369** | 2,267 (380) | 2 (2) | 2,145 (2,187) |
 | 客户端插件 | [`mindie-agent-dsh`](https://github.com/mindie-agent/mindie-agent-dsh) | `v0.1.5` | 0 | 0 | **1,200** | 1,200 (360) | 1 (1) | 29 (78) |
-| 运行时组件 | [`knowledge`](https://github.com/mindie-agent/knowledge) | `v0.13.4` | 0 | 2 | **6,895** | 5,836 (1,691) | 25 (8) | 44 (190) |
+| 运行时组件 | [`knowledge`](https://github.com/mindie-agent/knowledge) | `v0.13.4` | 0 | 2 | **6,895** | 5,836 (1,691) | 25 (8) | 44 (192) |
 | 领域知识库 | [`knowledge-vllm-ascend`](https://github.com/mindie-agent/knowledge-vllm-ascend) | `knowledge-v1f0362a8ba94` | 0 | 2 | **3,889** | 3,446 (714) | 37 (11) | 629 (629) |
 | 运行时组件 | [`remote-dev`](https://github.com/mindie-agent/remote-dev) | `v0.10.8` | 1 | 2 | **4,093** | 3,700 (1,533) | 10 (4) | 45 (210) |
 | 运行时组件 | [`coordinator`](https://github.com/mindie-agent/coordinator) | `v0.6.3` | 0 | 1 | **1,086** | 1,002 (234) | 3 (2) | 24 (68) |
 | NPU 监控 | [`npu-top`](https://github.com/mindie-agent/npu-top) | `v0.2.1` | 2 | 3 | **749** | 688 (153) | 10 (2) | 619 (666) |
-| 运行时组件 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.5.4` | 0 | 1 | **7,367** | 6,502 (2,410) | 0 (0) | 62 (217) |
+| 运行时组件 | [`diagnostics`](https://github.com/mindie-agent/diagnostics) | `v0.5.4` | 0 | 1 | **7,367** | 6,502 (2,410) | 0 (0) | 62 (219) |
 | 评测工具 | [`mindie-bench`](https://github.com/mindie-agent/mindie-bench) | `v0.4.4` | 0 | 0 | **1,250** | 1,250 (277) | 47 (4) | 20 (56) |
-| **合计** | **13 个公开仓库** | — | **65** | **72** | **35,974** | **32,174** | — | **3,967** (4,772) |
+| **合计** | **13 个公开仓库** | — | **65** | **72** | **35,974** | **32,174** | — | **3,967** (4,776) |
 
 ## 数据文件
 
